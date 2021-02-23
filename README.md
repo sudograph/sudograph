@@ -1,2 +1,3 @@
-# sudograph
-GraphQL generator for the Internet Computer
+# Sudograph
+
+GraphQL generator for the Internet Computer.
