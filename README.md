@@ -45,7 +45,7 @@ Single level of scalar inputs per entity and connecting or disconnecting relatio
   - [ ] applied at arbitrary depths in selection sets on relations
   - [ ] field name and order direction
 
-  ### Possible Future Capabilities
+### Possible Future Capabilities
 
 - [ ] create, update, delete many
 - [ ] create, update, delete, update/upsert within mutation inputs
