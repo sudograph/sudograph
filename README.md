@@ -14,6 +14,17 @@ These are lofty goals, and there is a long road ahead.
 
 This roadmap should give you an idea of what Sudograph is currently capable of, and where it is headed. Keep in mind that the roadmap is a rough sketch and subject to change.
 
+### Database
+
+The Internet Computer does not have an efficient and scalable relational data store yet. A prerequisite to this project's success may be to create one of these data stores.
+
+- [ ] Single canister scaling
+  - [ ] Efficient field-level search
+  - [ ] Relational joins
+- [ ] Multiple canister scaling
+  - [ ] Efficient field-level search
+  - [ ] Relational joins
+
 ### Query
 
 Arbitrary-depth joins in selection sets, all basic relation types including one-to-one, one-to-many, many-to-one, and many-to-many.
