@@ -1,0 +1,14 @@
+[package]
+name = "basic"
+version = "0.0.0"
+authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
+edition = "2018"
+
+[lib]
+path = "basic.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+ic-cdk = { path = "../../../../cdk-rs/src/ic-cdk", version = "0.2.1" }
+ic-cdk-macros = { path = "../../../../cdk-rs/src/ic-cdk-macros", version = "0.2.1" }
+sudodb = { path = "../../../../sudodb" }

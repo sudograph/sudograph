@@ -1,0 +1,10 @@
+[package]
+name = "sudograph"
+version = "0.0.0"
+authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sudodb = { path = "../sudodb" }
