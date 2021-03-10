@@ -277,6 +277,135 @@ transactions</li>
 unique constraints and capabilities</li>
 </ul>
 <h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+<h2 id="install-sudograph"><a class="header" href="#install-sudograph">Install Sudograph</a></h2>
+<p>Navigate to the root directory of your project in your terminal and run the following command:</p>
+<pre><code class="language-bash">cargo install sudograph
+</code></pre>
+<h2 id="create-your-graphql-schema"><a class="header" href="#create-your-graphql-schema">Create your GraphQL schema</a></h2>
+<p>Create a file called <code>schema.graphql</code> in the root directory of your project. For example, it might look like the following:</p>
+<pre><code class="language-graphql">type User {
+    id: String!
+    blog_posts: [BlogPost!]!
+    username: String!
+}
+
+type BlogPost {
+    id: String!
+    author: User!
+    body: String!
+    created_at: DateTime!
+    live: Boolean!
+    title: String!
+}
+</code></pre>
+<p>Your schema should define all of the types of your application, including the relationships between them. You can think of each GraphQL type as an object, document, or table.</p>
+<h2 id="generate"><a class="header" href="#generate">Generate</a></h2>
+<p>Run the following command in your terminal:</p>
+<pre><code class="language-bash">cargo sudograph generate
+</code></pre>
+<p>You should now have a new directory called <code>sudograph_generated</code> in the root directory of your project. It will contain a much more capable schema file called <code>schema-generated.graphql</code>. For example, given the simple schema we defined above, the following will be generated:</p>
+<pre><code class="language-graphql">type Query {
+    readUser(input: ReadUserInput)
+    readBlogPost(input: ReadBlogPostInput)
+}
+
+type Mutation {
+    createUser(input: CreateUserInput, inputs: [CreateUserInput!])
+    createBlogPost(input: CreateBlogPostInput, inputs: [CreateBlogPostInput!])
+    updateUser(input: UpdateUserInput, inputs: [UpdateUserInput!])
+    updateBlogPost(input: UpdateBlogPostInput, inputs: [UpdateBlogPostInput!])
+    deleteUser(input: DeleteUserInput, inputs: [DeleteUserInput!])
+    deleteBlogPost(input: DeleteBlogPostInput, inputs: [DeleteBlogPostInput!])
+}
+
+type User {
+    id: String!
+    blog_posts: [BlogPost!]!
+    username: String!
+}
+
+type BlogPost {
+    id: String!
+    author: User!
+    body: String!
+    created_at: DateTime!
+    live: Boolean!
+    title: String!
+}
+
+input ReadUserInput {
+    id: ReadStringInput
+    blog_posts: ReadBlogPostInput # TODO perhaps an annotation here will help us distinguish the type of result, singular or multiple
+    username: ReadStringInput
+}
+
+input ReadBlogPostInput {
+    id: ReadStringInput
+    author: ReadUserInput
+    body: ReadStringInput
+    created_at: ReadDateTimeInput
+    live: ReadBooleanInput
+    title: ReadStringInput
+}
+
+input ReadStringInput {
+    eq: String
+    gt: String
+    gte: String
+    lt: String
+    lte: String
+    contains: String
+}
+
+input ReadDateTimeInput {
+    eq: String
+    gt: String
+    gte: String
+    lt: String
+    lte: String
+}
+
+input ReadBooleanInput {
+    eq: String
+}
+
+input CreateUserInput {
+
+}
+
+input CreateBlogPostInput {
+
+}
+
+input UpdateUserInput {
+
+}
+
+input UpdateBlogPostInput {
+
+}
+
+input DeleteUserInput {
+
+}
+
+input DeleteBlogPostInput {
+
+}
+</code></pre>
+<p>In addition to the generated schema file, there is a directory called <code>canister</code>. This has all of the code necessary to be deployed to the IC. You will need to update your <code>dfx.json</code> file to include this new canister, or you can simply run <code>dfx deploy</code> from the canister directory.</p>
+<p>It is very likely that you'll need to customize this canister, so you may wish to move it into a directory with your other canisters.</p>
+<p>You'll need to update the argument being passed to the <code>sudograph_generate</code> procedural macro. Make sure the argument is the correct path to your <code>schema.graphql</code> file.</p>
+<p>In addition to a much more capable schema than the simple one we've created, Sudograph will generate resolvers that read and write data using <code>Sudodb</code>.</p>
+<p>Here's what the generate resolvers for the above would look like:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// TODO put in some Rust code here
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="todo"><a class="header" href="#todo">TODO</a></h2>
+<p>Actually, perhaps I should actually update their dfx.json file? I can read it in, find out where they're storing their canisters, and just write a new cansiter there. This might be tricky and dangerous, so perhaps that should come later?</p>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <h1 id="motivation"><a class="header" href="#motivation">Motivation</a></h1>
 <h1 id="vision"><a class="header" href="#vision">Vision</a></h1>
