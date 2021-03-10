@@ -23,7 +23,7 @@ type BlogPost {
     id: String!
     author: User!
     body: String!
-    created_at: DateTime!
+    created_at: Date!
     live: Boolean!
     title: String!
 }

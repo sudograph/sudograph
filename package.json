@@ -4,7 +4,8 @@
   "description": "GraphQL database for the Internet Computer",
   "scripts": {
     "book-serve": "cd sudograph-book && mdbook serve",
-    "book-build": "cd sudograph-book && mdbook build"
+    "book-build": "cd sudograph-book && mdbook build",
+    "test-macro": "cargo expand --bin sudograph"
   },
   "repository": {
     "type": "git",
