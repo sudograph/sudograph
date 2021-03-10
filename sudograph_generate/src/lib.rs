@@ -99,15 +99,12 @@ fn get_rust_type(graphql_type: &Type<String>) -> quote::__private::TokenStream {
         Type::NamedType(named_type) => {
             match &named_type[..] {
                 "String" => {
-                    // return String::from("String");
                     return quote! {String};
                 },
                 "Int" => {
-                    // return String::from("i32");
                     return quote! {i32};
-                },
+                }, // TODO implement more types here
                 _ => {
-                    // return String::from("not found");
                     panic!();
                 }
             }
@@ -119,7 +116,7 @@ fn get_rust_type(graphql_type: &Type<String>) -> quote::__private::TokenStream {
                 Option<#rust_type>
             };
         },
-        _ => {
+        _ => { // TODO implement the list type here
             // return String::from("Not yet implemented");
             panic!();
         }
