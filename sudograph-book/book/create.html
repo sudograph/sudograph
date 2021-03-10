@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Sudograph - Sudograph</title>
+        <title>create - Sudograph</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="sudograph.html"><strong aria-hidden="true">1.</strong> Sudograph</a></li><li class="chapter-item expanded "><a href="quick-start.html"><strong aria-hidden="true">2.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="examples.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li class="chapter-item expanded "><a href="motivation.html"><strong aria-hidden="true">4.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="vision.html"><strong aria-hidden="true">5.</strong> Vision</a></li><li class="chapter-item expanded "><a href="limitations.html"><strong aria-hidden="true">6.</strong> Limitations</a></li><li class="chapter-item expanded "><a href="generated-schema.html"><strong aria-hidden="true">7.</strong> Generated Schema</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="query.html"><strong aria-hidden="true">7.1.</strong> Query</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="read.html"><strong aria-hidden="true">7.1.1.</strong> read</a></li></ol></li><li class="chapter-item expanded "><a href="mutation.html"><strong aria-hidden="true">7.2.</strong> Mutation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="create.html"><strong aria-hidden="true">7.2.1.</strong> create</a></li><li class="chapter-item expanded "><a href="update.html"><strong aria-hidden="true">7.2.2.</strong> update</a></li><li class="chapter-item expanded "><a href="delete.html"><strong aria-hidden="true">7.2.3.</strong> delete</a></li></ol></li><li class="chapter-item expanded "><a href="subscription.html"><strong aria-hidden="true">7.3.</strong> Subscription</a></li><li class="chapter-item expanded "><a href="filtering.html"><strong aria-hidden="true">7.4.</strong> Filtering</a></li><li class="chapter-item expanded "><a href="paging.html"><strong aria-hidden="true">7.5.</strong> Paging</a></li><li class="chapter-item expanded "><a href="ordering.html"><strong aria-hidden="true">7.6.</strong> Ordering</a></li></ol></li><li class="chapter-item expanded "><a href="migrations.html"><strong aria-hidden="true">8.</strong> Migrations</a></li><li class="chapter-item expanded "><a href="transactions.html"><strong aria-hidden="true">9.</strong> Transactions</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="sudograph.html"><strong aria-hidden="true">1.</strong> Sudograph</a></li><li class="chapter-item expanded "><a href="quick-start.html"><strong aria-hidden="true">2.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="examples.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li class="chapter-item expanded "><a href="motivation.html"><strong aria-hidden="true">4.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="vision.html"><strong aria-hidden="true">5.</strong> Vision</a></li><li class="chapter-item expanded "><a href="limitations.html"><strong aria-hidden="true">6.</strong> Limitations</a></li><li class="chapter-item expanded "><a href="generated-schema.html"><strong aria-hidden="true">7.</strong> Generated Schema</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="query.html"><strong aria-hidden="true">7.1.</strong> Query</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="read.html"><strong aria-hidden="true">7.1.1.</strong> read</a></li></ol></li><li class="chapter-item expanded "><a href="mutation.html"><strong aria-hidden="true">7.2.</strong> Mutation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="create.html" class="active"><strong aria-hidden="true">7.2.1.</strong> create</a></li><li class="chapter-item expanded "><a href="update.html"><strong aria-hidden="true">7.2.2.</strong> update</a></li><li class="chapter-item expanded "><a href="delete.html"><strong aria-hidden="true">7.2.3.</strong> delete</a></li></ol></li><li class="chapter-item expanded "><a href="subscription.html"><strong aria-hidden="true">7.3.</strong> Subscription</a></li><li class="chapter-item expanded "><a href="filtering.html"><strong aria-hidden="true">7.4.</strong> Filtering</a></li><li class="chapter-item expanded "><a href="paging.html"><strong aria-hidden="true">7.5.</strong> Paging</a></li><li class="chapter-item expanded "><a href="ordering.html"><strong aria-hidden="true">7.6.</strong> Ordering</a></li></ol></li><li class="chapter-item expanded "><a href="migrations.html"><strong aria-hidden="true">8.</strong> Migrations</a></li><li class="chapter-item expanded "><a href="transactions.html"><strong aria-hidden="true">9.</strong> Transactions</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,126 +163,20 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="sudograph"><a class="header" href="#sudograph">Sudograph</a></h1>
-<h3 id="this-book-is-hosted-on-the-internet-computer-sodium-test-network"><a class="header" href="#this-book-is-hosted-on-the-internet-computer-sodium-test-network">This book is hosted on the Internet Computer (Sodium Test Network)</a></h3>
-<p>Sudograph is a GraphQL generator for the Internet Computer. It is similar to projects like <a href="https://www.prisma.io/">Prisma</a>, <a href="https://graphback.dev/">Graphback</a>, and <a href="https://hasura.io/">Hasura</a>, though it is designed to run on and thus inherit the capabilities of the <a href="https://dfinity.org/">Internet Computer</a>.</p>
-<p>Sudograph aims to greatly simplify the hardest part of GraphQL development, which is the actual implementation of the resolvers. From a types-only GraphQL schema written in the GraphQL SDL, Sudograph will generate a far more capable CRUD schema along with the implementation of its resolvers.</p>
-<p>Basically, a GraphQL schema goes in and a generated CRUD backend comes out. This will create a highly declarative developer experience, and will free you as a developer to think more in terms of the shapes of the data of the systems you create, and to pass the implementation of the more capable schema and resolvers on to the generator.</p>
-<p>As Sudograph will inherit the capabilities of the Internet Computer, its aim is to become the simplest, most flexible, secure, and scalable way to use GraphQL. It also aims to be the best way to build CRUD apps on the Internet Computer.</p>
-<p>These are lofty goals, and there is a long road ahead.</p>
-<h2 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h2>
-<p>This roadmap should give you an idea of what Sudograph is currently capable of, and where it is headed. Keep in mind that the roadmap is a rough sketch and subject to change.</p>
-<h3 id="database"><a class="header" href="#database">Database</a></h3>
-<p>The Internet Computer does not have an efficient and scalable relational data store yet. A prerequisite to this project's success may be to create one of these data stores.</p>
-<ul>
-<li><input disabled="" type="checkbox"/>
-Single canister scaling
-<ul>
-<li><input disabled="" type="checkbox"/>
-Efficient field-level search</li>
-<li><input disabled="" type="checkbox"/>
-Relational joins</li>
-</ul>
-</li>
-<li><input disabled="" type="checkbox"/>
-Multiple canister scaling
-<ul>
-<li><input disabled="" type="checkbox"/>
-Efficient field-level search</li>
-<li><input disabled="" type="checkbox"/>
-Relational joins</li>
-</ul>
-</li>
-</ul>
-<h3 id="query"><a class="header" href="#query">Query</a></h3>
-<p>Arbitrary-depth joins in selection sets, all basic relation types including one-to-one, one-to-many, many-to-one, and many-to-many.</p>
-<ul>
-<li><input disabled="" type="checkbox"/>
-get (retrieve single record by id)</li>
-<li><input disabled="" type="checkbox"/>
-find (retrieve multiple records by filter with paging and ordering)
-<ul>
-<li><input disabled="" type="checkbox"/>
-top level filtering as described in Selection Sets</li>
-<li><input disabled="" type="checkbox"/>
-top level paging as described in Selection Sets</li>
-</ul>
-</li>
-</ul>
-<h3 id="mutation"><a class="header" href="#mutation">Mutation</a></h3>
-<p>Single level of scalar inputs per entity and connecting or disconnecting relations by id only, arbitrary-depth joins in selection sets, same selection set capabilities as queries.</p>
-<ul>
-<li><input disabled="" type="checkbox"/>
-create</li>
-<li><input disabled="" type="checkbox"/>
-update</li>
-<li><input disabled="" type="checkbox"/>
-delete</li>
-</ul>
-<h3 id="selection-sets"><a class="header" href="#selection-sets">Selection Sets</a></h3>
-<ul>
-<li><input disabled="" type="checkbox"/>
-filtering
-<ul>
-<li><input disabled="" type="checkbox"/>
-applied at arbitrary depths in selection sets on relations</li>
-<li><input disabled="" type="checkbox"/>
-scalar values and relation ids only</li>
-<li><input disabled="" type="checkbox"/>
-no cross-relational filters</li>
-<li><input disabled="" type="checkbox"/>
-basic operations: eq, gt, lt, contains, startsWith, etc</li>
-</ul>
-</li>
-<li><input disabled="" type="checkbox"/>
-paging
-<ul>
-<li><input disabled="" type="checkbox"/>
-applied at arbitrary depths in selection sets on relations</li>
-<li><input disabled="" type="checkbox"/>
-limit and offset</li>
-</ul>
-</li>
-<li><input disabled="" type="checkbox"/>
-order by
-<ul>
-<li><input disabled="" type="checkbox"/>
-applied at arbitrary depths in selection sets on relations</li>
-<li><input disabled="" type="checkbox"/>
-field name and order direction</li>
-</ul>
-</li>
-</ul>
-<h3 id="possible-future-capabilities"><a class="header" href="#possible-future-capabilities">Possible Future Capabilities</a></h3>
-<ul>
-<li><input disabled="" type="checkbox"/>
-create, update, delete many</li>
-<li><input disabled="" type="checkbox"/>
-create, update, delete, update/upsert within mutation inputs</li>
-<li><input disabled="" type="checkbox"/>
-cross-relational filters</li>
-<li><input disabled="" type="checkbox"/>
-order by multiple fields</li>
-<li><input disabled="" type="checkbox"/>
-Statistics within relation results (for example total counts, averages, sums, etc)</li>
-<li><input disabled="" type="checkbox"/>
-migrations</li>
-<li><input disabled="" type="checkbox"/>
-subscriptions</li>
-<li><input disabled="" type="checkbox"/>
-transactions</li>
-<li><input disabled="" type="checkbox"/>
-unique constraints and capabilities</li>
-</ul>
+                        <h1 id="create"><a class="header" href="#create">create</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="mutation.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
-                            <a rel="next" href="quick-start.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="update.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -294,9 +188,13 @@ unique constraints and capabilities</li>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="mutation.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
                 
-                    <a rel="next" href="quick-start.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="update.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
