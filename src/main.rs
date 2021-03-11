@@ -1,23 +1,27 @@
 use sudodb;
 use std::collections::BTreeMap;
-use sudograph::Query;
 use async_graphql::{
     Object,
     Schema,
-    EmptyMutation,
     EmptySubscription
 };
-use sudograph_generate::sudograph_generate;
+use sudograph_generate::{
+    sudograph_generate
+};
+use unescape::unescape;
 
 // TODO instead of using this main binary crate, use dfx
 fn main() {
-    sudograph_generate!("test-schema.graphql");
+    // sudograph_generate!("test-schema.graphql");
 
-    // let schema = Schema::new(
-    //     Query,
-    //     EmptyMutation,
-    //     EmptySubscription
-    // );
+    let schema = Schema::new(
+        sudograph::Query,
+        sudograph::Mutation,
+        EmptySubscription
+    );
+
+    // println!("{}", unescape(&schema.sdl()).unwrap());
+    println!("{}", schema.sdl());
 
     // let res = schema.execute("
     //     query {

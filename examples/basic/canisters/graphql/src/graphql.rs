@@ -18,6 +18,8 @@ async fn graphql(query: String) -> String {
         EmptySubscription
     );
 
+    ic_cdk::print(schema.sdl());
+
     let result = schema.execute(query).await;
 
     let json_result = serde_json::to_string(&result);

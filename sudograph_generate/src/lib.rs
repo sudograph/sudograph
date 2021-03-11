@@ -38,6 +38,22 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
         &object_type_definitions
     );
 
+    // TODO start generating create input structs
+    // TODO once we generate the create input structs, we can implement the create resolvers
+    // TODO once we implement the create resolvers, we can implement the read resolvers
+    // TODO once we have those implemented we can start really testing from the playground
+    // TODO then we can add update and delete resolvers
+    // TODO once all of those basics are working, we can start adding more functionality
+    // TODO once we have a baseline of functionality, we should add tests
+    // TODO after we add tests we can continue to add functionality, refactor, and then start
+    // TODO working on multi-canister functionality possibly
+    // TODO we might want to prioritize Motoko interop...since many newcomers seem to really be moving toward Motoko
+
+    let generated_create_input_structs = generate_create_input_structs(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
     let generated_read_input_structs = generate_read_input_structs(
         &graphql_ast,
         &object_type_definitions
@@ -65,6 +81,8 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
         };
 
         #(#generated_object_type_structs)*
+
+        #(#generated_create_input_structs)*
 
         #(#generated_read_input_structs)*
 
@@ -149,12 +167,50 @@ fn generate_object_type_structs(
     return generated_object_type_structs;
 }
 
+fn generate_create_input_structs(
+    graphql_ast: &Document<String>,
+    object_type_definitions: &Vec<ObjectType<String>>
+) -> Vec<quote::__private::TokenStream> {
+    let generated_create_input_structs = object_type_definitions.iter().map(|object_type_definition| {
+        let create_input_name = Ident::new(
+            &(String::from("Create") + &object_type_definition.name + "Input"),
+            quote::__private::Span::call_site()
+        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        
+        let generated_fields = object_type_definition.fields.iter().map(|field| {
+            let field_name = Ident::new(
+                &field.name,
+                quote::__private::Span::call_site()
+            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+            
+            let field_type = get_rust_type_for_create_input(
+                &graphql_ast,
+                &field.field_type,
+                false
+            );
+
+            return quote! {
+                #field_name: #field_type
+            };
+        });
+        
+        return quote! {
+            #[derive(InputObject)]
+            struct #create_input_name {
+                #(#generated_fields),*
+            }
+        };
+    }).collect();
+
+    return generated_create_input_structs;
+}
+
 fn generate_read_input_structs(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
 ) -> Vec<quote::__private::TokenStream> {
-    let generated_object_type_structs = object_type_definitions.iter().map(|object_type_definition| {
-        let object_type_name = Ident::new(
+    let generated_read_input_structs = object_type_definitions.iter().map(|object_type_definition| {
+        let read_input_name = Ident::new(
             &(String::from("Read") + &object_type_definition.name + "Input"),
             quote::__private::Span::call_site()
         ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
@@ -177,13 +233,13 @@ fn generate_read_input_structs(
         
         return quote! {
             #[derive(InputObject)]
-            struct #object_type_name {
+            struct #read_input_name {
                 #(#generated_fields),*
             }
         };
     }).collect();
 
-    return generated_object_type_structs;
+    return generated_read_input_structs;
 }
 
 fn generate_query_resolvers(
@@ -228,6 +284,11 @@ fn generate_mutation_resolvers(
             quote::__private::Span::call_site()
         ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
 
+        let create_input_type = Ident::new(
+            &(String::from("Create") + object_type_name + "Input"), 
+            quote::__private::Span::call_site()
+        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+
         let update_function_name = Ident::new(
             &(String::from("update") + object_type_name), 
             quote::__private::Span::call_site()
@@ -239,7 +300,10 @@ fn generate_mutation_resolvers(
         ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
 
         return quote! {
-            async fn #create_function_name(&self) -> Result<bool> {
+            async fn #create_function_name(
+                &self,
+                input: #create_input_type
+            ) -> Result<bool> {
                 return Ok(true);
             }
 
@@ -333,6 +397,65 @@ fn get_rust_type_for_object_type_named_type<'a>(
             }
         }
     }
+}
+
+fn get_rust_type_for_create_input<'a>(
+    graphql_ast: &'a Document<String>,
+    graphql_type: &Type<String>,
+    is_non_null_type: bool
+) -> quote::__private::TokenStream {
+    match graphql_type {
+        Type::NamedType(named_type) => {
+            let rust_type_for_named_type = get_rust_type_for_object_type_named_type(
+                graphql_ast,
+                graphql_type,
+                named_type
+            );
+
+            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
+                // TODO this is just a placeholder for now, I will implement creating relations later...
+                // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
+                return quote! { Option<bool> };
+            }
+            else {
+                if
+                    is_non_null_type == true ||
+                    named_type == "id"
+                {
+                    return quote! { #rust_type_for_named_type };
+                }
+                else {
+                    return quote! { Option<#rust_type_for_named_type> };
+                }
+            }
+        },
+        Type::NonNullType(non_null_type) => {
+            let rust_type = get_rust_type_for_create_input(
+                graphql_ast,
+                non_null_type,
+                true
+            );
+            return quote! { #rust_type };
+        },
+        Type::ListType(list_type) => {
+            let rust_type = get_rust_type_for_create_input(
+                graphql_ast,
+                list_type,
+                false
+            );
+
+            // TODO this is just a placeholder for now, I will implement creating relations later...
+            // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
+            return quote! { Option<bool> };
+
+            // if is_non_null_type == true {
+            //     return quote! { Vec<#rust_type> };
+            // }
+            // else {
+            //     return quote! { Option<Vec<#rust_type>> };
+            // }
+        }
+    };
 }
 
 fn get_rust_type_for_read_input<'a>(
