@@ -1,0 +1,3 @@
+service : {
+    "graphql": (text) -> (text);
+}

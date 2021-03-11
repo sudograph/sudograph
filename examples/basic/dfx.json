@@ -1,13 +1,25 @@
 {
   "canisters": {
-    "basic": {
-      "build": "cargo build --target wasm32-unknown-unknown --package basic --release",
+    "graphql": {
+      "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
       "type": "custom",
-      "candid": "src/basic.did",
-      "wasm": "target/wasm32-unknown-unknown/release/basic.wasm"
-    }
+      "candid": "canisters/graphql/src/graphql.did",
+      "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
+    },
+    "playground": {
+      "type": "assets",
+      "dependencies": [
+          "graphql"
+      ],
+      "frontend": {
+          "entrypoint": "canisters/playground/index.js"
+      },
+      "source": [
+          "dist/playground/"
+      ]        
+  }
   },
-  "dfx": "0.6.23",
+  "dfx": "0.6.24",
   "networks": {
     "local": {
       "bind": "127.0.0.1:8000",

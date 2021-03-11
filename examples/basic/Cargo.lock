@@ -65,9 +65,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "2.5.9"
+version = "2.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d44e9cd1eedaa85207eea845e59280f87d8892b9c2c8057712c9f110726fb571"
+checksum = "0c1f0e95383c4d84c580ccbe6c18a525e7ed067976a08611d87665ec26899866"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -105,9 +105,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "2.5.9"
+version = "2.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91b828ac0ddb654259a9cf3aa0101bc47428e8798d97690f188f0bdd6fddd431"
+checksum = "02c25db077888d8c9eee274b4a27ce598b63ee31487131b233e111d767186e3e"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -171,9 +171,9 @@ checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
 name = "async-trait"
-version = "0.1.42"
+version = "0.1.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d3a45e77e34375a7923b1e8febb049bb011f064714a8e17a1a616fef01da13d"
+checksum = "36ea56748e10732c49404c153638a15ec3d6211ec5ff35d9bb20e13b93576adf"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -220,19 +220,6 @@ name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
-
-[[package]]
-name = "basic"
-version = "0.0.0"
-dependencies = [
- "async-graphql",
- "getrandom 0.2.2",
- "ic-cdk",
- "ic-cdk-macros",
- "serde_json",
- "sudodb",
- "sudograph",
-]
 
 [[package]]
 name = "beef"
@@ -341,9 +328,9 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "byteorder"
-version = "1.4.2"
+version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae44d1a3d5a19df61dd0c8beb138458ac2a53a7ac09eba97d55592540004306b"
+checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "bytes"
@@ -365,9 +352,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "candid"
-version = "0.6.16"
+version = "0.6.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9669668454dd04c144d6f6674b4266b6e8fd0ef75f0240f0d08ec60869f654aa"
+checksum = "7f9b7a91e4c220c5daeafaebfc775e06afcab733e4068075ea2eb7ab81ff5b84"
 dependencies = [
  "byteorder",
  "candid_derive",
@@ -384,14 +371,15 @@ dependencies = [
  "paste",
  "pretty",
  "serde",
+ "serde_bytes",
  "thiserror",
 ]
 
 [[package]]
 name = "candid_derive"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5603430e22543ff48a72020277340132dea6653e6c91b47c9e1f90f91ae82c54"
+checksum = "e3c7113fdbc587057808a551cfdf56ddcfcd4d2c68dd27599f102d03e1ed1712"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -818,6 +806,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "graphql"
+version = "0.0.0"
+dependencies = [
+ "async-graphql",
+ "getrandom 0.2.2",
+ "ic-cdk",
+ "ic-cdk-macros",
+ "serde_json",
+ "sudodb",
+ "sudograph",
+]
+
+[[package]]
 name = "graphql-parser"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -924,9 +925,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.6.1"
+version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
+checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -1002,9 +1003,9 @@ checksum = "3576a87f2ba00f6f106fdfcd16db1d698d648a26ad8e0573cad8537c3c362d2a"
 
 [[package]]
 name = "libc"
-version = "0.2.87"
+version = "0.2.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "265d751d31d6780a3f956bb5b8022feba2d94eeee5a84ba64f4212eedca42213"
+checksum = "03b07a082330a35e43f63177cc01689da34fbffa0105e1246cf0311472cac73a"
 
 [[package]]
 name = "linked-hash-map"
@@ -1111,9 +1112,9 @@ checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
 
 [[package]]
 name = "num-bigint"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e9a41747ae4633fce5adffb4d2e81ffc5e89593cb19917f8fb2cc5ff76507bf"
+checksum = "7d0a3d5e207573f948a9e5376662aa743a2ea13f7c50a554d7af443a73fbfeba"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -1501,18 +1502,27 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "serde"
-version = "1.0.123"
+version = "1.0.124"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d5161132722baa40d802cc70b15262b98258453e85e5d1d365c757c73869ae"
+checksum = "bd761ff957cb2a45fbb9ab3da6512de9de55872866160b23c25f1a841e99d29f"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
-name = "serde_derive"
-version = "1.0.123"
+name = "serde_bytes"
+version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9391c295d64fc0abb2c556bad848f33cb8296276b1ad2677d1ae1ace4f258f31"
+checksum = "16ae07dd2f88a366f15bd0632ba725227018c69a1c8550a927324f8eb8368bb9"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.124"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1800f7693e94e186f5e25a28291ae1570da908aff7d97a095dec1e56ff99069b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1640,9 +1650,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.61"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed22b90a0e734a23a7610f4283ac9e5acfb96cbb30dfefa540d66f866f1c09c5"
+checksum = "8fd9bc7ccc2688b3344c2f48b9b546648b25ce0b20fc717ee7fa7981a8ca9717"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -1,122 +1,133 @@
 // TODO start trying to generalize this, we want the macro to generate this eventually
 
 use async_graphql::{
-    Object,
+    // Object,
     Schema,
     EmptyMutation,
     EmptySubscription,
-    SimpleObject,
+    // SimpleObject,
     Result
 };
-use::sudodb;
-use serde::{
-    Deserialize,
-    Serialize
-};
+// use::sudodb;
+// use serde::{
+//     Deserialize,
+//     Serialize
+// };
+use sudograph_generate::sudograph_generate;
 
-#[derive(SimpleObject, Serialize, Deserialize)]
-struct User {
-    id: String,
-    username: String
-}
+// #[derive(SimpleObject, Serialize, Deserialize)]
+// struct User {
+//     id: String,
+//     username: String
+// }
 
-pub struct Query;
+sudograph_generate!("test-schema.graphql");
 
-#[Object]
-impl Query {
-    async fn add(&self, a: i32, b: i32) -> i32 {
-        return a + b;
-    }
+// pub struct Query;
 
-    // TODO see if we can actually return a user type here
-    async fn readUser(&self, id: String) -> Result<Vec<User>> {
-        let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
+// #[Object]
+// impl Query {
+//     async fn readUser(&self, id: String) -> Result<User> {
+//         return Ok(User {
+//             id: String::from("0"),
+//             blog_posts: vec![],
+//             username: String::from("lastmjs")
+//         });
+//     }
 
-        let result = sudodb::read(
-            object_store,
-            "User",
-            vec![
-                sudodb::ReadInput {
-                    input_type: sudodb::ReadInputType::Scalar,
-                    input_operation: sudodb::ReadInputOperation::Equals,
-                    field_name: String::from("id"),
-                    field_value: id
-                }
-            ]
-        );
+//     // async fn add(&self, a: i32, b: i32) -> i32 {
+//     //     return a + b;
+//     // }
 
-        match result {
-            Ok(result_strings) => {
-                let result_users = result_strings.iter().try_fold(vec![], |mut result, result_string| {
-                    let test = serde_json::from_str(result_string);
+//     // // TODO see if we can actually return a user type here
+//     // async fn readUser(&self, id: String) -> Result<Vec<User>> {
+//     //     let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
 
-                    match test {
-                        Ok(the_value) => {
-                            result.push(the_value);
-                            return Ok(result);
-                        },
-                        Err(error) => {
-                            return Err(error);
-                        }
-                    };
-                })?;
+//     //     let result = sudodb::read(
+//     //         object_store,
+//     //         "User",
+//     //         vec![
+//     //             sudodb::ReadInput {
+//     //                 input_type: sudodb::ReadInputType::Scalar,
+//     //                 input_operation: sudodb::ReadInputOperation::Equals,
+//     //                 field_name: String::from("id"),
+//     //                 field_value: id
+//     //             }
+//     //         ]
+//     //     );
 
-                return Ok(result_users);
-            },
-            Err(error) => {
-                return Err(async_graphql::Error {
-                    message: error,
-                    extensions: None
-                });
-            }
-        };
-    } 
-}
+//     //     match result {
+//     //         Ok(result_strings) => {
+//     //             let result_users = result_strings.iter().try_fold(vec![], |mut result, result_string| {
+//     //                 let test = serde_json::from_str(result_string);
 
-pub struct Mutation;
+//     //                 match test {
+//     //                     Ok(the_value) => {
+//     //                         result.push(the_value);
+//     //                         return Ok(result);
+//     //                     },
+//     //                     Err(error) => {
+//     //                         return Err(error);
+//     //                     }
+//     //                 };
+//     //             })?;
 
-#[Object]
-impl Mutation {
-    async fn createUser(&self) -> Result<bool> {
-        let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
+//     //             return Ok(result_users);
+//     //         },
+//     //         Err(error) => {
+//     //             return Err(async_graphql::Error {
+//     //                 message: error,
+//     //                 extensions: None
+//     //             });
+//     //         }
+//     //     };
+//     // } 
+// }
 
-        ic_cdk::print("Here I am -1");
+// pub struct Mutation;
 
-        sudodb::init_object_type(
-            object_store,
-            "User",
-            vec![
-                sudodb::FieldTypeInput {
-                    field_name: String::from("id"),
-                    field_type: sudodb::FieldType::String
-                },
-                sudodb::FieldTypeInput {
-                    field_name: String::from("username"),
-                    field_type: sudodb::FieldType::String
-                }
-            ]
-        );
+// #[Object]
+// impl Mutation {
+    // async fn createUser(&self) -> Result<bool> {
+    //     let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
 
-        ic_cdk::print("Here I am 0");
+    //     ic_cdk::print("Here I am -1");
 
-        let create_result = sudodb::create(
-            object_store,
-            "User",
-            "0",
-            vec![
-                sudodb::FieldInput {
-                    field_name: String::from("id"),
-                    field_value: sudodb::FieldValue::Scalar(String::from("0"))
-                },
-                sudodb::FieldInput {
-                    field_name: String::from("username"),
-                    field_value: sudodb::FieldValue::Scalar(String::from("lastmjs"))
-                }
-            ]
-        );
+    //     sudodb::init_object_type(
+    //         object_store,
+    //         "User",
+    //         vec![
+    //             sudodb::FieldTypeInput {
+    //                 field_name: String::from("id"),
+    //                 field_type: sudodb::FieldType::String
+    //             },
+    //             sudodb::FieldTypeInput {
+    //                 field_name: String::from("username"),
+    //                 field_type: sudodb::FieldType::String
+    //             }
+    //         ]
+    //     );
 
-        ic_cdk::print("Here I am 1");
+    //     ic_cdk::print("Here I am 0");
+
+    //     let create_result = sudodb::create(
+    //         object_store,
+    //         "User",
+    //         "0",
+    //         vec![
+    //             sudodb::FieldInput {
+    //                 field_name: String::from("id"),
+    //                 field_value: sudodb::FieldValue::Scalar(String::from("0"))
+    //             },
+    //             sudodb::FieldInput {
+    //                 field_name: String::from("username"),
+    //                 field_value: sudodb::FieldValue::Scalar(String::from("lastmjs"))
+    //             }
+    //         ]
+    //     );
+
+    //     ic_cdk::print("Here I am 1");
         
-        return Ok(true);
-    }
-}
+    //     return Ok(true);
+    // }
+// }

@@ -1,2 +1,4 @@
 target
 .dfx
+node_modules
+dist

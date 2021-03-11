@@ -95,7 +95,7 @@ input ReadStringInput {
     contains: String
 }
 
-input ReadDateTimeInput {
+input ReadDateInput {
     eq: String
     gt: String
     gte: String
