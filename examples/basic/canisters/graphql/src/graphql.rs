@@ -10,7 +10,7 @@ use async_graphql::{
 };
 
 // TODO this can start out as a query, but for mutations it will need to be an update
-#[ic_cdk_macros::query]
+#[ic_cdk_macros::update]
 async fn graphql(query: String) -> String {
     let schema = Schema::new(
         Query,

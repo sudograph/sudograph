@@ -1,3 +1,6 @@
+// TODO I might be able to use traits, methods, impls whatever to make a lot of the generation
+// TODO simpler per inputobject
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
@@ -81,13 +84,17 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
         };
         use sudodb::{
             ObjectTypeStore,
+            read,
             create,
             init_object_type,
             FieldTypeInput,
             FieldType,
             FieldInput,
             FieldValue,
-            FieldValueRelation
+            FieldValueRelation,
+            ReadInput,
+            ReadInputType,
+            ReadInputOperation
         };
 
         #(#generated_object_type_structs)*
@@ -101,9 +108,51 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
             eq: Option<bool>
         }
 
+        impl ReadBooleanInput {
+            fn get_read_inputs(
+                &self,
+                field_name: String
+            ) -> Vec<ReadInput> {
+                let mut read_inputs = vec![];
+
+                // TODO do this immutably if possible
+                if let Some(eq) = &self.eq {
+                    read_inputs.push(ReadInput {
+                        input_type: ReadInputType::Scalar,
+                        input_operation: ReadInputOperation::Equals,
+                        field_name,
+                        field_value: eq.sudo_serialize()
+                    });
+                }
+
+                return read_inputs;
+            }
+        }
+
         #[derive(InputObject)]
         struct ReadDateInput {
             eq: Option<String>
+        }
+
+        impl ReadDateInput {
+            fn get_read_inputs(
+                &self,
+                field_name: String
+            ) -> Vec<ReadInput> {
+                let mut read_inputs = vec![];
+
+                // TODO do this immutably if possible
+                if let Some(eq) = &self.eq {
+                    read_inputs.push(ReadInput {
+                        input_type: ReadInputType::Scalar,
+                        input_operation: ReadInputOperation::Equals,
+                        field_name,
+                        field_value: eq.sudo_serialize()
+                    });
+                }
+
+                return read_inputs;
+            }
         }
 
         #[derive(InputObject)]
@@ -119,6 +168,27 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
         #[derive(InputObject)]
         struct ReadStringInput {
             eq: Option<String>
+        }
+
+        impl ReadStringInput {
+            fn get_read_inputs(
+                &self,
+                field_name: String
+            ) -> Vec<ReadInput> {
+                let mut read_inputs = vec![];
+
+                // TODO do this immutably if possible
+                if let Some(eq) = &self.eq {
+                    read_inputs.push(ReadInput {
+                        input_type: ReadInputType::Scalar,
+                        input_operation: ReadInputOperation::Equals,
+                        field_name,
+                        field_value: eq.sudo_serialize()
+                    });
+                }
+
+                return read_inputs;
+            }
         }
 
         trait SudoSerialize {
@@ -285,11 +355,52 @@ fn generate_read_input_structs(
                 #field_name: #field_type
             };
         });
+
+        let temps = object_type_definition.fields.iter().map(|field| {
+            let field_name_string = &field.name;
+            
+            let field_name = Ident::new(
+                &field.name,
+                quote::__private::Span::call_site()
+            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+            
+            let field_type = get_rust_type_for_read_input(
+                &graphql_ast,
+                &field.field_type
+            );
+
+            return quote! {
+                if let Some(field_value) = &self.#field_name {
+                    // read_inputs.push(ReadInput {
+
+                    // });
+                    
+                    let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
+
+                    // TODO do this immutably if possible
+                    for field_read_input in field_read_inputs {
+                        read_inputs.push(field_read_input);
+                    }
+
+                    // for 
+                }
+            };
+        });
         
         return quote! {
             #[derive(InputObject)]
             struct #read_input_name {
                 #(#generated_fields),*
+            }
+
+            impl #read_input_name {
+                fn get_read_inputs(&self) -> Vec<ReadInput> {
+                    let mut read_inputs = vec![];
+
+                    #(#temps)*
+
+                    return read_inputs;
+                }
             }
         };
     }).collect();
@@ -303,6 +414,11 @@ fn generate_query_resolvers(
 ) -> Vec<quote::__private::TokenStream> {
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
+
+        let object_type_rust_type = Ident::new(
+            object_type_name, 
+            quote::__private::Span::call_site()
+        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
 
         let read_function_name = Ident::new(
             &(String::from("read") + object_type_name), 
@@ -318,8 +434,28 @@ fn generate_query_resolvers(
             async fn #read_function_name(
                 &self,
                 input: #read_input_type
-            ) -> Result<bool> {
-                return Ok(true);
+            ) -> Result<Vec<#object_type_rust_type>> {
+                let object_store = ic_cdk::storage::get_mut::<ObjectTypeStore>();
+
+                let read_result = read(
+                    object_store,
+                    #object_type_name,
+                    input.get_read_inputs()
+                );
+
+                // TODO make this error handling and matching better if possible
+                match read_result {
+                    Ok(strings) => {
+                        let deserialized_strings = strings.iter().map(|string| {
+                            return serde_json::from_str(string).unwrap();
+                        }).collect();
+
+                        return Ok(deserialized_strings);
+                    },
+                    Err(error_string) => {
+                        return Err(async_graphql::Error::new(error_string));
+                    }
+                };
             }
         };
     }).collect();
@@ -439,7 +575,6 @@ fn generate_mutation_resolvers(
                         #(#create_field_inputs),*
                     ]
                 );
-                
 
                 match create_result {
                     Ok(strings) => {
