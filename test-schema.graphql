@@ -1,12 +1,12 @@
 type User {
     id: String!
-    blog_posts: [BlogPost!]!
+    # blog_posts: [BlogPost!]!
     username: String!
 }
 
 type BlogPost {
     id: String!
-    author: User!
+    # author: User!
     body: String!
     created_at: Date!
     live: Boolean!
