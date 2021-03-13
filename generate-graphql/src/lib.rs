@@ -70,16 +70,17 @@ pub fn generate_graphql(input: TokenStream) -> TokenStream {
     let gen = quote! {
         // TODO right now it is required for the consuming crate to have these dependencies installed
         // TODO see if you can get rid of that need, not sure if it will be easily possible: https://stackoverflow.com/questions/54593472/how-do-i-write-a-procedural-macro-that-expands-to-a-macro-invocation-without-req
-        use serde::{
+        use sudograph::serde::{
             Deserialize,
             Serialize
         };
-        use async_graphql::{
+        use sudograph::async_graphql;
+        use sudograph::async_graphql::{
             SimpleObject,
             InputObject,
             Object
         };
-        use sudodb::{
+        use sudograph::sudodb::{
             ObjectTypeStore,
             read,
             create,
@@ -93,6 +94,9 @@ pub fn generate_graphql(input: TokenStream) -> TokenStream {
             ReadInputType,
             ReadInputOperation
         };
+        use sudograph::serde_json::from_str;
+        use sudograph::ic_cdk;
+        use sudograph::ic_cdk::storage;
 
         #(#generated_object_type_structs)*
 
@@ -449,8 +453,8 @@ fn generate_query_resolvers(
             async fn #read_function_name(
                 &self,
                 input: #read_input_type
-            ) -> Result<Vec<#object_type_rust_type>> {
-                let object_store = ic_cdk::storage::get_mut::<ObjectTypeStore>();
+            ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
+                let object_store = storage::get_mut::<ObjectTypeStore>();
 
                 let read_result = read(
                     object_store,
@@ -462,13 +466,13 @@ fn generate_query_resolvers(
                 match read_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
-                            return serde_json::from_str(string).unwrap();
+                            return from_str(string).unwrap();
                         }).collect();
 
                         return Ok(deserialized_strings);
                     },
                     Err(error_string) => {
-                        return Err(async_graphql::Error::new(error_string));
+                        return Err(sudograph::async_graphql::Error::new(error_string));
                     }
                 };
             }
@@ -567,21 +571,24 @@ fn generate_mutation_resolvers(
             async fn #create_function_name(
                 &self,
                 input: #create_input_type
-            ) -> Result<Vec<#object_type_rust_type>> {
-                let object_store = ic_cdk::storage::get_mut::<ObjectTypeStore>();
+            ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
+                let object_store = storage::get_mut::<ObjectTypeStore>();
 
                 // TODO we should probably handle the result here
                 // TODO where are we going to put this actually?
                 // TODO the init for all of the object types should really only happen once
 
-                // TODO we should check if the object already exists before doing this
-                init_object_type(
-                    object_store,
-                    #object_type_name,
-                    vec![
-                        #(#create_field_type_inputs),*
-                    ]
-                );
+                if object_store.contains_key(#object_type_name) == false {
+                    // TODO where should we put this?
+                    // TODO perhaps this should be in all queries and mutations?
+                    init_object_type(
+                        object_store,
+                        #object_type_name,
+                        vec![
+                            #(#create_field_type_inputs),*
+                        ]
+                    );
+                }
 
                 let create_result = create(
                     object_store,
@@ -595,23 +602,23 @@ fn generate_mutation_resolvers(
                 match create_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
-                            return serde_json::from_str(string).unwrap();
+                            return from_str(string).unwrap();
                         }).collect();
 
                         return Ok(deserialized_strings);
                     },
                     Err(error_string) => {
                         // return Err(error_string);
-                        return Err(async_graphql::Error::new(error_string));
+                        return Err(sudograph::async_graphql::Error::new(error_string));
                     }
                 };
             }
 
-            async fn #update_function_name(&self) -> Result<bool> {
+            async fn #update_function_name(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
                 return Ok(true);
             }
 
-            async fn #delete_function_name(&self) -> Result<bool> {
+            async fn #delete_function_name(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
                 return Ok(true);
             }
         };
@@ -1002,7 +1009,7 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
 
 //     // // TODO see if we can actually return a user type here
 //     // async fn readUser(&self, id: String) -> Result<Vec<User>> {
-//     //     let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
+//     //     let object_store = storage::get_mut::<sudodb::ObjectTypeStore>();
 
 //     //     let result = sudodb::read(
 //     //         object_store,
@@ -1020,7 +1027,7 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
 //     //     match result {
 //     //         Ok(result_strings) => {
 //     //             let result_users = result_strings.iter().try_fold(vec![], |mut result, result_string| {
-//     //                 let test = serde_json::from_str(result_string);
+//     //                 let test = from_str(result_string);
 
 //     //                 match test {
 //     //                     Ok(the_value) => {
@@ -1050,9 +1057,9 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
 // #[Object]
 // impl Mutation {
     // async fn createUser(&self) -> Result<bool> {
-    //     let object_store = ic_cdk::storage::get_mut::<sudodb::ObjectTypeStore>();
+    //     let object_store = storage::get_mut::<sudodb::ObjectTypeStore>();
 
-    //     ic_cdk::print("Here I am -1");
+    //     print("Here I am -1");
 
     //     sudodb::init_object_type(
     //         object_store,
@@ -1069,7 +1076,7 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
     //         ]
     //     );
 
-    //     ic_cdk::print("Here I am 0");
+    //     print("Here I am 0");
 
     //     let create_result = sudodb::create(
     //         object_store,
@@ -1087,7 +1094,7 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
     //         ]
     //     );
 
-    //     ic_cdk::print("Here I am 1");
+    //     print("Here I am 1");
         
     //     return Ok(true);
     // }

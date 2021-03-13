@@ -818,12 +818,7 @@ dependencies = [
 name = "graphql"
 version = "0.0.0"
 dependencies = [
- "async-graphql",
- "getrandom 0.2.2",
- "ic-cdk",
- "ic-cdk-macros",
- "serde_json",
- "sudodb",
+ "serde",
  "sudograph",
 ]
 
@@ -1641,12 +1636,12 @@ version = "0.0.0"
 dependencies = [
  "async-graphql",
  "generate_graphql",
+ "getrandom 0.2.2",
  "ic-cdk",
  "ic-cdk-macros",
  "serde",
  "serde_json",
  "sudodb",
- "unescape",
 ]
 
 [[package]]
@@ -1832,12 +1827,6 @@ name = "unchecked-index"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eeba86d422ce181a719445e51872fa30f1f7413b62becb52e95ec91aa262d85c"
-
-[[package]]
-name = "unescape"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccb97dac3243214f8d8507998906ca3e2e0b900bf9bf4870477f125b82e68f6e"
 
 [[package]]
 name = "unicode-bidi"

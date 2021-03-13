@@ -1,28 +1,33 @@
-use async_graphql::{
+use sudograph::{
+    generate_graphql,
     Schema,
-    EmptySubscription
+    EmptySubscription,
+    query,
+    update,
+    to_json_string,
+    ic_print
 };
-use sudograph::generate_graphql;
 
-// generate_graphql!("canisters/graphql/src/schema.graphql");
+generate_graphql!("canisters/graphql/src/schema.graphql");
 
-// TODO this can start out as a query, but for mutations it will need to be an update
-#[ic_cdk_macros::update]
+// TODO we should show how to have a query endpoint and a mutation endpoint
+// TODO the query endpoint will be much faster
+// TODO this will get people up and going quickly though
+#[update]
 async fn graphql(query: String) -> String {
-    // let schema = Schema::new(
-    //     Query,
-    //     Mutation,
-    //     EmptySubscription
-    // );
+    let schema = Schema::new(
+        Query,
+        Mutation,
+        EmptySubscription
+    );
 
-    // ic_cdk::print(schema.sdl());
+    ic_print(schema.sdl());
 
-    // let result = schema.execute(query).await;
+    let result = schema.execute(query).await;
 
-    // let json_result = serde_json::to_string(&result);
+    let json_result = to_json_string(&result);
 
-    // return json_result.expect("This should work");
-    return String::from("");
+    return json_result.expect("This should work");
 }
 
 // #[ic_cdk_macros::query]
