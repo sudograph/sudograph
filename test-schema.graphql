@@ -9,6 +9,6 @@ type BlogPost {
     # author: User!
     body: String!
     created_at: Date!
-    live: Boolean!
+    # live: Boolean!
     title: String!
 }

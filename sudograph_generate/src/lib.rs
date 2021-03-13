@@ -167,7 +167,12 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
 
         #[derive(InputObject)]
         struct ReadStringInput {
-            eq: Option<String>
+            eq: Option<String>,
+            gt: Option<String>,
+            gte: Option<String>,
+            lt: Option<String>,
+            lte: Option<String>,
+            contains: Option<String>
         }
 
         impl ReadStringInput {
@@ -175,17 +180,46 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
                 &self,
                 field_name: String
             ) -> Vec<ReadInput> {
-                let mut read_inputs = vec![];
+                let fields = [
+                    (
+                        &self.eq,
+                        ReadInputOperation::Equals
+                    ),
+                    (
+                        &self.gt,
+                        ReadInputOperation::GreaterThan
+                    ),
+                    (
+                        &self.gte,
+                        ReadInputOperation::GreaterThanOrEqualTo
+                    ),
+                    (
+                        &self.lt,
+                        ReadInputOperation::LessThan
+                    ),
+                    (
+                        &self.lte,
+                        ReadInputOperation::LessThanOrEqualTo
+                    ),
+                    (
+                        &self.contains,
+                        ReadInputOperation::Contains
+                    )
+                ];
 
-                // TODO do this immutably if possible
-                if let Some(eq) = &self.eq {
-                    read_inputs.push(ReadInput {
-                        input_type: ReadInputType::Scalar,
-                        input_operation: ReadInputOperation::Equals,
-                        field_name,
-                        field_value: eq.sudo_serialize()
-                    });
-                }
+                let read_inputs = fields.iter().filter_map(|(field, read_input_operation)| {
+                    if let Some(field_value) = field {
+                        return Some(ReadInput {
+                            input_type: ReadInputType::Scalar,
+                            input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
+                            field_name: String::from(&field_name),
+                            field_value: field_value.sudo_serialize()
+                        });
+                    }
+                    else {
+                        return None;
+                    }
+                }).collect();
 
                 return read_inputs;
             }
@@ -219,22 +253,6 @@ pub fn sudograph_generate(input: TokenStream) -> TokenStream {
                 }
             }
         }
-
-        // TODO I think what might be best is to implement a trait on Option and all of the
-        // TODO primitive types, to serialize them for my purposes...
-
-        // impl ToString for Option<T> {
-        //     fn to_string(&self) => {
-        //         match self {
-        //             Some(value) => {
-        //                 return value.to_string();
-        //             },
-        //             None => {
-        //                 return "";
-        //             }
-        //         }
-        //     }
-        // }
 
         pub struct Query;
 
@@ -503,6 +521,7 @@ fn generate_mutation_resolvers(
             };
         });
 
+        // TODO see if we can simply do this through struct methods like we are doing with the ReadInputs
         // TODO we actually want to map over the fields of the input struct...which is going to be different than
         // TODO the fields in the object_type_definition
         let create_field_inputs = object_type_definition.fields.iter().map(|field| {
