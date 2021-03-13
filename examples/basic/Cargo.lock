@@ -1636,11 +1636,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sudodb",
- "sudograph_generate",
+ "sudograph-generate",
 ]
 
 [[package]]
-name = "sudograph_generate"
+name = "sudograph-generate"
 version = "0.0.0"
 dependencies = [
  "graphql-parser",

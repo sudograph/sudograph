@@ -1,5 +1,5 @@
 [package]
-name = "sudograph_generate"
+name = "sudograph-generate"
 version = "0.0.0"
 authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
 edition = "2018"
