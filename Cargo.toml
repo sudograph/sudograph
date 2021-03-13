@@ -9,7 +9,7 @@ homepage = "https://sudograph.org"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sudodb = { version = "0.0.0", path = "../sudodb" }
+sudodb = { version = "0.0.0", path = "./sudodb" }
 sudograph_generate = { version = "0.0.0", path = "./sudograph-generate" }
 async-graphql = "2.5.9"
 getrandom = { version = "0.2.2", features = ["custom"] }
