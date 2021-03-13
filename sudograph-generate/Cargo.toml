@@ -1,5 +1,5 @@
 [package]
-name = "generate_graphql"
+name = "sudograph_generate"
 version = "0.0.0"
 authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
 edition = "2018"

@@ -9,7 +9,7 @@ pub use async_graphql::{
     Schema,
     EmptySubscription
 };
-pub use generate_graphql::generate_graphql;
+pub use sudograph_generate::generate_graphql;
 pub use ic_cdk;
 pub use ic_cdk::print as ic_print;
 pub use ic_cdk_macros;
