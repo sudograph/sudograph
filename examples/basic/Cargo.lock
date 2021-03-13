@@ -765,6 +765,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "generate_graphql"
+version = "0.0.0"
+dependencies = [
+ "graphql-parser",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1631,22 +1640,13 @@ name = "sudograph"
 version = "0.0.0"
 dependencies = [
  "async-graphql",
+ "generate_graphql",
  "ic-cdk",
  "ic-cdk-macros",
  "serde",
  "serde_json",
  "sudodb",
- "sudograph_generate",
  "unescape",
-]
-
-[[package]]
-name = "sudograph_generate"
-version = "0.0.0"
-dependencies = [
- "graphql-parser",
- "quote",
- "syn",
 ]
 
 [[package]]

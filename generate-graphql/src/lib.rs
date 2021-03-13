@@ -10,8 +10,7 @@
 
 use proc_macro::TokenStream;
 use quote::{
-    quote,
-    format_ident
+    quote
 };
 use syn::{
     parse_macro_input,
@@ -462,7 +461,7 @@ fn generate_query_resolvers(
                 // TODO make this error handling and matching better if possible
                 match read_result {
                     Ok(strings) => {
-                        let deserialized_strings = strings.iter().map(|string| {
+                        let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
                             return serde_json::from_str(string).unwrap();
                         }).collect();
 
@@ -595,7 +594,7 @@ fn generate_mutation_resolvers(
 
                 match create_result {
                     Ok(strings) => {
-                        let deserialized_strings = strings.iter().map(|string| {
+                        let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
                             return serde_json::from_str(string).unwrap();
                         }).collect();
 

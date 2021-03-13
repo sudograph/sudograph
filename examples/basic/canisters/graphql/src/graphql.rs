@@ -1,30 +1,28 @@
-use::sudodb;
-use sudograph::{
-    Query,
-    Mutation
-};
 use async_graphql::{
-    Object,
     Schema,
     EmptySubscription
 };
+use sudograph::generate_graphql;
+
+// generate_graphql!("canisters/graphql/src/schema.graphql");
 
 // TODO this can start out as a query, but for mutations it will need to be an update
 #[ic_cdk_macros::update]
 async fn graphql(query: String) -> String {
-    let schema = Schema::new(
-        Query,
-        Mutation,
-        EmptySubscription
-    );
+    // let schema = Schema::new(
+    //     Query,
+    //     Mutation,
+    //     EmptySubscription
+    // );
 
-    ic_cdk::print(schema.sdl());
+    // ic_cdk::print(schema.sdl());
 
-    let result = schema.execute(query).await;
+    // let result = schema.execute(query).await;
 
-    let json_result = serde_json::to_string(&result);
+    // let json_result = serde_json::to_string(&result);
 
-    return json_result.expect("This should work");
+    // return json_result.expect("This should work");
+    return String::from("");
 }
 
 // #[ic_cdk_macros::query]
