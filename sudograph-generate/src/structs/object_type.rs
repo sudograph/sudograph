@@ -1,6 +1,7 @@
 // TODO consider if using traits or impls could somehow help the organize of this functionality
 // TODO the functionality is very similar across the different Rust types that must be generated
 // TODO perhaps a common trait could work for this somehow?
+use proc_macro2::TokenStream;
 use quote::{
     quote,
     format_ident
@@ -15,7 +16,7 @@ use crate::is_graphql_type_a_relation;
 pub fn generate_object_type_rust_structs(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> {
+) -> Vec<TokenStream> {
     let generated_object_type_structs = object_type_definitions.iter().map(|object_type_definition| {        
         let object_type_name = format_ident!(
             "{}",
@@ -54,7 +55,7 @@ fn get_rust_type_for_object_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     is_non_null_type: bool
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_object_type_named_type(
@@ -99,7 +100,7 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     named_type: &str
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match named_type {
         "Boolean" => {
             return quote! { bool };

@@ -1,6 +1,7 @@
+use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn get_read_date_input_rust_struct() -> quote::__private::TokenStream {
+pub fn get_read_date_input_rust_struct() -> TokenStream {
     return quote! {
         #[derive(InputObject)]
         struct ReadDateInput {

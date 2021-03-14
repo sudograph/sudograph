@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use quote::{
     quote,
     format_ident
@@ -12,7 +13,7 @@ use crate::is_graphql_type_a_relation;
 pub fn generate_read_input_rust_structs(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> { // TODO get rid of the __private
+) -> Vec<TokenStream> {
     let generated_read_input_structs = object_type_definitions.iter().map(|object_type_definition| {
         let read_input_name = format_ident!(
             "{}",
@@ -90,7 +91,7 @@ pub fn generate_read_input_rust_structs(
 fn get_rust_type_for_read_input<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_read_input_named_type(
@@ -123,7 +124,7 @@ fn get_rust_type_for_read_input_named_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     named_type: &str
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match named_type {
         "Boolean" => {
             return quote! { ReadBooleanInput };

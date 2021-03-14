@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use quote::{
     quote,
     format_ident
@@ -12,7 +13,7 @@ use crate::is_graphql_type_a_relation;
 pub fn generate_delete_mutation_resolvers(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> {
+) -> Vec<TokenStream> {
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
         

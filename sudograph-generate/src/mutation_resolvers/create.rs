@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use quote::{
     quote,
     format_ident
@@ -12,7 +13,7 @@ use crate::is_graphql_type_a_relation;
 pub fn generate_create_mutation_resolvers(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> {
+) -> Vec<TokenStream> {
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
         
@@ -138,7 +139,7 @@ fn get_rust_type_for_sudodb_field_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     is_non_null_type: bool
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_sudodb_field_type_named_type(
@@ -184,7 +185,7 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     named_type: &str
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match named_type {
         "Boolean" => {
             return quote! { FieldType::Boolean };

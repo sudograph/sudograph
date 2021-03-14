@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use graphql_parser::schema::{
     ObjectType,
     Document
@@ -10,7 +11,7 @@ use quote::{
 pub fn generate_read_query_resolvers(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> {
+) -> Vec<TokenStream> {
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
 

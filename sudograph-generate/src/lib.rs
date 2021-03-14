@@ -1,4 +1,3 @@
-// TODO find out the correct type to use instead of quote::__private::TokenStream
 // TODO I might be able to use traits, methods, impls whatever to make a lot of the generation
 // TODO simpler per inputobject
 // TODO once we have those implemented we can start really testing from the playground

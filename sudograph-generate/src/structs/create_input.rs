@@ -1,3 +1,4 @@
+use proc_macro2::TokenStream;
 use quote::{
     quote,
     format_ident
@@ -13,7 +14,7 @@ use crate::structs::object_type::get_rust_type_for_object_type_named_type;
 pub fn generate_create_input_rust_structs(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<quote::__private::TokenStream> {
+) -> Vec<TokenStream> {
     let generated_create_input_structs = object_type_definitions.iter().map(|object_type_definition| {
         let create_input_name = format_ident!(
             "{}",
@@ -52,7 +53,7 @@ fn get_rust_type_for_create_input<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
     is_non_null_type: bool
-) -> quote::__private::TokenStream {
+) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_object_type_named_type(
