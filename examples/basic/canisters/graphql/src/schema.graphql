@@ -1,5 +1,8 @@
 type User {
     id: String!
+    age: Int!
+    activated: Boolean!
+    created_at: Date!
     # blog_posts: [BlogPost!]!
     username: String!
 }

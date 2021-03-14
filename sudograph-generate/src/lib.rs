@@ -162,6 +162,18 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
             }
         }
 
+        impl SudoSerialize for f32 {
+            fn sudo_serialize(&self) -> String {
+                return self.to_string();
+            }
+        }
+
+        impl SudoSerialize for i32 {
+            fn sudo_serialize(&self) -> String {
+                return self.to_string();
+            }
+        }
+
         impl SudoSerialize for String {
             fn sudo_serialize(&self) -> String {
                 return self.to_string();
