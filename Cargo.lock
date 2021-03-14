@@ -1635,6 +1635,7 @@ name = "sudograph-generate"
 version = "0.0.0"
 dependencies = [
  "graphql-parser",
+ "proc-macro2",
  "quote",
  "syn",
 ]
