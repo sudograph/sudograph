@@ -1,8 +1,6 @@
 use quote::{
-    quote
-};
-use syn::{
-    Ident
+    quote,
+    format_ident
 };
 use graphql_parser::schema::{
     ObjectType,
@@ -18,15 +16,15 @@ pub fn generate_update_mutation_resolvers(
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
         
-        let object_type_rust_type = Ident::new(
-            object_type_name, 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let object_type_rust_type = format_ident!(
+            "{}",
+            object_type_name
+        );
 
-        let update_function_name = Ident::new(
-            &(String::from("update") + object_type_name), 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let update_function_name = format_ident!(
+            "{}",
+            String::from("update") + object_type_name
+        );
 
         return quote! {
             async fn #update_function_name(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {

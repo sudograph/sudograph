@@ -1,3 +1,4 @@
+// TODO find out the correct type to use instead of quote::__private::TokenStream
 // TODO I might be able to use traits, methods, impls whatever to make a lot of the generation
 // TODO simpler per inputobject
 // TODO once we have those implemented we can start really testing from the playground
@@ -28,9 +29,7 @@ mod mutation_resolvers {
 }
 
 use proc_macro::TokenStream;
-use quote::{
-    quote
-};
+use quote::quote;
 use syn::{
     parse_macro_input,
     LitStr
@@ -212,8 +211,6 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     return gen.into();
 }
-
-// TODO I think format_ident! might be the solution to creating identifiers, instead of the private option I am using
 
 fn get_graphql_type_name(graphql_type: &Type<String>) -> String {
     match graphql_type {

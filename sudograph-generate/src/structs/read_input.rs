@@ -1,10 +1,12 @@
-use quote::quote;
+use quote::{
+    quote,
+    format_ident
+};
 use graphql_parser::schema::{
     ObjectType,
     Document,
     Type
 };
-use syn::Ident;
 use crate::is_graphql_type_a_relation;
 
 pub fn generate_read_input_rust_structs(
@@ -12,17 +14,17 @@ pub fn generate_read_input_rust_structs(
     object_type_definitions: &Vec<ObjectType<String>>
 ) -> Vec<quote::__private::TokenStream> { // TODO get rid of the __private
     let generated_read_input_structs = object_type_definitions.iter().map(|object_type_definition| {
-        let read_input_name = Ident::new(
-            &(String::from("Read") + &object_type_definition.name + "Input"),
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-        
+        let read_input_name = format_ident!(
+            "{}",
+            String::from("Read") + &object_type_definition.name + "Input"
+        );
+
         let generated_fields = object_type_definition.fields.iter().map(|field| {
-            let field_name = Ident::new(
-                &field.name,
-                quote::__private::Span::call_site()
-            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-            
+            let field_name = format_ident!(
+                "{}",
+                field.name
+            );
+
             let field_type = get_rust_type_for_read_input(
                 &graphql_ast,
                 &field.field_type
@@ -35,16 +37,16 @@ pub fn generate_read_input_rust_structs(
 
         let temps = object_type_definition.fields.iter().map(|field| {
             let field_name_string = &field.name;
-            
-            let field_name = Ident::new(
-                &field.name,
-                quote::__private::Span::call_site()
-            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-            
-            let field_type = get_rust_type_for_read_input(
-                &graphql_ast,
-                &field.field_type
+                        
+            let field_name = format_ident!(
+                "{}",
+                field.name
             );
+
+            // let field_type = get_rust_type_for_read_input(
+            //     &graphql_ast,
+            //     &field.field_type
+            // );
 
             return quote! {
                 if let Some(field_value) = &self.#field_name {
@@ -141,7 +143,11 @@ fn get_rust_type_for_read_input_named_type<'a>(
         },
         _ => {
             if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                let relation_name = Ident::new(&(String::from("Read") + named_type + "Input"), quote::__private::Span::call_site()); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+                let relation_name = format_ident!(
+                    "{}",
+                    String::from("Read") + named_type + "Input"
+                );
+                
                 return quote! { #relation_name };
             }
             else {

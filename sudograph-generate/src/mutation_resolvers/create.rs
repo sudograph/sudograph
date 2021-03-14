@@ -1,8 +1,6 @@
 use quote::{
-    quote
-};
-use syn::{
-    Ident
+    quote,
+    format_ident
 };
 use graphql_parser::schema::{
     ObjectType,
@@ -18,20 +16,20 @@ pub fn generate_create_mutation_resolvers(
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
         
-        let object_type_rust_type = Ident::new(
-            object_type_name, 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let object_type_rust_type = format_ident!(
+            "{}",
+            object_type_name
+        );
 
-        let create_function_name = Ident::new(
-            &(String::from("create") + object_type_name), 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let create_function_name = format_ident!(
+            "{}",
+            String::from("create") + object_type_name
+        );
 
-        let create_input_type = Ident::new(
-            &(String::from("Create") + object_type_name + "Input"), 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let create_input_type = format_ident!(
+            "{}",
+            String::from("Create") + object_type_name + "Input"
+        );
 
         let create_field_type_inputs = object_type_definition.fields.iter().map(|field| {
             let field_name = &field.name;
@@ -55,10 +53,10 @@ pub fn generate_create_mutation_resolvers(
         let create_field_inputs = object_type_definition.fields.iter().map(|field| {
             let field_name = &field.name;
 
-            let field_name_identifier = Ident::new(
-                field_name,
-                quote::__private::Span::call_site()
-            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+            let field_name_identifier = format_ident!(
+                "{}",
+                field_name
+            );
 
             if is_graphql_type_a_relation(
                 graphql_ast,

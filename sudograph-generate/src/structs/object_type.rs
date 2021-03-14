@@ -2,9 +2,9 @@
 // TODO the functionality is very similar across the different Rust types that must be generated
 // TODO perhaps a common trait could work for this somehow?
 use quote::{
-    quote
+    quote,
+    format_ident
 };
-use syn::Ident;
 use graphql_parser::schema::{
     ObjectType,
     Type,
@@ -16,18 +16,18 @@ pub fn generate_object_type_rust_structs(
     graphql_ast: &Document<String>,
     object_type_definitions: &Vec<ObjectType<String>>
 ) -> Vec<quote::__private::TokenStream> {
-    let generated_object_type_structs = object_type_definitions.iter().map(|object_type_definition| {
-        let object_type_name = Ident::new(
-            &object_type_definition.name,
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-        
+    let generated_object_type_structs = object_type_definitions.iter().map(|object_type_definition| {        
+        let object_type_name = format_ident!(
+            "{}",
+            object_type_definition.name
+        );
+
         let generated_fields = object_type_definition.fields.iter().map(|field| {
-            let field_name = Ident::new(
-                &field.name,
-                quote::__private::Span::call_site()
-            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-            
+            let field_name = format_ident!(
+                "{}",
+                field.name
+            );
+
             let field_type = get_rust_type_for_object_type(
                 &graphql_ast,
                 &field.field_type,
@@ -119,7 +119,11 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
         },
         _ => {
             if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                let relation_name = Ident::new(named_type, quote::__private::Span::call_site()); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+                let relation_name = format_ident!(
+                    "{}",
+                    named_type
+                );
+                
                 return quote! { #relation_name };
             }
             else {

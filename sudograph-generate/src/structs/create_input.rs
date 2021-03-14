@@ -1,10 +1,12 @@
-use quote::quote;
+use quote::{
+    quote,
+    format_ident
+};
 use graphql_parser::schema::{
     ObjectType,
     Document,
     Type
 };
-use syn::Ident;
 use crate::is_graphql_type_a_relation;
 use crate::structs::object_type::get_rust_type_for_object_type_named_type;
 
@@ -13,16 +15,16 @@ pub fn generate_create_input_rust_structs(
     object_type_definitions: &Vec<ObjectType<String>>
 ) -> Vec<quote::__private::TokenStream> {
     let generated_create_input_structs = object_type_definitions.iter().map(|object_type_definition| {
-        let create_input_name = Ident::new(
-            &(String::from("Create") + &object_type_definition.name + "Input"),
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
-        
+        let create_input_name = format_ident!(
+            "{}",
+            String::from("Create") + &object_type_definition.name + "Input"
+        );
+
         let generated_fields = object_type_definition.fields.iter().map(|field| {
-            let field_name = Ident::new(
-                &field.name,
-                quote::__private::Span::call_site()
-            ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+            let field_name = format_ident!(
+                "{}",
+                field.name
+            );
             
             let field_type = get_rust_type_for_create_input(
                 &graphql_ast,

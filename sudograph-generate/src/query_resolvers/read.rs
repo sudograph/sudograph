@@ -2,9 +2,9 @@ use graphql_parser::schema::{
     ObjectType,
     Document
 };
-use syn::Ident;
 use quote::{
-    quote
+    quote,
+    format_ident
 };
 
 pub fn generate_read_query_resolvers(
@@ -14,20 +14,20 @@ pub fn generate_read_query_resolvers(
     let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
         let object_type_name = &object_type_definition.name;
 
-        let object_type_rust_type = Ident::new(
-            object_type_name, 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let object_type_rust_type = format_ident!(
+            "{}",
+            object_type_name
+        );
 
-        let read_function_name = Ident::new(
-            &(String::from("read") + object_type_name), 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let read_function_name = format_ident!(
+            "{}",
+            String::from("read") + object_type_name
+        );
 
-        let read_input_type = Ident::new(
-            &(String::from("Read") + object_type_name + "Input"), 
-            quote::__private::Span::call_site()
-        ); // TODO obviously I should not be using __private here, but I am not sure how to get the span to work
+        let read_input_type = format_ident!(
+            "{}",
+            String::from("Read") + object_type_name + "Input"
+        );
 
         return quote! {
             async fn #read_function_name(
@@ -43,6 +43,7 @@ pub fn generate_read_query_resolvers(
                 );
 
                 // TODO make this error handling and matching better if possible
+                // TODO it would be nice to just be able to pass the error up without doing what I am doing...maybe?
                 match read_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
