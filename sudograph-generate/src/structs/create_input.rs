@@ -22,6 +22,7 @@ pub fn generate_create_input_rust_structs(
         );
 
         let generated_fields = object_type_definition.fields.iter().map(|field| {
+            let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",
                 field.name
@@ -34,6 +35,7 @@ pub fn generate_create_input_rust_structs(
             );
 
             return quote! {
+                #[graphql(name = #field_name_string)]
                 #field_name: #field_type
             };
         });

@@ -5,12 +5,12 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
     return quote! {
         #[derive(InputObject)]
         struct ReadStringInput {
-            eq: Option<String>,
-            gt: Option<String>,
-            gte: Option<String>,
-            lt: Option<String>,
-            lte: Option<String>,
-            contains: Option<String>
+            eq: MaybeUndefined<String>,
+            gt: MaybeUndefined<String>,
+            gte: MaybeUndefined<String>,
+            lt: MaybeUndefined<String>,
+            lte: MaybeUndefined<String>,
+            contains: MaybeUndefined<String>
         }
 
         impl ReadStringInput {
@@ -46,16 +46,26 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                 ];
 
                 let read_inputs = fields.iter().filter_map(|(field, read_input_operation)| {
-                    if let Some(field_value) = field {
-                        return Some(ReadInput {
-                            input_type: ReadInputType::Scalar,
-                            input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
-                            field_name: String::from(&field_name),
-                            field_value: field_value.sudo_serialize()
-                        });
-                    }
-                    else {
-                        return None;
+                    match field {
+                        MaybeUndefined::Value(field_value) => {
+                            return Some(ReadInput {
+                                input_type: ReadInputType::Scalar,
+                                input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
+                                field_name: String::from(&field_name),
+                                field_value: field_value.sudo_serialize()
+                            });
+                        },
+                        MaybeUndefined::Null => {
+                            return Some(ReadInput {
+                                input_type: ReadInputType::Scalar,
+                                input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
+                                field_name: String::from(&field_name),
+                                field_value: FieldValue::Scalar(None) // TODO relations?
+                            });
+                        },
+                        MaybeUndefined::Undefined => {
+                            return None;
+                        }
                     }
                 }).collect();
 

@@ -77,7 +77,7 @@ pub fn generate_create_mutation_resolvers(
                 return quote! {
                     FieldInput {
                         field_name: String::from(#field_name),
-                        field_value: FieldValue::Scalar(input.#field_name_identifier.sudo_serialize())
+                        field_value: input.#field_name_identifier.sudo_serialize()
                     }
                 };
             }
@@ -123,9 +123,8 @@ pub fn generate_create_mutation_resolvers(
 
                         return Ok(deserialized_strings);
                     },
-                    Err(error_string) => {
-                        // return Err(error_string);
-                        return Err(sudograph::async_graphql::Error::new(error_string));
+                    Err(error) => {
+                        return Err(sudograph::async_graphql::Error::from(error));
                     }
                 };
             }

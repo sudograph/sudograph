@@ -53,8 +53,8 @@ pub fn generate_read_query_resolvers(
 
                         return Ok(deserialized_strings);
                     },
-                    Err(error_string) => {
-                        return Err(sudograph::async_graphql::Error::new(error_string));
+                    Err(error) => {
+                        return Err(sudograph::async_graphql::Error::from(error));
                     }
                 };
             }
