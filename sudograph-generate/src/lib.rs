@@ -203,17 +203,22 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             }
         }
 
-        pub struct Query;
+        // TODO we might want to make sure we explicitly path everything...I am not quite sure
+        // TODO why Default here is able to be used, becuase I believe it come from async-graphql
+        // TODO and I am not importing it
+        #[derive(Default)]
+        pub struct QueryGenerated;
 
         #[Object]
-        impl Query {
+        impl QueryGenerated {
             #(#generated_query_resolvers)*
         }
 
-        pub struct Mutation;
+        #[derive(Default)]
+        pub struct MutationGenerated;
 
         #[Object]
-        impl Mutation {
+        impl MutationGenerated {
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
@@ -223,8 +228,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         async fn graphql_query(query: String) -> String {
             // TODO figure out how to create global variable to store the schema in
             let schema = Schema::new(
-                Query,
-                Mutation,
+                QueryGenerated,
+                MutationGenerated,
                 EmptySubscription
             );
 
@@ -241,8 +246,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         async fn graphql_mutation(query: String) -> String {
             // TODO figure out how to create global variable to store the schema in
             let schema = Schema::new(
-                Query,
-                Mutation,
+                QueryGenerated,
+                MutationGenerated,
                 EmptySubscription
             );
 
