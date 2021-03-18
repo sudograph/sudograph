@@ -121,7 +121,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             SimpleObject,
             InputObject,
             Object,
-            MaybeUndefined
+            MaybeUndefined,
+            Schema,
+            EmptySubscription
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -141,6 +143,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
         use sudograph::ic_cdk::storage;
+        use sudograph::to_json_string;
+        use sudograph::ic_print;
+        use sudograph::ic_cdk_macros::{
+            query,
+            update
+        };
         use std::error::Error;
 
         #(#generated_object_type_structs)*
@@ -209,6 +217,42 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
+        }
+
+        #[query]
+        async fn graphql_query(query: String) -> String {
+            // TODO figure out how to create global variable to store the schema in
+            let schema = Schema::new(
+                Query,
+                Mutation,
+                EmptySubscription
+            );
+
+            ic_print("graphql_query");
+
+            let result = schema.execute(query).await;
+
+            let json_result = to_json_string(&result);
+
+            return json_result.expect("This should work");
+        }
+
+        #[update]
+        async fn graphql_mutation(query: String) -> String {
+            // TODO figure out how to create global variable to store the schema in
+            let schema = Schema::new(
+                Query,
+                Mutation,
+                EmptySubscription
+            );
+
+            ic_print("graphql_mutation");
+
+            let result = schema.execute(query).await;
+
+            let json_result = to_json_string(&result);
+
+            return json_result.expect("This should work");
         }
     };
 
