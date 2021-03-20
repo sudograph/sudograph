@@ -49,41 +49,6 @@ pub fn generate_update_mutation_resolvers(
             };
         });
 
-        // TODO see if we can simply do this through struct methods like we are doing with the ReadInputs
-        // TODO we actually want to map over the fields of the input struct...which is going to be different than
-        // TODO the fields in the object_type_definition
-        let update_field_inputs = object_type_definition.fields.iter().map(|field| {
-            let field_name = &field.name;
-
-            let field_name_identifier = format_ident!(
-                "{}",
-                field_name
-            );
-
-            if is_graphql_type_a_relation(
-                graphql_ast,
-                &field.field_type
-            ) == true {
-                return quote! {
-                    FieldInput {
-                        field_name: String::from(#field_name),
-                        field_value: FieldValue::Relation(FieldValueRelation {
-                            relation_object_type_name: String::from(""), // TODO we need this to work
-                            relation_primary_keys: vec![]
-                        })
-                    }
-                };
-            }
-            else {
-                return quote! {
-                    FieldInput {
-                        field_name: String::from(#field_name),
-                        field_value: input.#field_name_identifier.sudo_serialize()
-                    }
-                };
-            }
-        });
-
         return quote! {
             async fn #update_function_name(
                 &self,
@@ -106,16 +71,14 @@ pub fn generate_update_mutation_resolvers(
                         ]
                     );
                 }
-
+                
                 let update_result = update(
                     object_store,
                     #object_type_name,
                     &input.id, // TODO we might want to get rid of this?
-                    vec![
-                        #(#update_field_inputs),*
-                    ]
+                    input.get_update_inputs()
                 );
-
+                    
                 match update_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
