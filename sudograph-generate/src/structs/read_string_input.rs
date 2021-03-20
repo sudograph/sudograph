@@ -52,7 +52,9 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                                 input_type: ReadInputType::Scalar,
                                 input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
                                 field_name: String::from(&field_name),
-                                field_value: field_value.sudo_serialize()
+                                field_value: field_value.sudo_serialize(), // TODO relations?
+                                and: vec![],
+                                or: vec![]
                             });
                         },
                         MaybeUndefined::Null => {
@@ -60,7 +62,9 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                                 input_type: ReadInputType::Scalar,
                                 input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
                                 field_name: String::from(&field_name),
-                                field_value: FieldValue::Scalar(None) // TODO relations?
+                                field_value: FieldValue::Scalar(None), // TODO relations?
+                                and: vec![],
+                                or: vec![]
                             });
                         },
                         MaybeUndefined::Undefined => {

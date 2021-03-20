@@ -72,7 +72,9 @@ pub fn generate_read_input_rust_structs(
         return quote! {
             #[derive(InputObject)]
             struct #read_input_name {
-                #(#generated_fields),*
+                #(#generated_fields),*,
+                and: Option<Vec<#read_input_name>>,
+                or: Option<Vec<#read_input_name>>
             }
 
             impl #read_input_name {
@@ -80,6 +82,34 @@ pub fn generate_read_input_rust_structs(
                     let mut read_inputs = vec![];
 
                     #(#temps)*
+
+                    if let Some(and) = &self.and {
+                        // TODO perhaps readInput should have better types...relation, scalar, and, or
+                        read_inputs.push(ReadInput {
+                            input_type: ReadInputType::Scalar,
+                            input_operation: ReadInputOperation::Equals,
+                            field_name: String::from("and"),
+                            field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
+                            and: and.iter().flat_map(|read_entity_input| {
+                                return read_entity_input.get_read_inputs();
+                            }).collect(),
+                            or: vec![]
+                        });
+                    }
+
+                    if let Some(or) = &self.or {
+                        // TODO perhaps readInput should have better types...relation, scalar, and, or
+                        read_inputs.push(ReadInput {
+                            input_type: ReadInputType::Scalar,
+                            input_operation: ReadInputOperation::Equals,
+                            field_name: String::from("or"),
+                            field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
+                            and: vec![],
+                            or: or.iter().flat_map(|read_entity_input| {
+                                return read_entity_input.get_read_inputs();
+                            }).collect()
+                        });
+                    }
 
                     return read_inputs;
                 }

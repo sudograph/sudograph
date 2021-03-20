@@ -73,11 +73,6 @@ pub enum FieldType {
 
 // type FieldIndexStore = BTreeMap<FieldValue, PrimaryKey>;
 
-pub enum ReadInputType {
-    Scalar,
-    Relation
-}
-
 #[derive(Clone)]
 pub enum ReadInputOperation {
     Contains,
@@ -92,12 +87,24 @@ pub enum ReadInputOperation {
     // TODO we have not implemented or yet, and we have not done arbitrarily nested ands and ors
 }
 
+// TODO think if we are using the best structure below
+// TODO some of these are redundant depending on what we're doing
+// TODO I think this is where we start to get arbitrary ands and ors going
 pub struct ReadInput {
+    // TODO not sure we need input_type since FieldValue has that information inside of it
     pub input_type: ReadInputType, // TODO I think we might not need this
     pub input_operation: ReadInputOperation,
     pub field_name: String,
-    pub field_value: FieldValue
+    pub field_value: FieldValue,
+    pub and: Vec<ReadInput>, // TODO should we make and and or options?
+    pub or: Vec<ReadInput>
     // TODO I think I will need the field type here
+}
+
+// TODO we might want to get rid of this type
+pub enum ReadInputType {
+    Scalar,
+    Relation
 }
 
 pub struct FieldInput {
