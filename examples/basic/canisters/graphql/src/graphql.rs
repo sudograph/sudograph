@@ -1,5 +1,5 @@
 use sudograph::{
-    generate_graphql,
+    graphql_database,
     Schema,
     EmptySubscription,
     query,
@@ -8,8 +8,10 @@ use sudograph::{
     ic_print
 };
 
-generate_graphql!("canisters/graphql/src/schema.graphql");
 
+graphql_database!("canisters/graphql/src/schema.graphql");
+
+// TODO get rid of the need for this function, hahaha
 // TODO we should show how to have a query endpoint and a mutation endpoint
 // TODO the query endpoint will be much faster
 // TODO this will get people up and going quickly though

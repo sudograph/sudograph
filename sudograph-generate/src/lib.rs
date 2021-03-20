@@ -58,7 +58,7 @@ use mutation_resolvers::update::generate_update_mutation_resolvers;
 use mutation_resolvers::delete::generate_delete_mutation_resolvers;
 
 #[proc_macro]
-pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStream {
+pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStream {
     let schema_file_path_string_literal = parse_macro_input!(schema_file_path_token_stream as LitStr);
     let schema_file_path_string_value = schema_file_path_string_literal.value();
 
@@ -120,7 +120,8 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
         use sudograph::async_graphql::{
             SimpleObject,
             InputObject,
-            Object
+            Object,
+            MaybeUndefined
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -131,6 +132,7 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
             FieldType,
             FieldInput,
             FieldValue,
+            FieldValueScalar,
             FieldValueRelation,
             ReadInput,
             ReadInputType,
@@ -139,6 +141,7 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
         use sudograph::ic_cdk::storage;
+        use std::error::Error;
 
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
@@ -150,42 +153,43 @@ pub fn generate_graphql(schema_file_path_token_stream: TokenStream) -> TokenStre
         #read_int_input_rust_struct
         #read_string_input_rust_struct
 
+        // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
-            fn sudo_serialize(&self) -> String;
+            fn sudo_serialize(&self) -> FieldValue;
         }
 
         impl SudoSerialize for bool {
-            fn sudo_serialize(&self) -> String {
-                return self.to_string();
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::Boolean(self.clone())));
             }
         }
 
         impl SudoSerialize for f32 {
-            fn sudo_serialize(&self) -> String {
-                return self.to_string();
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::Float(self.clone())));
             }
         }
 
         impl SudoSerialize for i32 {
-            fn sudo_serialize(&self) -> String {
-                return self.to_string();
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::Int(self.clone())));
             }
         }
 
         impl SudoSerialize for String {
-            fn sudo_serialize(&self) -> String {
-                return self.to_string();
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::String(self.clone())));
             }
         }
 
-        impl<T: std::fmt::Display> SudoSerialize for Option<T> {
-            fn sudo_serialize(&self) -> String {
+        impl<T: SudoSerialize> SudoSerialize for Option<T> {
+            fn sudo_serialize(&self) -> FieldValue {
                 match self {
                     Some(value) => {
-                        return value.to_string();
+                        return value.sudo_serialize();
                     },
                     None => {
-                        return String::from("");
+                        return FieldValue::Scalar(None); // TODO what about relations
                     }
                 }
             }

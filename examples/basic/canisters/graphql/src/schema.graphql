@@ -1,17 +1,19 @@
+# TODO do not allow inputs to be null if the object type field cannot be null
+
 type User {
     id: String!
-    age: Int!
+    age: Int
     activated: Boolean!
-    created_at: Date!
+    created_at: Date
     # blog_posts: [BlogPost!]!
-    username: String!
+    # username: String!
 }
 
-type BlogPost {
-    id: String!
-    # author: User!
-    body: String!
-    created_at: Date!
-    # live: Boolean!
-    title: String!
-}
+# type BlogPost {
+#     id: String!
+#     # author: User!
+#     body: String!
+#     created_at: Date!
+#     # live: Boolean!
+#     title: String!
+# }

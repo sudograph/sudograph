@@ -1,3 +1,7 @@
+// TODO we also need to add and and or, arbitrarily nested
+
+// TODO also finish refactoring this library
+
 // TODO should we type field values?
 // TODO how do we do transactions? Will the IC simply take care of that for us?
 // TODO How much type checking and enforcing should sudodb do? Perhaps I should just leave that up to sudograph for now?
@@ -9,6 +13,7 @@
 // TODO we need to somehow represent the lack of a value
 
 use std::collections::BTreeMap;
+use std::error::Error;
 mod read;
 mod create;
 
@@ -19,20 +24,21 @@ pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
 type ObjectTypeName = String;
 type FieldName = String;
-// type FieldValue = String; // TODO we need to get relations to work here, so we need to change things up a bit
 
 // TODO we have no concept of null or an option here
-type FieldValueScalar = String;
+#[derive(Clone)]
+pub enum FieldValueScalar {
+    Boolean(bool),
+    Date(String),
+    Float(f32),
+    Int(i32),
+    String(String)
+}
 
 #[derive(Clone)]
 pub enum FieldValue {
-    Scalar(FieldValueScalar),
+    Scalar(Option<FieldValueScalar>),
     Relation(FieldValueRelation)
-}
-
-enum FieldValueType {
-    Scalar,
-    Relation
 }
 
 // TODO we have no concept of null or an option here
@@ -90,7 +96,7 @@ pub struct ReadInput {
     pub input_type: ReadInputType, // TODO I think we might not need this
     pub input_operation: ReadInputOperation,
     pub field_name: String,
-    pub field_value: String
+    pub field_value: FieldValue
     // TODO I think I will need the field type here
 }
 
@@ -104,7 +110,21 @@ pub struct FieldTypeInput {
     pub field_type: FieldType
 }
 
-pub type SudodbError = String;
+// TODO make sure we are doing our error handling in the best way possible
+#[derive(Debug)]
+pub struct SudodbError {
+    message: String
+}
+
+impl Error for SudodbError {
+
+}
+
+impl std::fmt::Display for SudodbError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        return write!(f, "{}", self.message);
+    }
+}
 
 // TODO we should do some type checking on relations
 // TODO it may be slightly difficult though, because we do not know the order the user will do relations in
@@ -114,7 +134,7 @@ pub fn init_object_type(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     field_type_inputs: Vec<FieldTypeInput>
-) -> Result<(), SudodbError> {
+) -> Result<(), Box<dyn Error>> {
     let mut field_types_store = BTreeMap::new();
 
     for field_type_input in field_type_inputs {
@@ -140,7 +160,7 @@ pub fn update(
     object_type_name: &str,
     id: &str,
     inputs: Vec<FieldInput>
-) -> Result<Vec<String>, SudodbError> {
+) -> Result<Vec<String>, Box<dyn Error>> {
     let object_type_result = object_type_store.get_mut(object_type_name);
 
     if let Some(object_type) = object_type_result {
@@ -158,18 +178,22 @@ pub fn update(
             return Ok(vec![]); // TODO this should return a string of the result
         }
         else {
-            return Err(format!(
-                "record {id} not found for {object_type_name} object type",
-                id = id,
-                object_type_name = object_type_name
-            ));
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "record {id} not found for {object_type_name} object type",
+                    id = id,
+                    object_type_name = object_type_name
+                )
+            }));
         }
     }
     else {
-        return Err(format!(
-            "{object_type_name} not found in database",
-            object_type_name = object_type_name
-        ));
+        return Err(Box::new(SudodbError {
+            message: format!(
+                "{object_type_name} not found in database",
+                object_type_name = object_type_name
+            )
+        }));
     }
 }
 
@@ -177,7 +201,7 @@ pub fn delete(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     id: &str
-) -> Result<Vec<String>, SudodbError> {
+) -> Result<Vec<String>, Box<dyn Error>> {
     let object_type_result = object_type_store.get_mut(object_type_name);
 
     if let Some(object_type) = object_type_result {
@@ -186,10 +210,12 @@ pub fn delete(
         return Ok(vec![]); // TODO this should return a string of the result
     }
     else {
-        return Err(format!(
-            "{object_type_name} not found in database",
-            object_type_name = object_type_name
-        ));
+        return Err(Box::new(SudodbError {
+            message: format!(
+                "{object_type_name} not found in database",
+                object_type_name = object_type_name
+            )
+        }));
     }
 }
 
@@ -208,12 +234,21 @@ pub fn convert_field_value_store_to_json_string(
     let inner_json = field_value_store.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {
         
         match value {
-            FieldValue::Scalar(field_value_scalar) => {
+            FieldValue::Scalar(field_value_scalar_option) => {
                 return format!(
-                    "{result}\"{key}\":\"{value}\"{comma}",
+                    "{result}\"{key}\":{value}{comma}",
                     result = result,
                     key = key,
-                    value = field_value_scalar,
+                    value = match field_value_scalar_option {
+                        Some(field_value_scalar) => match field_value_scalar {
+                            FieldValueScalar::Boolean(field_value_scalar_boolean) => format!("{}", field_value_scalar_boolean),
+                            FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
+                            FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
+                            FieldValueScalar::Int(field_value_scalar_int) => format!("{}", field_value_scalar_int),
+                            FieldValueScalar::String(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string)
+                        },
+                        None => String::from("null")
+                    },
                     comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
                 );
             },
