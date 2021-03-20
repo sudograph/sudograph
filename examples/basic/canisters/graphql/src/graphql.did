@@ -1,3 +1,4 @@
 service : {
-    "graphql": (text) -> (text);
+    "graphql_query": (text) -> (text) query;
+    "graphql_mutation": (text) -> (text);
 }
