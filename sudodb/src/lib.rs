@@ -14,11 +14,15 @@
 
 use std::collections::BTreeMap;
 use std::error::Error;
-mod read;
 mod create;
+mod read;
+mod update;
+mod delete;
 
-pub use read::read;
 pub use create::create;
+pub use read::read;
+pub use update::update;
+pub use delete::delete;
 
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
@@ -160,70 +164,6 @@ pub fn init_object_type(
     );
 
     return Ok(());
-}
-
-pub fn update(
-    object_type_store: &mut ObjectTypeStore,
-    object_type_name: &str,
-    id: &str,
-    inputs: Vec<FieldInput>
-) -> Result<Vec<String>, Box<dyn Error>> {
-    let object_type_result = object_type_store.get_mut(object_type_name);
-
-    if let Some(object_type) = object_type_result {
-        let field_values_map_result = object_type.field_values_store.get_mut(id);
-
-        if let Some(field_values_map) = field_values_map_result {
-            for input in inputs {
-                // TODO simply respect relations here
-                // field_values_map.insert(
-                //     input.field_name,
-                //     input.field_value
-                // );
-            }
-        
-            return Ok(vec![]); // TODO this should return a string of the result
-        }
-        else {
-            return Err(Box::new(SudodbError {
-                message: format!(
-                    "record {id} not found for {object_type_name} object type",
-                    id = id,
-                    object_type_name = object_type_name
-                )
-            }));
-        }
-    }
-    else {
-        return Err(Box::new(SudodbError {
-            message: format!(
-                "{object_type_name} not found in database",
-                object_type_name = object_type_name
-            )
-        }));
-    }
-}
-
-pub fn delete(
-    object_type_store: &mut ObjectTypeStore,
-    object_type_name: &str,
-    id: &str
-) -> Result<Vec<String>, Box<dyn Error>> {
-    let object_type_result = object_type_store.get_mut(object_type_name);
-
-    if let Some(object_type) = object_type_result {
-        object_type.field_values_store.remove(id);
-
-        return Ok(vec![]); // TODO this should return a string of the result
-    }
-    else {
-        return Err(Box::new(SudodbError {
-            message: format!(
-                "{object_type_name} not found in database",
-                object_type_name = object_type_name
-            )
-        }));
-    }
 }
 
 // TODO actually, we absolutely need some sort of selection set mechanism here, otherwise we will grab all relations

@@ -17,6 +17,8 @@ mod structs {
     pub mod read_float_input;
     pub mod read_int_input;
     pub mod read_string_input;
+    pub mod update_input;
+    pub mod delete_input;
 }
 mod query_resolvers {
     pub mod read;
@@ -52,6 +54,8 @@ use structs::read_date_input::get_read_date_input_rust_struct;
 use structs::read_float_input::get_read_float_input_rust_struct;
 use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
+use structs::update_input::generate_update_input_rust_structs;
+use structs::delete_input::generate_delete_input_rust_structs;
 use query_resolvers::read::generate_read_query_resolvers;
 use mutation_resolvers::create::generate_create_mutation_resolvers;
 use mutation_resolvers::update::generate_update_mutation_resolvers;
@@ -91,6 +95,16 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_int_input_rust_struct = get_read_int_input_rust_struct();
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
 
+    let generated_update_input_structs = generate_update_input_rust_structs(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
+    let generated_delete_input_structs = generate_delete_input_rust_structs(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
     let generated_query_resolvers = generate_read_query_resolvers(
         &graphql_ast,
         &object_type_definitions
@@ -127,8 +141,10 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
-            read,
             create,
+            read,
+            update,
+            delete,
             init_object_type,
             FieldTypeInput,
             FieldType,
@@ -154,6 +170,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
         #(#generated_read_input_structs)*
+        #(#generated_update_input_structs)*
+        #(#generated_delete_input_structs)*
 
         #read_boolean_input_rust_struct
         #read_date_input_rust_struct
