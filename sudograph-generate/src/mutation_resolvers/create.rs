@@ -111,7 +111,7 @@ pub fn generate_create_mutation_resolvers(
                     #object_type_name,
                     &input.id, // TODO we might want to get rid of this?
                     vec![
-                        #(#create_field_inputs),*
+                        #(#create_field_inputs),* // TODO we want to change this to only put values in if they exist, similar to the read input read values thing
                     ]
                 );
 

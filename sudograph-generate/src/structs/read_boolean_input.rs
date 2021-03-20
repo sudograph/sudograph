@@ -45,7 +45,7 @@ pub fn get_read_boolean_input_rust_struct() -> TokenStream {
                         MaybeUndefined::Undefined => {
                             return None;
                         }
-                    }
+                    };
                 }).collect();
 
                 return read_inputs;

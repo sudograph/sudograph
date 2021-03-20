@@ -31,7 +31,8 @@ pub fn generate_update_input_rust_structs(
             let field_type = get_rust_type_for_update_input(
                 &graphql_ast,
                 &field.field_type,
-                false
+                false,
+                &field.name
             );
 
             return quote! {
@@ -39,11 +40,63 @@ pub fn generate_update_input_rust_structs(
                 #field_name: #field_type
             };
         });
+
+        let temps = object_type_definition.fields.iter().map(|field| {
+            let field_name_string = &field.name;
+                        
+            let field_name = format_ident!(
+                "{}",
+                field.name
+            );
+
+            // let self_field_name = format_ident!(
+            //     "&self.{}",
+            //     field.name
+            // );
+
+            if field.name == "id" {
+                return quote! {
+
+                };
+            }
+            else {
+                return quote! {
+                    match &self.#field_name {
+                        MaybeUndefined::Value(value) => {
+                            update_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: value.sudo_serialize()
+                            });
+                        },
+                        MaybeUndefined::Null => {
+                            update_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: FieldValue::Scalar(None) // TODO what about relations
+                            });
+                            // return FieldValue::Scalar(None); // TODO I am not sure how to differentiate between Null and Undefined yet when inserting the values
+                        },
+                        MaybeUndefined::Undefined => {
+                            // return FieldValue::Scalar(None); // TODO I am not sure how to differentiate between Null and Undefined yet when inserting the values
+                        }
+                    };
+                };
+            }
+        });
         
         return quote! {
             #[derive(InputObject)]
             struct #update_input_name {
                 #(#generated_fields),*
+            }
+
+            impl #update_input_name {
+                fn get_update_inputs(&self) -> Vec<FieldInput> {
+                    let mut update_inputs = vec![];
+
+                    #(#temps)*
+                    
+                    return update_inputs;
+                }
             }
         };
     }).collect();
@@ -54,7 +107,8 @@ pub fn generate_update_input_rust_structs(
 fn get_rust_type_for_update_input<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
-    is_non_null_type: bool
+    is_non_null_type: bool,
+    field_name: &str // TODO this needs to be put elsewhere too
 ) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
@@ -71,13 +125,14 @@ fn get_rust_type_for_update_input<'a>(
             }
             else {
                 if
-                    is_non_null_type == true ||
-                    named_type == "id"
+                    // is_non_null_type == true ||
+                    field_name == "id" // TODO elsewhere this check was not doing what I thought it was
                 {
                     return quote! { #rust_type_for_named_type };
                 }
                 else {
-                    return quote! { Option<#rust_type_for_named_type> };
+                    // return quote! { #rust_type_for_named_type };
+                    return quote! { MaybeUndefined<#rust_type_for_named_type> };
                 }
             }
         },
@@ -85,7 +140,8 @@ fn get_rust_type_for_update_input<'a>(
             let rust_type = get_rust_type_for_update_input(
                 graphql_ast,
                 non_null_type,
-                true
+                false,
+                field_name
             );
             return quote! { #rust_type };
         },
@@ -93,7 +149,8 @@ fn get_rust_type_for_update_input<'a>(
             let rust_type = get_rust_type_for_update_input(
                 graphql_ast,
                 list_type,
-                false
+                false,
+                field_name
             );
 
             // TODO this is just a placeholder for now, I will implement creating relations later...
