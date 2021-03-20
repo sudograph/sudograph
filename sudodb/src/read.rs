@@ -69,7 +69,8 @@ fn find_field_value_stores_for_inputs(
         let inputs_match: bool = field_value_store_matches_inputs(
             field_value_store,
             field_types_store,
-            &inputs
+            &inputs,
+            false
         )?;
 
         if inputs_match == true {
@@ -88,11 +89,40 @@ fn find_field_value_stores_for_inputs(
 fn field_value_store_matches_inputs(
     field_value_store: &FieldValueStore,
     field_types_store: &FieldTypesStore,
-    inputs: &Vec<ReadInput>
+    inputs: &Vec<ReadInput>,
+    or: bool
 ) -> Result<bool, Box<dyn Error>> {
-    return inputs.iter().try_fold(true, |result, input| {
-        if result == false {
+    return inputs.iter().try_fold(if or == true { false } else { true }, |result, input| {
+        if
+            result == false &&
+            or == false
+        {
             return Ok(false);
+        }
+
+        if
+            result == true &&
+            or == true
+        {
+            return Ok(true);
+        }
+
+        if input.field_name == "and" {
+            return field_value_store_matches_inputs(
+                field_value_store,
+                field_types_store,
+                &input.and,
+                false
+            );
+        }
+
+        if input.field_name == "or" {
+            return field_value_store_matches_inputs(
+                field_value_store,
+                field_types_store,
+                &input.or,
+                true
+            );
         }
 
         let field_type_option = field_types_store.get(&input.field_name);
