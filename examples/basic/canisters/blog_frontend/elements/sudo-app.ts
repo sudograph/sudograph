@@ -75,6 +75,7 @@ class SudoApp extends HTMLElement {
             <style>
                 html {
                     margin: 0;
+                    font-family: sans-serif;
                 }
 
                 body {
@@ -98,6 +99,10 @@ class SudoApp extends HTMLElement {
                     flex-direction: column;
                     flex: 1;
                 }
+
+                .blog-post-container {
+                    box-shadow: 0px 0px 5px grey;
+                }
             </style>
 
             <div class="main-container">
@@ -108,7 +113,11 @@ class SudoApp extends HTMLElement {
                     
                     <div>
                         ${state.blogPosts.map((blogPost) => {
-                            return html`<sudo-blog-post .blogPost=${blogPost}></sudo-blog-post>`;
+                            return html`
+                                <div class="blog-post-container">
+                                    <sudo-blog-post .blogPost=${blogPost}></sudo-blog-post>
+                                </div>
+                            `;
                         })}
                     </div>
                 </div>
@@ -122,10 +131,13 @@ class SudoApp extends HTMLElement {
                     <div>
                         ${state.drafts.map((draft) => {
                             return html`
-                                <sudo-draft
-                                    .draft=${draft}
-                                    @draft-published=${async (e) => await this.draftPublished(e)}
-                                ></sudo-draft>`;
+                                <div class="blog-post-container">
+                                    <sudo-draft
+                                        .draft=${draft}
+                                        @draft-published=${async (e) => await this.draftPublished(e)}
+                                    ></sudo-draft>
+                                </div>
+                            `;
                         })}
                     </div>
                 </div>
