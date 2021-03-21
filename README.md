@@ -85,7 +85,7 @@ Sudograph is a Rust crate, and thus (for now) you must create a Rust IC canister
 
 If you ever want to see a concrete example of how to implement Sudograph, simply take a look at the examples directory.
 
-Let's imagine you've created a Rust canister called `graphql` in a directory called `graphql`. In the `graphql` directory you should have a `Cargo.toml` file. You'll need to add two dependencies to it (the need to directory include `serde` should be removed soon). For example:
+Let's imagine you've created a Rust canister called `graphql` in a directory called `graphql`. In the `graphql` directory you should have a `Cargo.toml` file. You'll need to add two dependencies to it (the need to directly include `serde` should be removed soon). For example:
 
 ```toml
 [package]
@@ -144,9 +144,13 @@ If you have setup your `dfx.json` correctly, then you should be able to deploy y
 
 You should now have a GraphQL database running inside of your `graphql` canister.
 
+# Playground
+
+It's simple to spin up a GraphQL playground in another canister...but this isn't documented yet. Check out the examples for more information.
+
 # Custom Queries and Mutations
 
-More information to come...this is possible, just not documented yet.
+More information to come...this is possible, just not documented yet. Actually, check out the intermediate example in the mean time.
 
 # Current Limitations
 
