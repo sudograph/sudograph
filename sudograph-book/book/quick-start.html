@@ -180,7 +180,7 @@ type BlogPost {
     id: String!
     author: User!
     body: String!
-    created_at: DateTime!
+    created_at: Date!
     live: Boolean!
     title: String!
 }
@@ -244,7 +244,7 @@ input ReadStringInput {
     contains: String
 }
 
-input ReadDateTimeInput {
+input ReadDateInput {
     eq: String
     gt: String
     gte: String
@@ -331,21 +331,6 @@ input DeleteBlogPostInput {
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         

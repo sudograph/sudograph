@@ -166,6 +166,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="sudograph"><a class="header" href="#sudograph">Sudograph</a></h1>
+<p>Testing</p>
 <h3 id="this-book-is-hosted-on-the-internet-computer-sodium-test-network"><a class="header" href="#this-book-is-hosted-on-the-internet-computer-sodium-test-network">This book is hosted on the Internet Computer (Sodium Test Network)</a></h3>
 <p>Sudograph is a GraphQL generator for the Internet Computer. It is similar to projects like <a href="https://www.prisma.io/">Prisma</a>, <a href="https://graphback.dev/">Graphback</a>, and <a href="https://hasura.io/">Hasura</a>, though it is designed to run on and thus inherit the capabilities of the <a href="https://dfinity.org/">Internet Computer</a>.</p>
 <p>Sudograph aims to greatly simplify the hardest part of GraphQL development, which is the actual implementation of the resolvers. From a types-only GraphQL schema written in the GraphQL SDL, Sudograph will generate a far more capable CRUD schema along with the implementation of its resolvers.</p>
@@ -293,7 +294,7 @@ type BlogPost {
     id: String!
     author: User!
     body: String!
-    created_at: DateTime!
+    created_at: Date!
     live: Boolean!
     title: String!
 }
@@ -357,7 +358,7 @@ input ReadStringInput {
     contains: String
 }
 
-input ReadDateTimeInput {
+input ReadDateInput {
     eq: String
     gt: String
     gte: String
@@ -445,21 +446,6 @@ input DeleteBlogPostInput {
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         
