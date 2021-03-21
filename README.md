@@ -158,6 +158,7 @@ More information to come...this is possible, just not documented yet. Actually, 
 - [ ] No client-side variables (you must interpolate variables yourself client-side)
 - [ ] Scaling is limited to a single canister
 - [ ] Simple/inefficient filtering algorithm (simple linear searches)
+- [ ] No built-in authorization (authorization will have to be handled with custom canister methods that then create Sudograph GraphQL queries)
 
 # Possibly Outdated Information
 
