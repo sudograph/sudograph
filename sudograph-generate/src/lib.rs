@@ -27,6 +27,7 @@ mod mutation_resolvers {
     pub mod create;
     pub mod update;
     pub mod delete;
+    pub mod init;
 }
 
 use proc_macro::TokenStream;
@@ -60,6 +61,7 @@ use query_resolvers::read::generate_read_query_resolvers;
 use mutation_resolvers::create::generate_create_mutation_resolvers;
 use mutation_resolvers::update::generate_update_mutation_resolvers;
 use mutation_resolvers::delete::generate_delete_mutation_resolvers;
+use mutation_resolvers::init::generate_init_mutation_resolvers;
 
 #[proc_macro]
 pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStream {
@@ -121,6 +123,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     );
 
     let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
+    let generated_init_mutation_resolvers = generate_init_mutation_resolvers(
         &graphql_ast,
         &object_type_definitions
     );
@@ -240,6 +247,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
+            #(#generated_init_mutation_resolvers)*
         }
 
         #[query]

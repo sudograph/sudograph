@@ -17,7 +17,19 @@
       "source": [
           "dist/playground/"
       ]        
-  }
+    },
+    "blog_frontend": {
+      "type": "assets",
+      "dependencies": [
+        "graphql"
+      ],
+      "frontend": {
+          "entrypoint": "canisters/blog_frontend/index.ts"
+      },
+      "source": [
+          "dist/blog_frontend/"
+      ] 
+    }
   },
   "dfx": "0.6.24",
   "networks": {
