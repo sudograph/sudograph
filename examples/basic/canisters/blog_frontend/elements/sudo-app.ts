@@ -25,7 +25,6 @@ class SudoApp extends HTMLElement {
     store = createObjectStore(InitialState, (state: State) => litRender(this.render(state), this.shadow), this);
 
     async connectedCallback() {
-        await initBlogPost();
         await this.fetchAndSetBlogPostsAndDrafts();
     }
 
@@ -148,14 +147,6 @@ class SudoApp extends HTMLElement {
 }
 
 window.customElements.define('sudo-app', SudoApp);
-
-async function initBlogPost() {
-    await graphql.graphql_mutation(`
-        mutation {
-            initBlogPost
-        }
-    `);
-}
 
 async function fetchBlogPosts(): Promise<ReadonlyArray<BlogPost>> {
     const resultString = await graphql.graphql_query(`

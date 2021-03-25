@@ -90,22 +90,6 @@ pub fn generate_create_mutation_resolvers(
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
 
-                // TODO we should probably handle the result here
-                // TODO where are we going to put this actually?
-                // TODO the init for all of the object types should really only happen once
-
-                if object_store.contains_key(#object_type_name) == false {
-                    // TODO where should we put this?
-                    // TODO perhaps this should be in all queries and mutations?
-                    init_object_type(
-                        object_store,
-                        #object_type_name,
-                        vec![
-                            #(#create_field_type_inputs),*
-                        ]
-                    );
-                }
-
                 let create_result = create(
                     object_store,
                     #object_type_name,

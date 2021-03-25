@@ -15,5 +15,7 @@ pub use ic_cdk::print as ic_print;
 pub use ic_cdk_macros;
 pub use ic_cdk_macros::{
     query,
-    update
+    update,
+    init,
+    post_upgrade
 };

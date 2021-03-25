@@ -68,7 +68,19 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let schema_file_path_string_literal = parse_macro_input!(schema_file_path_token_stream as LitStr);
     let schema_file_path_string_value = schema_file_path_string_literal.value();
 
-    let schema_file_contents = fs::read_to_string(schema_file_path_string_value).unwrap();
+    // TODO some of this cwd strangeness is here just so that the canister is forced to recompile when the GraphQL schema file changes
+    // TODO Hopefully this issue will help solve this more elegantly:https://users.rust-lang.org/t/logging-file-dependency-like-include-bytes-in-custom-macro/57441
+    // TODO more information: https://github.com/rust-lang/rust/pull/24423
+    // TODO more information: https://stackoverflow.com/questions/58768109/proper-way-to-handle-a-compile-time-relevant-text-file-passed-to-a-procedural-ma
+    // TODO const temp: &str = include_str!(#schema_absolute_file_path_string); below is related to this as well
+    // TODO whenever the schema file changes, include_str! somehow makes it so that the create will recompile, which is what we want!
+    // TODO it would be nice if there were a simpler or more standard way to accomplish this
+    let cwd = std::env::current_dir().unwrap();
+    let schema_absolute_file_path = cwd.join(&schema_file_path_string_value);
+    let schema_absolute_file_path_string_option = schema_absolute_file_path.to_str();
+    let schema_absolute_file_path_string = schema_absolute_file_path_string_option.unwrap();
+
+    let schema_file_contents = fs::read_to_string(&schema_absolute_file_path_string).unwrap();
 
     let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
 
@@ -132,6 +144,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         &object_type_definitions
     );
 
+    let generated_init_mutations = object_type_definitions.iter().fold(String::from(""), |result, object_type_definition| {
+        let object_type_name = &object_type_definition.name;
+        
+        let init_function_name = String::from("init") + object_type_name;
+
+        return result + &init_function_name + "\n";
+    });
+
     let gen = quote! {
         use sudograph::serde::{
             Deserialize,
@@ -170,9 +190,13 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         use sudograph::ic_print;
         use sudograph::ic_cdk_macros::{
             query,
-            update
+            update,
+            init,
+            post_upgrade
         };
         use std::error::Error;
+
+        const temp: &str = include_str!(#schema_absolute_file_path_string);
 
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
@@ -253,6 +277,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #[query]
         async fn graphql_query(query: String) -> String {
             // TODO figure out how to create global variable to store the schema in
+            // TODO we can probably just store this in a map or something with ic storage
             let schema = Schema::new(
                 QueryGenerated,
                 MutationGenerated,
@@ -261,9 +286,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
             ic_print("graphql_query");
 
-            let result = schema.execute(query).await;
+            let response = schema.execute(query).await;
 
-            let json_result = to_json_string(&result);
+            let json_result = to_json_string(&response);
 
             return json_result.expect("This should work");
         }
@@ -279,11 +304,42 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
             ic_print("graphql_mutation");
 
-            let result = schema.execute(query).await;
+            let response = schema.execute(query).await;
 
-            let json_result = to_json_string(&result);
+            let json_result = to_json_string(&response);
 
             return json_result.expect("This should work");
+        }
+
+        #[init]
+        async fn init() {
+            initialize_database_entities().await;
+        }
+
+        #[post_upgrade]
+        async fn post_upgrade() {
+            initialize_database_entities().await;
+        }
+
+        async fn initialize_database_entities() {
+            let schema = Schema::new(
+                QueryGenerated,
+                MutationGenerated,
+                EmptySubscription
+            );
+
+            let response = schema.execute(format!("
+                    mutation {{
+                        {generated_init_mutations}
+                    }}
+                ",
+                generated_init_mutations = #generated_init_mutations
+            )).await;
+
+            // TODO make this error print prettily
+            if response.errors.len() > 0 {
+                panic!("{:?}", response.errors);
+            }
         }
     };
 
