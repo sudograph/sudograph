@@ -155,7 +155,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let gen = quote! {
         use sudograph::serde::{
             Deserialize,
-            Serialize
+            Serialize,
+            self
         };
         use sudograph::async_graphql;
         use sudograph::async_graphql::{

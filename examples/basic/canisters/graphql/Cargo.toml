@@ -10,4 +10,3 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sudograph = { path = "../../../../../sudograph" }
-serde = "1.0.123" # TODO for now we need to include serde directly, even though sudograph has it as a dependency. See here: https://github.com/serde-rs/serde/issues/1465

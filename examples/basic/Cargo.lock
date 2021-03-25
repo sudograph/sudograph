@@ -809,7 +809,6 @@ dependencies = [
 name = "graphql"
 version = "0.0.0"
 dependencies = [
- "serde",
  "sudograph",
 ]
 

@@ -44,6 +44,7 @@ pub fn generate_object_type_rust_structs(
         
         return quote! {
             #[derive(SimpleObject, Serialize, Deserialize)]
+            #[serde(crate="self::serde")]
             struct #object_type_name {
                 #(#generated_fields),*
             }

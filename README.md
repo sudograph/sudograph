@@ -85,7 +85,7 @@ Sudograph is a Rust crate, and thus (for now) you must create a Rust IC canister
 
 If you ever want to see a concrete example of how to implement Sudograph, simply take a look at the examples directory.
 
-Let's imagine you've created a Rust canister called `graphql` in a directory called `graphql`. In the `graphql` directory you should have a `Cargo.toml` file. You'll need to add two dependencies to it (the need to directly include `serde` should be removed soon). For example:
+Let's imagine you've created a Rust canister called `graphql` in a directory called `graphql`. In the `graphql` directory you should have a `Cargo.toml` file. You'll need to add Sudograph as a dependency. For example:
 
 ```toml
 [package]
@@ -100,7 +100,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sudograph = "0.1.0"
-serde = "1.0.123"
 ```
 
 Next let's define our schema. In the `graphql/src` directory, let's add a file called `schema.graphql`:
