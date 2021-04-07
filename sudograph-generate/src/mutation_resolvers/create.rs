@@ -51,7 +51,7 @@ pub fn generate_create_mutation_resolvers(
         // TODO see if we can simply do this through struct methods like we are doing with the ReadInputs
         // TODO we actually want to map over the fields of the input struct...which is going to be different than
         // TODO the fields in the object_type_definition
-        let create_field_inputs = object_type_definition.fields.iter().map(|field| {
+        let create_field_inputs = object_type_definition.fields.iter().filter_map(|field| {
             let field_name = &field.name;
 
             let field_name_identifier = format_ident!(
@@ -63,7 +63,7 @@ pub fn generate_create_mutation_resolvers(
                 graphql_ast,
                 &field.field_type
             ) == true {
-                return quote! {
+                return Some(quote! {
                     FieldInput {
                         field_name: String::from(#field_name),
                         field_value: FieldValue::Relation(FieldValueRelation {
@@ -71,15 +71,20 @@ pub fn generate_create_mutation_resolvers(
                             relation_primary_keys: vec![]
                         })
                     }
-                };
+                });
             }
             else {
-                return quote! {
-                    FieldInput {
-                        field_name: String::from(#field_name),
-                        field_value: input.#field_name_identifier.sudo_serialize()
-                    }
-                };
+                if field_name == "id" {
+                    return None;
+                }
+                else {
+                    return Some(quote! {
+                        FieldInput {
+                            field_name: String::from(#field_name),
+                            field_value: input.#field_name_identifier.sudo_serialize()
+                        }
+                    });
+                }
             }
         });
 
@@ -88,15 +93,18 @@ pub fn generate_create_mutation_resolvers(
                 &self,
                 input: #create_input_type
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
+                let rand_store = storage::get_mut::<RandStore>();
+
                 let object_store = storage::get_mut::<ObjectTypeStore>();
 
                 let create_result = create(
                     object_store,
                     #object_type_name,
-                    &input.id, // TODO we might want to get rid of this?
+                    input.id.clone(), // TODO we might want to get rid of this?
                     vec![
                         #(#create_field_inputs),* // TODO we want to change this to only put values in if they exist, similar to the read input read values thing
-                    ]
+                    ],
+                    rand_store.get_mut("RNG").unwrap()
                 );
 
                 match create_result {

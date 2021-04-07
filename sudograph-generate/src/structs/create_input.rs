@@ -30,6 +30,7 @@ pub fn generate_create_input_rust_structs(
             
             let field_type = get_rust_type_for_create_input(
                 &graphql_ast,
+                String::from(field_name_string),
                 &field.field_type,
                 false
             );
@@ -53,6 +54,7 @@ pub fn generate_create_input_rust_structs(
 
 fn get_rust_type_for_create_input<'a>(
     graphql_ast: &'a Document<String>,
+    field_name_string: String,
     graphql_type: &Type<String>,
     is_non_null_type: bool
 ) -> TokenStream {
@@ -71,8 +73,8 @@ fn get_rust_type_for_create_input<'a>(
             }
             else {
                 if
-                    is_non_null_type == true ||
-                    named_type == "id"
+                    is_non_null_type == true &&
+                    field_name_string != "id"
                 {
                     return quote! { #rust_type_for_named_type };
                 }
@@ -84,6 +86,7 @@ fn get_rust_type_for_create_input<'a>(
         Type::NonNullType(non_null_type) => {
             let rust_type = get_rust_type_for_create_input(
                 graphql_ast,
+                field_name_string,
                 non_null_type,
                 true
             );
@@ -92,6 +95,7 @@ fn get_rust_type_for_create_input<'a>(
         Type::ListType(list_type) => {
             let rust_type = get_rust_type_for_create_input(
                 graphql_ast,
+                field_name_string,
                 list_type,
                 false
             );

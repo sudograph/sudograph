@@ -19,3 +19,4 @@ pub use ic_cdk_macros::{
     init,
     post_upgrade
 };
+pub use rand;

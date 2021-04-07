@@ -196,6 +196,23 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             post_upgrade
         };
         use std::error::Error;
+        use std::collections::BTreeMap;
+        use sudograph::rand::{
+            Rng,
+            SeedableRng,
+            rngs::StdRng
+        };
+
+        // TODO this is just to test out storing a source of randomness per update call
+        // TODO the best way I believe would to somehow
+        // TODO use the standard randomness ways of getting randomness
+        // TODO used in the random crates...I think we would have to implement some
+        // TODO random trait or something for the IC architecture
+        // TODO second best would be if DFINITY were to implement a synchronous way of getting
+        // TODO raw randomness from the IC environment
+        // TODO third best is to use an async call to get randomness from the management canister
+        // TODO but for now there are issues with asynchronous calls from within graphql resolvers
+        type RandStore = BTreeMap<String, StdRng>;
 
         const temp: &str = include_str!(#schema_absolute_file_path_string);
 
@@ -296,6 +313,18 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         #[update]
         async fn graphql_mutation(query: String) -> String {
+            let call_result: Result<(Vec<u8>,), _> = ic_cdk::api::call::call(ic_cdk::export::Principal::management_canister(), "raw_rand", ()).await;
+
+            if let Ok(result) = call_result {
+                let rand_store = storage::get_mut::<RandStore>();
+
+                let randomness = result.0;
+
+                let mut rng: StdRng = SeedableRng::from_seed(randomness_vector_to_array(randomness));
+
+                rand_store.insert(String::from("RNG"), rng);
+            }
+
             // TODO figure out how to create global variable to store the schema in
             let schema = Schema::new(
                 QueryGenerated,
@@ -341,6 +370,22 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             if response.errors.len() > 0 {
                 panic!("{:?}", response.errors);
             }
+        }
+
+        // TODO double-check the math
+        // TODO there is no protection on lengths here...the IC will give us 32 bytes, so a vector of length 32 with u8 values
+        fn randomness_vector_to_array(randomness: Vec<u8>) -> [u8; 32] {
+            let mut array = [0u8; 32];
+
+            for i in 0..randomness.len() {
+                // if i > array.len() {
+                //     break;
+                // }
+
+                array[i] = randomness[i];
+            }
+
+            return array;
         }
     };
 
@@ -400,287 +445,3 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
 
     return object_type_definitions;
 }
-
-// TODO start trying to generalize this, we want the macro to generate this eventually
-
-// use async_graphql::{
-//     // Object,
-//     Schema,
-//     EmptyMutation,
-//     EmptySubscription,
-//     // SimpleObject,
-//     Result
-// };
-// use::sudodb;
-// use serde::{
-//     Deserialize,
-//     Serialize
-// };
-// pub use sudograph_generate::sudograph_generate;
-
-// #[derive(SimpleObject, Serialize, Deserialize)]
-// struct User {
-//     id: String,
-//     username: String
-// }
-
-// sudograph_generate!("test-schema.graphql");
-
-// pub struct Query;
-
-// #[Object]
-// impl Query {
-//     async fn readUser(&self, id: String) -> Result<User> {
-//         return Ok(User {
-//             id: String::from("0"),
-//             blog_posts: vec![],
-//             username: String::from("lastmjs")
-//         });
-//     }
-
-//     // async fn add(&self, a: i32, b: i32) -> i32 {
-//     //     return a + b;
-//     // }
-
-//     // // TODO see if we can actually return a user type here
-//     // async fn readUser(&self, id: String) -> Result<Vec<User>> {
-//     //     let object_store = storage::get_mut::<sudodb::ObjectTypeStore>();
-
-//     //     let result = sudodb::read(
-//     //         object_store,
-//     //         "User",
-//     //         vec![
-//     //             sudodb::ReadInput {
-//     //                 input_type: sudodb::ReadInputType::Scalar,
-//     //                 input_operation: sudodb::ReadInputOperation::Equals,
-//     //                 field_name: String::from("id"),
-//     //                 field_value: id
-//     //             }
-//     //         ]
-//     //     );
-
-//     //     match result {
-//     //         Ok(result_strings) => {
-//     //             let result_users = result_strings.iter().try_fold(vec![], |mut result, result_string| {
-//     //                 let test = from_str(result_string);
-
-//     //                 match test {
-//     //                     Ok(the_value) => {
-//     //                         result.push(the_value);
-//     //                         return Ok(result);
-//     //                     },
-//     //                     Err(error) => {
-//     //                         return Err(error);
-//     //                     }
-//     //                 };
-//     //             })?;
-
-//     //             return Ok(result_users);
-//     //         },
-//     //         Err(error) => {
-//     //             return Err(async_graphql::Error {
-//     //                 message: error,
-//     //                 extensions: None
-//     //             });
-//     //         }
-//     //     };
-//     // } 
-// }
-
-// pub struct Mutation;
-
-// #[Object]
-// impl Mutation {
-    // async fn createUser(&self) -> Result<bool> {
-    //     let object_store = storage::get_mut::<sudodb::ObjectTypeStore>();
-
-    //     print("Here I am -1");
-
-    //     sudodb::init_object_type(
-    //         object_store,
-    //         "User",
-    //         vec![
-    //             sudodb::FieldTypeInput {
-    //                 field_name: String::from("id"),
-    //                 field_type: sudodb::FieldType::String
-    //             },
-    //             sudodb::FieldTypeInput {
-    //                 field_name: String::from("username"),
-    //                 field_type: sudodb::FieldType::String
-    //             }
-    //         ]
-    //     );
-
-    //     print("Here I am 0");
-
-    //     let create_result = sudodb::create(
-    //         object_store,
-    //         "User",
-    //         "0",
-    //         vec![
-    //             sudodb::FieldInput {
-    //                 field_name: String::from("id"),
-    //                 field_value: sudodb::FieldValue::Scalar(String::from("0"))
-    //             },
-    //             sudodb::FieldInput {
-    //                 field_name: String::from("username"),
-    //                 field_value: sudodb::FieldValue::Scalar(String::from("lastmjs"))
-    //             }
-    //         ]
-    //     );
-
-    //     print("Here I am 1");
-        
-    //     return Ok(true);
-    // }
-// }
-
-    // sudograph_generate!("test-schema.graphql");
-
-    // let schema = Schema::new(
-    //     sudograph::Query,
-    //     sudograph::Mutation,
-    //     EmptySubscription
-    // );
-
-    // println!("{}", unescape(&schema.sdl()).unwrap());
-    // println!("{}", schema.sdl());
-
-    // let res = schema.execute("
-    //     query {
-    //         add(a: 5, b: 7)
-    //     }
-    // ").await;
-    // println!("sudograph");
-    // sudodb::create();
-    // let mut object_store: sudodb::ObjectTypeStore = BTreeMap::new();
-    
-    // sudodb::init_object_type(
-    //     &mut object_store,
-    //     "User",
-    //     vec![
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("id"),
-    //             field_type: sudodb::FieldType::String
-    //         },
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("username"),
-    //             field_type: sudodb::FieldType::String
-    //         },
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("created_at"),
-    //             field_type: sudodb::FieldType::Date
-    //         },
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("age"),
-    //             field_type: sudodb::FieldType::Int
-    //         },
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("blog_posts"),
-    //             field_type: sudodb::FieldType::Relation(String::from("BlogPost")) // TODO I think we want to type check this...before or after to ensure that relation actually exists
-    //         }
-    //     ]
-    // );
-
-    // sudodb::init_object_type(
-    //     &mut object_store,
-    //     "BlogPost",
-    //     vec![
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("id"),
-    //             field_type: sudodb::FieldType::String
-    //         },
-    //         sudodb::FieldTypeInput {
-    //             field_name: String::from("title"),
-    //             field_type: sudodb::FieldType::String
-    //         }
-    //     ]
-    // );
-
-    // sudodb::create(
-    //     &mut object_store,
-    //     "BlogPost",
-    //     "0",
-    //     vec![
-    //         sudodb::FieldInput {
-    //             field_name: String::from("id"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("0"))
-    //         },
-    //         sudodb::FieldInput {
-    //             field_name: String::from("title"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("Blog Post 1"))
-    //         }
-    //     ]
-    // );
-
-    // sudodb::create(
-    //     &mut object_store,
-    //     "User",
-    //     "0",
-    //     vec![
-    //         sudodb::FieldInput {
-    //             field_name: String::from("id"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("0"))
-    //         },
-    //         sudodb::FieldInput {
-    //             field_name: String::from("username"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("lastmjs"))
-    //         },
-    //         sudodb::FieldInput {
-    //             field_name: String::from("created_at"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("2021-03-04T19:55:35.917Z"))
-    //         },
-    //         sudodb::FieldInput {
-    //             field_name: String::from("age"),
-    //             field_value: sudodb::FieldValue::Scalar(String::from("30"))
-    //         },
-    //         sudodb::FieldInput {
-    //             field_name: String::from("blog_posts"),
-    //             field_value: sudodb::FieldValue::Relation(sudodb::FieldValueRelation {
-    //                 relation_object_type_name: String::from("BlogPost"),
-    //                 relation_primary_keys: vec![String::from("0")]
-    //             })
-    //         }
-    //     ]
-    // );
-
-    // let results1 = sudodb::read(
-    //     &object_store,
-    //     "User",
-    //     vec![
-    //         sudodb::ReadInput {
-    //             input_type: sudodb::ReadInputType::Scalar,
-    //             input_operation: sudodb::ReadInputOperation::Equals,
-    //             field_name: String::from("created_at"),
-    //             field_value: String::from("2021-03-04T19:55:35.917Z")
-    //         }
-    //     ]
-    // );
-
-    // sudodb::delete(
-    //     &mut object_store,
-    //     "User",
-    //     "0"
-    // );
-
-    // sudodb::update(
-    //     &mut object_store,
-    //     "User",
-    //     "0",
-    //     vec![sudodb::FieldInput {
-    //         field_name: String::from("email"),
-    //         field_value: String::from("jlast@gmail.com")
-    //     }, sudodb::FieldInput {
-    //         field_name: String::from("password"),
-    //         field_value: String::from("mashword")
-    //     }]
-    // );
-
-    // let results2 = sudodb::read(
-    //     &object_store,
-    //     "User",
-    //     "0"
-    // );
-
-    // println!("results1 {:?}", results1);
-    // println!("results2 {:?}", results2);
