@@ -19,6 +19,7 @@ mod structs {
     pub mod read_string_input;
     pub mod update_input;
     pub mod delete_input;
+    pub mod upsert_input;
 }
 mod query_resolvers {
     pub mod read;
@@ -27,6 +28,7 @@ mod mutation_resolvers {
     pub mod create;
     pub mod update;
     pub mod delete;
+    pub mod upsert;
     pub mod init;
 }
 
@@ -57,10 +59,12 @@ use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
+use structs::upsert_input::generate_upsert_input_rust_structs;
 use query_resolvers::read::generate_read_query_resolvers;
 use mutation_resolvers::create::generate_create_mutation_resolvers;
 use mutation_resolvers::update::generate_update_mutation_resolvers;
 use mutation_resolvers::delete::generate_delete_mutation_resolvers;
+use mutation_resolvers::upsert::generate_upsert_mutation_resolvers;
 use mutation_resolvers::init::generate_init_mutation_resolvers;
 
 #[proc_macro]
@@ -119,6 +123,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         &object_type_definitions
     );
 
+    let generated_upsert_input_structs = generate_upsert_input_rust_structs(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
     let generated_query_resolvers = generate_read_query_resolvers(
         &graphql_ast,
         &object_type_definitions
@@ -135,6 +144,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     );
 
     let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(
+        &graphql_ast,
+        &object_type_definitions
+    );
+
+    let generated_upsert_mutation_resolvers = generate_upsert_mutation_resolvers(
         &graphql_ast,
         &object_type_definitions
     );
@@ -221,6 +235,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_read_input_structs)*
         #(#generated_update_input_structs)*
         #(#generated_delete_input_structs)*
+        #(#generated_upsert_input_structs)*
 
         #read_boolean_input_rust_struct
         #read_date_input_rust_struct
@@ -289,6 +304,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
+            #(#generated_upsert_mutation_resolvers)*
             #(#generated_init_mutation_resolvers)*
         }
 
@@ -402,6 +418,17 @@ fn get_graphql_type_name(graphql_type: &Type<String>) -> String {
         },
         Type::ListType(list_type) => {
             return get_graphql_type_name(list_type);
+        }
+    };
+}
+
+fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
+    match graphql_type {
+        Type::NonNullType(_) => {
+            return false;
+        },
+        _ => {
+            return true;
         }
     };
 }
