@@ -1,0 +1,17 @@
+{
+  "name": "playground",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "build": "snowpack build --polyfill-node --reload"
+  },
+  "keywords": [],
+  "author": "Jordan Last <jordan.michael.last@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "snowpack": "3.4.0"
+  },
+  "dependencies": {
+    "sudograph-playground": "0.0.1"
+  }
+}

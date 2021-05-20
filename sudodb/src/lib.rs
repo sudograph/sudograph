@@ -1,5 +1,3 @@
-// TODO we also need to add and and or, arbitrarily nested
-
 // TODO also finish refactoring this library
 
 // TODO should we type field values?
@@ -8,9 +6,6 @@
 
 // TODO I think I should do some primitive type checking in here...such as if you try to update a field
 // TODO that you did not initialize the type with...like creating or updating fields that you did not initialize the type with
-
-// TODO there is no concept of null here, no options are being used...
-// TODO we need to somehow represent the lack of a value
 
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -29,7 +24,6 @@ pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 type ObjectTypeName = String;
 type FieldName = String;
 
-// TODO we have no concept of null or an option here
 #[derive(Clone)]
 pub enum FieldValueScalar {
     Boolean(bool),
