@@ -1,42 +1,14 @@
 {
-  "canisters": {
-    "graphql": {
-      "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
-      "type": "custom",
-      "candid": "canisters/graphql/src/graphql.did",
-      "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
-    },
-    "playground": {
-      "type": "assets",
-      "dependencies": [
-          "graphql"
-      ],
-      "frontend": {
-          "entrypoint": "canisters/playground/index.js"
-      },
-      "source": [
-          "dist/playground/"
-      ]        
-    },
-    "blog_frontend": {
-      "type": "assets",
-      "dependencies": [
-        "graphql"
-      ],
-      "frontend": {
-          "entrypoint": "canisters/blog_frontend/index.ts"
-      },
-      "source": [
-          "dist/blog_frontend/"
-      ] 
+    "canisters": {
+        "playground": {
+            "type": "assets",
+            "source": ["canisters/playground/build"]
+        },
+        "graphql": {
+            "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
+            "type": "custom",
+            "candid": "canisters/graphql/src/graphql.did",
+            "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
+        }
     }
-  },
-  "dfx": "0.6.26",
-  "networks": {
-    "local": {
-      "bind": "127.0.0.1:8000",
-      "type": "ephemeral"
-    }
-  },
-  "version": 1
 }
