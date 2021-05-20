@@ -7,17 +7,33 @@ use crate::{
     FieldValue,
     FieldValueRelation,
     FieldType,
+    FieldValueScalar,
     convert_field_value_store_to_json_string
 };
 use std::collections::BTreeMap;
 use std::error::Error;
+use rand::{
+    Rng,
+    rngs::StdRng
+};
+use sha2::{
+    Sha224,
+    Digest
+};
+use base32::{
+    encode as base32_encode,
+    Alphabet
+};
 
 pub fn create(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
-    id: &str,
-    inputs: Vec<FieldInput>
+    id_option: Option<String>,
+    inputs: Vec<FieldInput>,
+    rng: &mut StdRng // TODO we need to store a seeded rng somewhere...where is the best place to store it?
 ) -> Result<Vec<String>, Box<dyn Error>> {
+    let uuid = if let Some(id) = id_option { id } else { create_uuid(rng) };
+
     let object_type_result = object_type_store.get_mut(object_type_name);
 
     if let Some(object_type) = object_type_result {
@@ -28,6 +44,11 @@ pub fn create(
             &object_type.field_types_store,
             &inputs
         )?;
+
+        field_values_map.insert(
+            String::from("id"),
+            FieldValue::Scalar(Some(FieldValueScalar::String(String::from(&uuid))))
+        );
 
         for input in inputs {
             if let Some(field_type) = object_type.field_types_store.get(&input.field_name) {
@@ -80,7 +101,7 @@ pub fn create(
 
         let temp_clone = field_values_map.clone();
 
-        object_type.field_values_store.insert(String::from(id), field_values_map);
+        object_type.field_values_store.insert(String::from(&uuid), field_values_map);
 
         let json_result_string = convert_field_value_store_to_json_string(
             object_type_store,
@@ -124,4 +145,33 @@ fn check_if_all_inputs_are_valid(
             )
         }));
     }
+}
+
+fn create_uuid(rng: &mut StdRng) -> String {
+    let random_values: [u8; 32] = rng.gen();
+
+    let mut hasher = Sha224::new();
+    hasher.update(random_values);
+    let hash = hasher.finalize();
+
+    let base32_encoding = base32_encode(Alphabet::RFC4648 {
+        padding: false
+    }, &hash);
+
+    let grouped_base32_encoding = group_ascii(base32_encoding);
+
+    return grouped_base32_encoding;
+}
+
+fn group_ascii(ascii: String) -> String {
+    return ascii.to_ascii_lowercase().chars().enumerate().fold(String::from(""), |result, (index, character)| {
+        let character_string = String::from(character);
+
+        if index != 0 && index != ascii.len() - 1 && index % 5 == 0 {
+            return result + &character_string + "-";
+        }
+        else {
+            return result + &character_string;
+        }
+    });
 }

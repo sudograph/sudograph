@@ -52,6 +52,7 @@ pub fn generate_update_mutation_resolvers(
         return quote! {
             async fn #update_function_name(
                 &self,
+                context: &sudograph::async_graphql::Context<'_>,
                 input: #update_input_type
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
