@@ -8,7 +8,10 @@ use graphql_parser::schema::{
     Type,
     Document
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 
 pub fn generate_init_mutation_resolvers(
     graphql_ast: &Document<String>,
@@ -135,14 +138,15 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
             return quote! { FieldType::String };
         },
         _ => {
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                // let relation_name = String::from(named_type); // TODO this might not be necessary
-                return quote! { FieldType::Relation(String::from(#named_type)) };
-                // return quote! { FieldType::String };
+            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
+                return quote! { FieldType::RelationMany(String::from(#named_type)) };
             }
-            else {
-                panic!();
+
+            if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
+                return quote! { FieldType::RelationOne(String::from(#named_type)) };
             }
+
+            panic!();
         }
     }
 }

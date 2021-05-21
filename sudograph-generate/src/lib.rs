@@ -17,6 +17,7 @@ mod structs {
     pub mod read_float_input;
     pub mod read_int_input;
     pub mod read_string_input;
+    pub mod read_relation_input;
     pub mod update_input;
     pub mod delete_input;
     pub mod upsert_input;
@@ -57,6 +58,7 @@ use structs::read_date_input::get_read_date_input_rust_struct;
 use structs::read_float_input::get_read_float_input_rust_struct;
 use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
+use structs::read_relation_input::get_read_relation_input_rust_struct;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
 use structs::upsert_input::generate_upsert_input_rust_structs;
@@ -112,6 +114,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_float_input_rust_struct = get_read_float_input_rust_struct();
     let read_int_input_rust_struct = get_read_int_input_rust_struct();
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
+    let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
 
     let generated_update_input_structs = generate_update_input_rust_structs(
         &graphql_ast,
@@ -193,7 +196,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             FieldInput,
             FieldValue,
             FieldValueScalar,
-            FieldValueRelation,
+            FieldValueRelationMany,
+            FieldValueRelationOne,
             ReadInput,
             ReadInputType,
             ReadInputOperation
@@ -230,6 +234,23 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         const temp: &str = include_str!(#schema_absolute_file_path_string);
 
+        #[derive(InputObject)]
+        struct RelationManyInput {
+            connect: Vec<String>
+        }
+
+        #[derive(InputObject)]
+        struct RelationOneInput {
+            connect: String
+        }
+
+        #read_boolean_input_rust_struct
+        #read_date_input_rust_struct
+        #read_float_input_rust_struct
+        #read_int_input_rust_struct
+        #read_string_input_rust_struct
+        #read_relation_input_rust_struct
+
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
         #(#generated_read_input_structs)*
@@ -237,49 +258,110 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_delete_input_structs)*
         #(#generated_upsert_input_structs)*
 
-        #read_boolean_input_rust_struct
-        #read_date_input_rust_struct
-        #read_float_input_rust_struct
-        #read_int_input_rust_struct
-        #read_string_input_rust_struct
-
         // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
-            fn sudo_serialize(&self) -> FieldValue;
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue;
         }
 
         impl SudoSerialize for bool {
-            fn sudo_serialize(&self) -> FieldValue {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Boolean(self.clone())));
             }
         }
 
         impl SudoSerialize for f32 {
-            fn sudo_serialize(&self) -> FieldValue {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Float(self.clone())));
             }
         }
 
         impl SudoSerialize for i32 {
-            fn sudo_serialize(&self) -> FieldValue {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Int(self.clone())));
             }
         }
 
         impl SudoSerialize for String {
-            fn sudo_serialize(&self) -> FieldValue {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(self.clone())));
             }
         }
 
         impl<T: SudoSerialize> SudoSerialize for Option<T> {
-            fn sudo_serialize(&self) -> FieldValue {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 match self {
                     Some(value) => {
-                        return value.sudo_serialize();
+                        return value.sudo_serialize(relation_object_type_name);
                     },
                     None => {
-                        return FieldValue::Scalar(None); // TODO what about relations
+                        return FieldValue::Scalar(None);
+                    }
+                }
+            }
+        }
+
+        // TODO I do not think it makes sense at all to use this serialize thing for the relation types
+        // TODO the serializing does not seem to make as much sense for the relations
+        trait SudoSerializeRelationOne {
+            fn sudo_serialize_relation_one(&self, relation_object_type_name: String) -> FieldValue;
+        }
+
+        // TODO the serializing does not seem to make as much sense for the relations
+        trait SudoSerializeRelationMany {
+            fn sudo_serialize_relation_many(&self, relation_object_type_name: String) -> FieldValue;
+        }
+
+        impl SudoSerialize for RelationManyInput {
+            fn sudo_serialize(
+                &self,
+                relation_object_type_name: Option<String>
+            ) -> FieldValue {
+                return FieldValue::RelationMany(Some(FieldValueRelationMany {
+                    relation_object_type_name: relation_object_type_name.unwrap(),
+                    relation_primary_keys: self.connect.clone()
+                }));
+            }
+        }
+
+        impl SudoSerialize for RelationOneInput {
+            fn sudo_serialize(
+                &self,
+                relation_object_type_name: Option<String>
+            ) -> FieldValue {
+                return FieldValue::RelationOne(Some(FieldValueRelationOne {
+                    relation_object_type_name: relation_object_type_name.unwrap(),
+                    relation_primary_key: self.connect.clone()
+                }));
+            }
+        }
+
+        impl<T: SudoSerializeRelationOne> SudoSerializeRelationOne for Option<T> {
+            fn sudo_serialize_relation_one(
+                &self,
+                relation_object_type_name: String
+            ) -> FieldValue {
+                match self {
+                    Some(value) => {
+                        return value.sudo_serialize_relation_one(relation_object_type_name);
+                    },
+                    None => {
+                        return FieldValue::RelationOne(None);
+                    }
+                }
+            }
+        }
+
+        impl<T: SudoSerializeRelationMany> SudoSerializeRelationMany for Option<T> {
+            fn sudo_serialize_relation_many(
+                &self,
+                relation_object_type_name: String
+            ) -> FieldValue {
+                match self {
+                    Some(value) => {
+                        return value.sudo_serialize_relation_many(relation_object_type_name);
+                    },
+                    None => {
+                        return FieldValue::RelationMany(None);
                     }
                 }
             }
@@ -433,7 +515,7 @@ fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
     };
 }
 
-fn is_graphql_type_a_relation<'a>(
+fn is_graphql_type_a_relation_many<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
@@ -444,7 +526,57 @@ fn is_graphql_type_a_relation<'a>(
         return object_type_definition.name == graphql_type_name;
     });
 
-    return graphql_type_is_a_relation;
+    let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+        graphql_ast,
+        graphql_type
+    );
+
+    return 
+        graphql_type_is_a_relation == true &&
+        graphql_type_is_a_list_type == true
+    ;
+}
+
+fn is_graphql_type_a_relation_one<'a>(
+    graphql_ast: &'a Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    let object_type_definitions = get_object_type_definitions(graphql_ast);
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+
+    let graphql_type_is_a_relation = object_type_definitions.iter().any(|object_type_definition| {
+        return object_type_definition.name == graphql_type_name;
+    });
+
+    let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+        graphql_ast,
+        graphql_type
+    );
+
+    return 
+        graphql_type_is_a_relation == true &&
+        graphql_type_is_a_list_type == false
+    ;
+}
+
+fn is_graphql_type_a_list_type<'a>(
+    graphql_ast: &'a Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    match graphql_type {
+        Type::NamedType(_) => {
+            return false;
+        },
+        Type::NonNullType(non_null_type) => {
+            return is_graphql_type_a_list_type(
+                graphql_ast,
+                non_null_type
+            );
+        },
+        Type::ListType(_) => {
+            return true;
+        }
+    };
 }
 
 fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a, String>> {

@@ -131,7 +131,10 @@ fn field_value_store_matches_inputs(
         // TODO what if I split based on the scalar types here?
         if let (Some(field_type), Some(field_value)) = (field_type_option, field_value_option) {
             match field_type {
-                FieldType::Relation(object_type_name) => {
+                FieldType::RelationMany(object_type_name) => {
+                    return Ok(false);
+                },
+                FieldType::RelationOne(object_type_name) => {
                     return Ok(false);
                 },
                 _ => {
@@ -217,7 +220,11 @@ fn field_value_matches_input(
                                         }
                                     };
                                 },
-                                FieldValue::Relation(_) => {
+                                FieldValue::RelationMany(_) => {
+                                    // TODO we might even want to panic here
+                                    return Ok(false);
+                                },
+                                FieldValue::RelationOne(_) => {
                                     // TODO we might even want to panic here
                                     return Ok(false);
                                 }
@@ -230,7 +237,10 @@ fn field_value_matches_input(
                 }
             }
         },
-        FieldValue::Relation(field_value_relation) => {
+        FieldValue::RelationMany(field_value_relation_many_option) => {
+            return Ok(false); // TODO relation filtering not yet implemented
+        },
+        FieldValue::RelationOne(field_value_relation_one_option) => {
             return Ok(false); // TODO relation filtering not yet implemented
         }
     }
@@ -326,7 +336,11 @@ fn field_value_matches_input_for_type_boolean(
                 }
             };
         },
-        FieldValue::Relation(_) => {
+        FieldValue::RelationMany(_) => {
+            // TODO we might even want to panic here
+            return Ok(false);
+        },
+        FieldValue::RelationOne(_) => {
             // TODO we might even want to panic here
             return Ok(false);
         }
@@ -408,7 +422,11 @@ fn field_value_matches_input_for_type_date(
                 }
             };
         },
-        FieldValue::Relation(_) => {
+        FieldValue::RelationMany(_) => {
+            // TODO we might even want to panic here
+            return Ok(false);
+        },
+        FieldValue::RelationOne(_) => {
             // TODO we might even want to panic here
             return Ok(false);
         }
@@ -485,7 +503,11 @@ fn field_value_matches_input_for_type_float(
                 }
             };
         },
-        FieldValue::Relation(_) => {
+        FieldValue::RelationMany(_) => {
+            // TODO we might even want to panic here
+            return Ok(false);
+        },
+        FieldValue::RelationOne(_) => {
             // TODO we might even want to panic here
             return Ok(false);
         }
@@ -562,7 +584,11 @@ fn field_value_matches_input_for_type_int(
                 }
             };
         },
-        FieldValue::Relation(_) => {
+        FieldValue::RelationMany(_) => {
+            // TODO we might even want to panic here
+            return Ok(false);
+        },
+        FieldValue::RelationOne(_) => {
             // TODO we might even want to panic here
             return Ok(false);
         }
@@ -624,7 +650,11 @@ fn field_value_matches_input_for_type_string(
                 }
             };
         },
-        FieldValue::Relation(_) => {
+        FieldValue::RelationMany(_) => {
+            // TODO we might even want to panic here
+            return Ok(false);
+        },
+        FieldValue::RelationOne(_) => {
             // TODO we might even want to panic here
             return Ok(false);
         }

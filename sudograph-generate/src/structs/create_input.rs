@@ -8,7 +8,10 @@ use graphql_parser::schema::{
     Document,
     Type
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 use crate::structs::object_type::get_rust_type_for_object_type_named_type;
 
 pub fn generate_create_input_rust_structs(
@@ -66,10 +69,16 @@ fn get_rust_type_for_create_input<'a>(
                 named_type
             );
 
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                // TODO this is just a placeholder for now, I will implement creating relations later...
-                // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
-                return quote! { Option<bool> };
+            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
+                return quote! { Option<RelationManyInput> }; // TODO I do not think this would ever happen
+            }
+            else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
+                if is_non_null_type == true {
+                    return quote! { RelationOneInput };
+                }
+                else {
+                    return quote! { Option<RelationOneInput> };
+                }
             }
             else {
                 if
@@ -92,24 +101,8 @@ fn get_rust_type_for_create_input<'a>(
             );
             return quote! { #rust_type };
         },
-        Type::ListType(list_type) => {
-            let rust_type = get_rust_type_for_create_input(
-                graphql_ast,
-                field_name_string,
-                list_type,
-                false
-            );
-
-            // TODO this is just a placeholder for now, I will implement creating relations later...
-            // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
-            return quote! { Option<bool> };
-
-            // if is_non_null_type == true {
-            //     return quote! { Vec<#rust_type> };
-            // }
-            // else {
-            //     return quote! { Option<Vec<#rust_type>> };
-            // }
+        Type::ListType(_) => {
+            return quote! { Option<RelationManyInput> };
         }
     };
 }

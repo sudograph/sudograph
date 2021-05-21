@@ -40,7 +40,7 @@ pub fn generate_read_query_resolvers(
                 let read_result = read(
                     object_store,
                     #object_type_name,
-                    input.get_read_inputs()
+                    input.get_read_inputs(String::from("")) // TODO it is weird to pass in the empty string
                 );
 
                 // TODO make this error handling and matching better if possible

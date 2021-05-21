@@ -1,22 +1,42 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn get_read_boolean_input_rust_struct() -> TokenStream {
+pub fn get_read_relation_input_rust_struct() -> TokenStream {
     return quote! {
         #[derive(InputObject)]
-        struct ReadBooleanInput {
-            eq: MaybeUndefined<bool>
+        struct ReadRelationInput {
+            id: ReadStringInput
         }
 
-        impl ReadBooleanInput {
+        impl ReadRelationInput {
             fn get_read_inputs(
                 &self,
                 field_name: String
             ) -> Vec<ReadInput> {
                 let fields = [
                     (
-                        &self.eq,
+                        &self.id.eq,
                         ReadInputOperation::Equals
+                    ),
+                    (
+                        &self.id.gt,
+                        ReadInputOperation::GreaterThan
+                    ),
+                    (
+                        &self.id.gte,
+                        ReadInputOperation::GreaterThanOrEqualTo
+                    ),
+                    (
+                        &self.id.lt,
+                        ReadInputOperation::LessThan
+                    ),
+                    (
+                        &self.id.lte,
+                        ReadInputOperation::LessThanOrEqualTo
+                    ),
+                    (
+                        &self.id.contains,
+                        ReadInputOperation::Contains
                     )
                 ];
 

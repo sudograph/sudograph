@@ -5,7 +5,8 @@ use crate::{
     SudodbError,
     FieldTypesStore,
     FieldValue,
-    FieldValueRelation,
+    FieldValueRelationMany,
+    FieldValueRelationOne,
     FieldType,
     FieldValueScalar,
     convert_field_value_store_to_json_string
@@ -53,15 +54,37 @@ pub fn create(
         for input in inputs {
             if let Some(field_type) = object_type.field_types_store.get(&input.field_name) {
                 match field_type {
-                    FieldType::Relation(_) => {
-                        if let FieldValue::Relation(field_value_relation) = input.field_value {
-                            field_values_map.insert(
-                                input.field_name,
-                                FieldValue::Relation(FieldValueRelation {
-                                    relation_object_type_name: String::from(field_value_relation.relation_object_type_name),
-                                    relation_primary_keys: field_value_relation.relation_primary_keys // TODO I think we need to check that these primary keys exist in the relation object
-                                })
-                            );
+                    FieldType::RelationMany(_) => {
+                        if let FieldValue::RelationMany(field_value_relation_many_option) = input.field_value {
+                            if let Some(field_value_relation) = field_value_relation_many_option {
+                                field_values_map.insert(
+                                    input.field_name,
+                                    FieldValue::RelationMany(Some(FieldValueRelationMany {
+                                        relation_object_type_name: String::from(field_value_relation.relation_object_type_name),
+                                        relation_primary_keys: field_value_relation.relation_primary_keys // TODO I think we need to check that these primary keys exist in the relation object
+                                    }))
+                                );
+                            }
+                        }
+                        else {
+                            return Err(Box::new(SudodbError {
+                                message: format!(
+                                    "This should be an impossible situation, look into making this less verbose"
+                                )
+                            }));
+                        }
+                    },
+                    FieldType::RelationOne(_) => {
+                        if let FieldValue::RelationOne(field_value_relation_one_option) = input.field_value {
+                            if let Some(field_value_relation) = field_value_relation_one_option {
+                                field_values_map.insert(
+                                    input.field_name,
+                                    FieldValue::RelationOne(Some(FieldValueRelationOne {
+                                        relation_object_type_name: String::from(field_value_relation.relation_object_type_name),
+                                        relation_primary_key: field_value_relation.relation_primary_key // TODO I think we need to check that these primary keys exist in the relation object
+                                    }))
+                                );
+                            }
                         }
                         else {
                             return Err(Box::new(SudodbError {
@@ -72,10 +95,10 @@ pub fn create(
                         }
                     },
                     _ => {
-                        if let FieldValue::Scalar(field_value_scalar) = input.field_value {
+                        if let FieldValue::Scalar(field_value_scalar_option) = input.field_value {
                             field_values_map.insert(
                                 input.field_name,
-                                FieldValue::Scalar(field_value_scalar)
+                                FieldValue::Scalar(field_value_scalar_option)
                             );
                         }
                         else {
