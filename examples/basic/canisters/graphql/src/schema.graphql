@@ -1,7 +1,7 @@
 # TODO let's use the ID type
 
 type BlogPost {
-    id: String!
+    id: ID!
     author0: User!
     author1: User
     authors2: [User!]!
@@ -20,7 +20,7 @@ type BlogPost {
 }
 
 type User {
-    id: String!
+    id: ID!
     # blog_posts: [BlogPost!]!
 #     blog_post: BlogPost!
 #     blog_posts: [BlogPost!]!

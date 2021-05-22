@@ -118,6 +118,9 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
         "Float" => {
             return quote! { f32 };
         },
+        "ID" => {
+            return quote! { ID };
+        },
         "Int" => {
             return quote! { i32 };
         },
