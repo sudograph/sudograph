@@ -1,19 +1,13 @@
-use graphql_parser::schema::{
-    Document,
-    ObjectType
-};
+use graphql_parser::schema::ObjectType;
 use proc_macro2::TokenStream;
 use quote::{
     format_ident,
     quote
 };
 
-pub fn generate_read_query_resolvers(
-    graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<TokenStream> {
-    let generated_query_resolvers = object_type_definitions.iter().map(|object_type_definition| {
-        let object_type_name = &object_type_definition.name;
+pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> Vec<TokenStream> {
+    let generated_query_resolvers = object_types.iter().map(|object_type| {
+        let object_type_name = &object_type.name;
 
         let object_type_rust_type = format_ident!(
             "{}",

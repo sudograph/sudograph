@@ -1,29 +1,29 @@
-use proc_macro2::TokenStream;
-use quote::{
-    quote,
-    format_ident
-};
-use graphql_parser::schema::{
-    ObjectType,
-    Document,
-    Type
-};
 use crate::{
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one
 };
+use graphql_parser::schema::{
+    Document,
+    ObjectType,
+    Type
+};
+use proc_macro2::TokenStream;
+use quote::{
+    format_ident,
+    quote
+};
 
 pub fn generate_read_input_rust_structs(
     graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
+    object_types: &Vec<ObjectType<String>>
 ) -> Vec<TokenStream> {
-    let generated_read_input_structs = object_type_definitions.iter().map(|object_type_definition| {
+    let generated_read_input_structs = object_types.iter().map(|object_type| {
         let read_input_name = format_ident!(
             "{}",
-            String::from("Read") + &object_type_definition.name + "Input"
+            String::from("Read") + &object_type.name + "Input"
         );
 
-        let generated_fields = object_type_definition.fields.iter().map(|field| {
+        let generated_fields = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",
@@ -41,7 +41,7 @@ pub fn generate_read_input_rust_structs(
             };
         });
 
-        let temps = object_type_definition.fields.iter().map(|field| {
+        let temps = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
                         
             let field_name = format_ident!(

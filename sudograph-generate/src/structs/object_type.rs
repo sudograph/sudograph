@@ -18,15 +18,15 @@ use crate::{
 
 pub fn generate_object_type_rust_structs(
     graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
+    object_types: &Vec<ObjectType<String>>
 ) -> Vec<TokenStream> {
-    let generated_object_type_structs = object_type_definitions.iter().map(|object_type_definition| {        
+    let generated_object_type_structs = object_types.iter().map(|object_type| {        
         let object_type_name = format_ident!(
             "{}",
-            object_type_definition.name
+            object_type.name
         );
 
-        let generated_fields = object_type_definition.fields.iter().map(|field| {
+        let generated_fields = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",

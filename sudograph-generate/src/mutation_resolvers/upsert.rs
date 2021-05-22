@@ -15,10 +15,10 @@ use quote::{
 
 pub fn generate_upsert_mutation_resolvers(
     graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
+    object_types: &Vec<ObjectType<String>>
 ) -> Vec<TokenStream> {
-    let generated_upsert_mutation_resolvers = object_type_definitions.iter().map(|object_type_definition| {
-        let object_type_name = &object_type_definition.name;
+    let generated_upsert_mutation_resolvers = object_types.iter().map(|object_type| {
+        let object_type_name = &object_type.name;
         
         let object_type_rust_type = format_ident!(
             "{}",
@@ -55,7 +55,7 @@ pub fn generate_upsert_mutation_resolvers(
             String::from("Update") + object_type_name + "Input"
         );
 
-        let upsert_to_create_input_conversions = object_type_definition.fields.iter().map(|field| {
+        let upsert_to_create_input_conversions = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",
@@ -96,7 +96,7 @@ pub fn generate_upsert_mutation_resolvers(
             }
         });
 
-        let upsert_to_update_input_conversions = object_type_definition.fields.iter().map(|field| {
+        let upsert_to_update_input_conversions = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",

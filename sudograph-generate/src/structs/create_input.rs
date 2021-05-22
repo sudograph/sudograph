@@ -167,146 +167,137 @@ fn generate_create_field_input_pushers(
     object_type: &ObjectType<String>
 ) -> Vec<TokenStream> {
     let create_field_input_pushers = object_type.fields.iter().filter_map(|field| {
-        let field_name_string = &field.name;         
-        let field_name = format_ident!(
-            "{}",
-            field.name
-        );
-
         if field.name == "id" {
             return None;
         }
         else {
             if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
-                let relation_object_type_name = get_graphql_type_name(&field.field_type);
-
-                return Some(quote! {
-                    match &self.#field_name {
-                        MaybeUndefined::Value(value) => {
-                            // TODO we need to do both sides of the relation
-
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
-                                    relation_object_type_name: String::from(#relation_object_type_name),
-                                    relation_primary_keys: value.connect.iter().map(|id| {
-                                        return String::from(id.as_str());
-                                    }).collect()
-                                }))
-                            });
-                        },
-                        MaybeUndefined::Null => {
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: FieldValue::RelationMany(None)
-                            });
-                        },
-                        MaybeUndefined::Undefined => {
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: FieldValue::RelationMany(None)
-                            });
-                        }
-                    };
-                });
+                return Some(generate_create_field_input_pusher_for_relation_many(field));
             }
 
             if is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == true {
-                let relation_object_type_name = get_graphql_type_name(&field.field_type);
-
-                if is_graphql_type_nullable(&field.field_type) == true {
-                    return Some(quote! {
-                        match &self.#field_name {
-                            MaybeUndefined::Value(value) => {
-                                // TODO we need to do both sides of the relation
-                                // TODO simply go through the schema and find the object type and field that
-                                // TODO matches the relation directive
-                                // TODO then create another fieldinput with that information
-                                // TODO if no field is found with the relation directive, throw an error
-                                // TODO we should also statically test for that when first compiling
-                                // TODO we will need a static analysis of the GraphQL schema of our own
-
-                                create_field_inputs.push(FieldInput {
-                                    field_name: String::from(#field_name_string),
-                                    field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
-                                        relation_object_type_name: String::from(#relation_object_type_name),
-                                        relation_primary_key: value.connect.as_str()
-                                    }))
-                                });
-                            },
-                            MaybeUndefined::Null => {
-                                create_field_inputs.push(FieldInput {
-                                    field_name: String::from(#field_name_string),
-                                    field_value: FieldValue::RelationOne(None)
-                                });
-                            },
-                            MaybeUndefined::Undefined => {
-                                create_field_inputs.push(FieldInput {
-                                    field_name: String::from(#field_name_string),
-                                    field_value: FieldValue::RelationOne(None)
-                                });
-                            }
-                        };
-                    });
-                }
-                else {
-                    return Some(quote! {
-                        // TODO we need to do both sides of the relation
-
-                        create_field_inputs.push(FieldInput {
-                            field_name: String::from(#field_name_string),
-                            field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
-                                relation_object_type_name: String::from(#relation_object_type_name),
-                                relation_primary_key: String::from(self.#field_name.connect.as_str())
-                            }))
-                        });
-                    });
-                }
+                return Some(generate_create_field_input_pusher_for_relation_one(field));
             }
 
-            if is_graphql_type_nullable(&field.field_type) == true {
-                return Some(quote! {
-                    // TODO I do not believe we are handling relations here like we need to be
-                    match &self.#field_name {
-                        MaybeUndefined::Value(value) => {
-                            // TODO we need to handle relations in here
-                            // TODO I am not sure how this ever worked before...I thought I was able to do a create
-                            // TODO with a relation, but this does not make sense to me...oh wait, the sudo_serialize I think
-                            // TODO does make sense...but we need to get the relation name here
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: value.sudo_serialize()
-                            });
-                        },
-                        MaybeUndefined::Null => {
-                            // TODO this depends...if it is actually null and a relation, decide what to do
-                            // TODO null on a multiple relation might not make sense, and maybe not even on a single relation
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: FieldValue::Scalar(None) // TODO what about relations
-                            });
-                            // return FieldValue::Scalar(None); // TODO I am not sure how to differentiate between Null and Undefined yet when inserting the values
-                        },
-                        MaybeUndefined::Undefined => {
-                            // return FieldValue::Scalar(None); // TODO I am not sure how to differentiate between Null and Undefined yet when inserting the values
-                            create_field_inputs.push(FieldInput {
-                                field_name: String::from(#field_name_string),
-                                field_value: FieldValue::Scalar(None) // TODO what about relations
-                            });
-                        }
-                    };
-                });
-            }
-            else {
-                return Some(quote! {
-                    create_field_inputs.push(FieldInput {
-                        field_name: String::from(#field_name_string),
-                        field_value: self.#field_name.sudo_serialize()
-                    });
-                });
-            }
+            return Some(generate_create_field_input_pusher_for_scalar(field));
         }
     }).collect();
 
     return create_field_input_pushers;
+}
+
+fn generate_create_field_input_pusher_for_relation_many(field: &Field<String>) -> TokenStream {
+    let field_name_string = &field.name;         
+    let field_name_ident = format_ident!(
+        "{}",
+        field.name
+    );
+    let relation_object_type_name = get_graphql_type_name(&field.field_type);
+
+    return quote! {
+        match &self.#field_name_ident {
+            MaybeUndefined::Value(value) => {
+                create_field_inputs.push(FieldInput {
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                        relation_object_type_name: String::from(#relation_object_type_name),
+                        relation_primary_keys: value.connect.iter().map(|id| {
+                            return String::from(id.as_str());
+                        }).collect()
+                    }))
+                });
+            },
+            _ => {
+                create_field_inputs.push(FieldInput {
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::RelationMany(None)
+                });
+            }
+        };
+    };
+}
+
+fn generate_create_field_input_pusher_for_relation_one(
+    field: &Field<String>
+) -> TokenStream {
+    let field_name_string = &field.name;         
+    let field_name_ident = format_ident!(
+        "{}",
+        field.name
+    );
+    let relation_object_type_name = get_graphql_type_name(&field.field_type);
+
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_key: value.connect.as_str()
+                        }))
+                    });
+                },
+                _ => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationOne(None)
+                    });
+                }
+            };
+        };
+    }
+    else {
+        return quote! {
+            create_field_inputs.push(FieldInput {
+                field_name: String::from(#field_name_string),
+                field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
+                    relation_object_type_name: String::from(#relation_object_type_name),
+                    relation_primary_key: String::from(self.#field_name_ident.connect.as_str())
+                }))
+            });
+        };
+    }
+}
+
+fn generate_create_field_input_pusher_for_scalar(field: &Field<String>) -> TokenStream {
+    let field_name_string = &field.name;         
+    let field_name_ident = format_ident!(
+        "{}",
+        field.name
+    );
+
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: value.sudo_serialize()
+                    });
+                },
+                MaybeUndefined::Null => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None)
+                    });
+                },
+                MaybeUndefined::Undefined => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None)
+                    });
+                }
+            };
+        };
+    }
+    else {
+        return quote! {
+            create_field_inputs.push(FieldInput {
+                field_name: String::from(#field_name_string),
+                field_value: self.#field_name_ident.sudo_serialize()
+            });
+        };
+    }
 }

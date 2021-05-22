@@ -49,7 +49,8 @@ use graphql_parser::schema::{
     TypeDefinition,
     ObjectType,
     Type,
-    Document
+    Document,
+    Field
 };
 use structs::object_type::generate_object_type_rust_structs;
 use structs::create_input::generate_create_input_rust_structs;
@@ -92,23 +93,23 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
 
-    let object_type_definitions = get_object_type_definitions(
+    let object_types = get_object_types(
         &graphql_ast
     );
 
     let generated_object_type_structs = generate_object_type_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_create_input_structs = generate_create_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_read_input_structs = generate_read_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let read_boolean_input_rust_struct = get_read_boolean_input_rust_struct();
@@ -121,51 +122,34 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let generated_update_input_structs = generate_update_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_delete_input_structs = generate_delete_input_rust_structs(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_delete_input_structs = generate_delete_input_rust_structs(&object_types);
 
     let generated_upsert_input_structs = generate_upsert_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_query_resolvers = generate_read_query_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_query_resolvers = generate_read_query_resolvers(&object_types);
 
-    let generated_create_mutation_resolvers = generate_create_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
-
-    let generated_update_mutation_resolvers = generate_update_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
-
-    let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_create_mutation_resolvers = generate_create_mutation_resolvers(&object_types);
+    let generated_update_mutation_resolvers = generate_update_mutation_resolvers(&object_types);
+    let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(&object_types);
 
     let generated_upsert_mutation_resolvers = generate_upsert_mutation_resolvers(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_init_mutation_resolvers = generate_init_mutation_resolvers(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_init_mutations = object_type_definitions.iter().fold(String::from(""), |result, object_type_definition| {
-        let object_type_name = &object_type_definition.name;
+    let generated_init_mutations = object_types.iter().fold(String::from(""), |result, object_type| {
+        let object_type_name = &object_type.name;
         
         let init_function_name = String::from("init") + object_type_name;
 
@@ -463,11 +447,11 @@ fn is_graphql_type_a_relation_many(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
-    let object_type_definitions = get_object_type_definitions(graphql_ast);
+    let object_types = get_object_types(graphql_ast);
     let graphql_type_name = get_graphql_type_name(graphql_type);
 
-    let graphql_type_is_a_relation = object_type_definitions.iter().any(|object_type_definition| {
-        return object_type_definition.name == graphql_type_name;
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
     });
 
     let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
@@ -485,11 +469,11 @@ fn is_graphql_type_a_relation_one(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
-    let object_type_definitions = get_object_type_definitions(graphql_ast);
+    let object_types = get_object_types(graphql_ast);
     let graphql_type_name = get_graphql_type_name(graphql_type);
 
-    let graphql_type_is_a_relation = object_type_definitions.iter().any(|object_type_definition| {
-        return object_type_definition.name == graphql_type_name;
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
     });
 
     let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
@@ -523,7 +507,7 @@ fn is_graphql_type_a_list_type(
     };
 }
 
-fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a, String>> {
+fn get_object_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a, String>> {
     let type_definitions: Vec<TypeDefinition<String>> = graphql_ast.definitions.iter().filter_map(|definition| {
         match definition {
             Definition::TypeDefinition(type_definition) => {
@@ -535,10 +519,10 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
         };
     }).collect();
 
-    let object_type_definitions: Vec<ObjectType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
+    let object_types: Vec<ObjectType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
         match type_definition {
-            TypeDefinition::Object(object_type_definition) => {
-                return Some(object_type_definition);
+            TypeDefinition::Object(object_type) => {
+                return Some(object_type);
             },
             _ => {
                 return None;
@@ -546,5 +530,55 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
         }
     }).collect();
 
-    return object_type_definitions;
+    return object_types;
+}
+
+fn get_opposing_relation_field<'a>(
+    graphql_ast: &'a Document<'a, String>,
+    relation_field: &Field<String>
+) -> Option<Field<'a, String>> {
+    let relation_name = get_directive_argument_value_from_field(
+        relation_field,
+        String::from("relation"),
+        String::from("name")
+    )?;
+    
+    let object_types = get_object_types(graphql_ast);
+
+    return object_types.iter().fold(None, |_, object_type| {
+        return object_type.fields.iter().fold(None, |result, field| {
+            if result != None {
+                return result;
+            }
+
+            let opposing_relation_name = get_directive_argument_value_from_field(
+                field,
+                String::from("relation"),
+                String::from("name")
+            )?;
+
+            if opposing_relation_name == relation_name {
+                return Some(field.clone());
+            }
+            else {
+                return result;
+            }
+        });
+    });
+}
+
+fn get_directive_argument_value_from_field(
+    field: &Field<String>,
+    directive_name: String,
+    argument_name: String
+) -> Option<String> {
+    let directive = field.directives.iter().find(|directive| {
+        return directive.name == directive_name;
+    })?;
+
+    let argument = directive.arguments.iter().find(|argument| {
+        return argument.0 == argument_name;
+    })?;
+
+    return Some(argument.1.to_string());
 }
