@@ -1,13 +1,27 @@
-# TODO let's use the ID type
+# TODO we need annotations otherwise we will not know which relations belong to which things
+
+type User {
+    id: ID!
+    authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
+    edited_blog_posts: [BlogPost!]! @relation(name: "edited blog posts")
+    username: String!
+    # blog_posts: [BlogPost!]!
+#     blog_post: BlogPost!
+#     blog_posts: [BlogPost!]!
+}
 
 type BlogPost {
     id: ID!
-    author0: User!
-    author1: User
-    authors2: [User!]!
-    authors3: [User]!
-    authors4: [User!]
-    authors5: [User]
+    author: User! @relation(name: "authored blog posts")
+    title: String!
+    open: Boolean!
+    editor: User! @relation(name: "edited blog posts")
+    # author0: User!
+    # author1: User
+    # authors2: [User!]!
+    # authors3: [User]!
+    # authors4: [User!]
+    # authors5: [User]
     # body: String
     # authors: [User!]!
     # body: String!
@@ -17,11 +31,4 @@ type BlogPost {
     # published_at: Date
     # title: String!
     # updated_at: Date!
-}
-
-type User {
-    id: ID!
-    # blog_posts: [BlogPost!]!
-#     blog_post: BlogPost!
-#     blog_posts: [BlogPost!]!
 }

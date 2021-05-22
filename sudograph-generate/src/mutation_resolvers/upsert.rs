@@ -1,16 +1,16 @@
-use proc_macro2::TokenStream;
-use quote::{
-    quote,
-    format_ident
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one,
+    is_graphql_type_nullable
 };
 use graphql_parser::schema::{
-    ObjectType,
-    Document
+    Document,
+    ObjectType
 };
-use crate::{
-    is_graphql_type_nullable,
-    is_graphql_type_a_relation_many,
-    is_graphql_type_a_relation_one
+use proc_macro2::TokenStream;
+use quote::{
+    format_ident,
+    quote
 };
 
 pub fn generate_upsert_mutation_resolvers(
@@ -62,33 +62,35 @@ pub fn generate_upsert_mutation_resolvers(
                 field.name
             );
 
-            if
-                (
-                    field_name_string == "id" ||
-                    is_graphql_type_nullable(&field.field_type) == true
-                ) &&
-                is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == false
-                // &&
-                // is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == false
-            {
-                return quote! {
-                    #field_name: match input.#field_name {
-                        MaybeUndefined::Value(value) => Some(value),
-                        MaybeUndefined::Null => None,
-                        MaybeUndefined::Undefined => None
-                    }
-                };
+            if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
+                return quote! { #field_name: input.#field_name }; // TODO I do not think this would ever happen
             }
-            else {
-                if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
-                    return quote! {
-                        #field_name: if let MaybeUndefined::Value(value) = input.#field_name { Some(value) } else { panic!("Should not happen") }
-                    };
+            else if is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == true {
+                if is_graphql_type_nullable(&field.field_type) == true {
+                    return quote! { #field_name: input.#field_name };
                 }
                 else {
-                    // TODO something around here is breaking as we try to make relation many always nullable in the create inputs
                     return quote! {
-                        #field_name: if let MaybeUndefined::Value(value) = input.#field_name { value } else { panic!("Should not happen") }
+                        #field_name: match input.#field_name {
+                            MaybeUndefined::Value(value) => value,
+                            _ => panic!("Should not happen")
+                        }
+                    };
+                }
+            }
+            else {
+                if
+                    is_graphql_type_nullable(&field.field_type) == true ||
+                    field_name_string == "id"
+                {
+                    return quote! { #field_name: input.#field_name };
+                }
+                else {
+                    return quote! {
+                        #field_name: match input.#field_name {
+                            MaybeUndefined::Value(value) => value,
+                            _ => panic!("Should not happen")
+                        }
                     };
                 }
             }

@@ -1,3 +1,5 @@
+// TODO technically all field types are nullable...is that okay?
+
 // TODO also finish refactoring this library
 
 // TODO how do we do transactions? Will the IC simply take care of that for us? The answer is no, the IC will not take care of that for us
@@ -18,6 +20,8 @@ pub use read::read;
 pub use update::update;
 pub use delete::delete;
 
+use ic_cdk;
+
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
 type ObjectTypeName = String;
@@ -34,6 +38,7 @@ pub type FieldTypesStore = BTreeMap<FieldName, FieldType>;
 type FieldName = String;
 
 // TODO time to get relations working!!!
+#[derive(Debug)]
 pub enum FieldType {
     Boolean,
     Date,
@@ -50,6 +55,7 @@ type PrimaryKey = String;
 
 type FieldValueStore = BTreeMap<FieldName, FieldValue>;
 
+#[derive(Debug)]
 #[derive(Clone)]
 pub enum FieldValue {
     Scalar(Option<FieldValueScalar>),
@@ -57,7 +63,7 @@ pub enum FieldValue {
     RelationOne(Option<FieldValueRelationOne>)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FieldValueScalar {
     Boolean(bool),
     Date(String),
@@ -66,13 +72,13 @@ pub enum FieldValueScalar {
     String(String)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FieldValueRelationMany {
     pub relation_object_type_name: ObjectTypeName,
     pub relation_primary_keys: Vec<PrimaryKey>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FieldValueRelationOne {
     pub relation_object_type_name: ObjectTypeName,
     pub relation_primary_key: PrimaryKey
@@ -115,11 +121,13 @@ pub enum ReadInputType {
     Relation
 }
 
+#[derive(Debug)]
 pub struct FieldInput {
     pub field_name: String,
     pub field_value: FieldValue
 }
 
+#[derive(Debug)]
 pub struct FieldTypeInput {
     pub field_name: String,
     pub field_type: FieldType
@@ -182,8 +190,8 @@ pub fn convert_field_value_store_to_json_string(
     object_type_store: &ObjectTypeStore,
     field_value_store: &FieldValueStore
 ) -> String {
-    let inner_json = field_value_store.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {
-        
+    let inner_json = field_value_store.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {        
+
         match value {
             FieldValue::Scalar(field_value_scalar_option) => {
                 return format!(
@@ -244,7 +252,8 @@ pub fn convert_field_value_store_to_json_string(
                         );
                     }
                     else {
-                        return result; // TODO this should probably return an error
+                        // return result; // TODO this should probably return an error
+                        panic!();
                     }
                 }
                 else {
@@ -252,7 +261,7 @@ pub fn convert_field_value_store_to_json_string(
                         "{result}\"{key}\":{value}{comma}",
                         result = result,
                         key = key,
-                        value = String::from("null"),
+                        value = String::from("[]"),
                         comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
                     );
                 }

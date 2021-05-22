@@ -164,6 +164,9 @@ fn get_rust_type_for_read_input<'a>(
     };
 }
 
+// TODO this might be incorrect in the same way that the init mutation resolver was incorrect
+// TODO pay close attention to the relation many, make sure that the is_graphql_type_a_relation_many is operating on the
+// TODO correct type...it is operating on a named type in here, which is not the correct type
 fn get_rust_type_for_read_input_named_type<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,

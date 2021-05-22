@@ -1,11 +1,11 @@
+use graphql_parser::schema::{
+    Document,
+    ObjectType
+};
 use proc_macro2::TokenStream;
 use quote::{
-    quote,
-    format_ident
-};
-use graphql_parser::schema::{
-    ObjectType,
-    Document
+    format_ident,
+    quote
 };
 
 pub fn generate_delete_input_rust_structs(
