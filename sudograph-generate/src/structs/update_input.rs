@@ -45,7 +45,10 @@ fn generate_update_input_rust_struct(
         graphql_ast,
         object_type
     );
-    let update_field_input_pushers = generate_update_field_input_pushers(object_type);
+    let update_field_input_pushers = generate_update_field_input_pushers(
+        graphql_ast,
+        object_type
+    );
     let update_input_rust_struct = quote! {
         #[derive(InputObject)]
         struct #update_input_rust_struct_name {
@@ -150,7 +153,10 @@ fn get_update_input_rust_struct_field_rust_type(
     };
 }
 
-fn generate_update_field_input_pushers(object_type: &ObjectType<String>) -> Vec<TokenStream> {
+fn generate_update_field_input_pushers(
+    graphql_ast: &Document<String>,
+    object_type: &ObjectType<String>
+) -> Vec<TokenStream> {
     let update_field_input_pushers = object_type.fields.iter().filter_map(|field| {
         let field_name_string = &field.name;         
         let field_name = format_ident!(
@@ -162,13 +168,23 @@ fn generate_update_field_input_pushers(object_type: &ObjectType<String>) -> Vec<
             return None;
         }
         else {
+            if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
+                // TODO we need to implement this or updates will not work
+                return None;
+            }
+
+            if is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == true {
+                // TODO we need to implement this or updates will not work
+                return None;
+            }
+
             return Some(quote! {
                 // TODO I do not believe we are handling relations here like we need to be
                 match &self.#field_name {
                     MaybeUndefined::Value(value) => {
                         update_field_inputs.push(FieldInput {
                             field_name: String::from(#field_name_string),
-                            field_value: value.sudo_serialize(None)
+                            field_value: value.sudo_serialize()
                         });
                     },
                     MaybeUndefined::Null => {

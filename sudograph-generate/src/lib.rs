@@ -265,116 +265,47 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue;
+            fn sudo_serialize(&self) -> FieldValue;
         }
 
         impl SudoSerialize for bool {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Boolean(self.clone())));
             }
         }
 
         impl SudoSerialize for f32 {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Float(self.clone())));
             }
         }
 
         impl SudoSerialize for ID {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
             }
         }
 
         impl SudoSerialize for i32 {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Int(self.clone())));
             }
         }
 
         impl SudoSerialize for String {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(self.clone())));
             }
         }
 
         impl<T: SudoSerialize> SudoSerialize for Option<T> {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 match self {
                     Some(value) => {
-                        return value.sudo_serialize(relation_object_type_name);
+                        return value.sudo_serialize();
                     },
                     None => {
                         return FieldValue::Scalar(None);
-                    }
-                }
-            }
-        }
-
-        // TODO I do not think it makes sense at all to use this serialize thing for the relation types
-        // TODO the serializing does not seem to make as much sense for the relations
-        trait SudoSerializeRelationOne {
-            fn sudo_serialize_relation_one(&self, relation_object_type_name: String) -> FieldValue;
-        }
-
-        // TODO the serializing does not seem to make as much sense for the relations
-        trait SudoSerializeRelationMany {
-            fn sudo_serialize_relation_many(&self, relation_object_type_name: String) -> FieldValue;
-        }
-
-        impl SudoSerialize for CreateRelationManyInput {
-            fn sudo_serialize(
-                &self,
-                relation_object_type_name: Option<String>
-            ) -> FieldValue {
-                return FieldValue::RelationMany(Some(FieldValueRelationMany {
-                    relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_keys: self.connect.iter().map(|id| {
-                        return String::from(id.as_str());
-                    }).collect()
-                }));
-            }
-        }
-
-        impl SudoSerialize for CreateRelationOneInput {
-            fn sudo_serialize(
-                &self,
-                relation_object_type_name: Option<String>
-            ) -> FieldValue {
-                return FieldValue::RelationOne(Some(FieldValueRelationOne {
-                    relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_key: String::from(self.connect.as_str())
-                }));
-            }
-        }
-
-        impl<T: SudoSerializeRelationOne> SudoSerializeRelationOne for Option<T> {
-            fn sudo_serialize_relation_one(
-                &self,
-                relation_object_type_name: String
-            ) -> FieldValue {
-                match self {
-                    Some(value) => {
-                        return value.sudo_serialize_relation_one(relation_object_type_name);
-                    },
-                    None => {
-                        return FieldValue::RelationOne(None);
-                    }
-                }
-            }
-        }
-
-        impl<T: SudoSerializeRelationMany> SudoSerializeRelationMany for Option<T> {
-            fn sudo_serialize_relation_many(
-                &self,
-                relation_object_type_name: String
-            ) -> FieldValue {
-                match self {
-                    Some(value) => {
-                        return value.sudo_serialize_relation_many(relation_object_type_name);
-                    },
-                    None => {
-                        return FieldValue::RelationMany(None);
                     }
                 }
             }

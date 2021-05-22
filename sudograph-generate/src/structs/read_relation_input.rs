@@ -40,6 +40,8 @@ pub fn get_read_relation_input_rust_struct() -> TokenStream {
                     )
                 ];
 
+                // TODO I do not think this is doing at all what we want it to, but we'll see
+                // TODO reading of relations probably needs to be reworked a lot
                 let read_inputs = fields.iter().filter_map(|(field, read_input_operation)| {
                     match field {
                         MaybeUndefined::Value(field_value) => {
@@ -47,7 +49,7 @@ pub fn get_read_relation_input_rust_struct() -> TokenStream {
                                 input_type: ReadInputType::Scalar,
                                 input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
                                 field_name: String::from(&field_name),
-                                field_value: field_value.sudo_serialize(None), // TODO relations?
+                                field_value: field_value.sudo_serialize(), // TODO relations?
                                 relation_object_type_name: String::from(""), // TODO this needs to be filled in
                                 and: vec![],
                                 or: vec![]

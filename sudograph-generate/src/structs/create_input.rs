@@ -183,6 +183,8 @@ fn generate_create_field_input_pushers(
                 return Some(quote! {
                     match &self.#field_name {
                         MaybeUndefined::Value(value) => {
+                            // TODO we need to do both sides of the relation
+
                             create_field_inputs.push(FieldInput {
                                 field_name: String::from(#field_name_string),
                                 field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
@@ -216,7 +218,14 @@ fn generate_create_field_input_pushers(
                     return Some(quote! {
                         match &self.#field_name {
                             MaybeUndefined::Value(value) => {
-                                // TODO figure this out
+                                // TODO we need to do both sides of the relation
+                                // TODO simply go through the schema and find the object type and field that
+                                // TODO matches the relation directive
+                                // TODO then create another fieldinput with that information
+                                // TODO if no field is found with the relation directive, throw an error
+                                // TODO we should also statically test for that when first compiling
+                                // TODO we will need a static analysis of the GraphQL schema of our own
+
                                 create_field_inputs.push(FieldInput {
                                     field_name: String::from(#field_name_string),
                                     field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
@@ -242,6 +251,8 @@ fn generate_create_field_input_pushers(
                 }
                 else {
                     return Some(quote! {
+                        // TODO we need to do both sides of the relation
+
                         create_field_inputs.push(FieldInput {
                             field_name: String::from(#field_name_string),
                             field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
@@ -264,7 +275,7 @@ fn generate_create_field_input_pushers(
                             // TODO does make sense...but we need to get the relation name here
                             create_field_inputs.push(FieldInput {
                                 field_name: String::from(#field_name_string),
-                                field_value: value.sudo_serialize(None)
+                                field_value: value.sudo_serialize()
                             });
                         },
                         MaybeUndefined::Null => {
@@ -290,7 +301,7 @@ fn generate_create_field_input_pushers(
                 return Some(quote! {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: self.#field_name.sudo_serialize(None)
+                        field_value: self.#field_name.sudo_serialize()
                     });
                 });
             }
