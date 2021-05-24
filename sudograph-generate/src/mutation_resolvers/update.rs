@@ -34,8 +34,8 @@ pub fn generate_update_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                 
                 let update_result = update(
                     object_store,
-                    #object_type_name,
-                    &input.id, // TODO we might want to get rid of this?
+                    String::from(#object_type_name),
+                    String::from(input.id.as_str()), // TODO we might want to get rid of this?
                     input.get_update_field_inputs()
                 );
                     

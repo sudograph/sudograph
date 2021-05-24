@@ -4,6 +4,7 @@ use crate::{
 };
 use graphql_parser::schema::{
     Document,
+    Field,
     ObjectType,
     Type
 };
@@ -35,14 +36,12 @@ pub fn generate_init_mutation_resolvers<'a>(
 
         let create_field_type_inputs = object_type.fields.iter().map(|field| {
             let field_name = &field.name;
+
             let field_type = get_rust_type_for_sudodb_field_type(
                 graphql_ast,
+                String::from(object_type_name),
+                &field,
                 &field.field_type
-            );
-
-            let opposing_relation_field_option = get_opposing_relation_field(
-                graphql_ast,
-                field
             );
 
             return quote! {
@@ -76,14 +75,18 @@ pub fn generate_init_mutation_resolvers<'a>(
 }
 
 fn get_rust_type_for_sudodb_field_type<'a>(
-    graphql_ast: &'a Document<String>,
+    graphql_ast: &'a Document<'a, String>,
+    object_type_name: String,
+    field: &Field<String>,
     graphql_type: &Type<String>
 ) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_sudodb_field_type_named_type(
                 graphql_ast,
+                field,
                 graphql_type,
+                object_type_name,
                 named_type
             );
 
@@ -92,6 +95,8 @@ fn get_rust_type_for_sudodb_field_type<'a>(
         Type::NonNullType(non_null_type) => {
             let rust_type = get_rust_type_for_sudodb_field_type(
                 graphql_ast,
+                object_type_name,
+                field,
                 non_null_type
             );
 
@@ -100,14 +105,42 @@ fn get_rust_type_for_sudodb_field_type<'a>(
         Type::ListType(list_type) => {
             let named_type = get_graphql_type_name(list_type);
 
-            return quote! { FieldType::RelationMany(String::from(#named_type)) };
+            let opposing_relation_field_option = get_opposing_relation_field(
+                graphql_ast,
+                field
+            );
+
+            match opposing_relation_field_option {
+                Some(opposing_relation_field) => {
+                    let opposing_relation_field_name = opposing_relation_field.name;
+
+                    return quote! {
+                        FieldType::RelationMany(FieldTypeRelationInfo {
+                            object_name: String::from(#object_type_name),
+                            opposing_object_name: String::from(#named_type),
+                            opposing_field_name: Some(String::from(#opposing_relation_field_name))
+                        })
+                    };
+                },
+                None => {
+                    return quote! {
+                        FieldType::RelationMany(FieldTypeRelationInfo {
+                            object_name: String::from(#object_type_name),
+                            opposing_object_name: String::from(#named_type),
+                            opposing_field_name: None
+                        })
+                    };
+                }
+            };
         }
     };
 }
 
 fn get_rust_type_for_sudodb_field_type_named_type<'a>(
-    graphql_ast: &'a Document<String>,
+    graphql_ast: &'a Document<'a, String>,
+    field: &Field<String>,
     graphql_type: &Type<String>,
+    object_type_name: String,
     named_type: &str
 ) -> TokenStream {
     match named_type {
@@ -131,7 +164,33 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
             return quote! { FieldType::String };
         },
         _ => {
-            return quote! { FieldType::RelationOne(String::from(#named_type)) };
+            let opposing_relation_field_option = get_opposing_relation_field(
+                graphql_ast,
+                field
+            );
+
+            match opposing_relation_field_option {
+                Some(opposing_relation_field) => {
+                    let opposing_relation_field_name = opposing_relation_field.name;
+
+                    return quote! {
+                        FieldType::RelationOne(FieldTypeRelationInfo {
+                            object_name: String::from(#object_type_name),
+                            opposing_object_name: String::from(#named_type),
+                            opposing_field_name: Some(String::from(#opposing_relation_field_name))
+                        })
+                    };
+                },
+                None => {
+                    return quote! {
+                        FieldType::RelationOne(FieldTypeRelationInfo {
+                            object_name: String::from(#object_type_name),
+                            opposing_object_name: String::from(#named_type),
+                            opposing_field_name: None
+                        })
+                    };
+                }
+            };
         }
     }
 }

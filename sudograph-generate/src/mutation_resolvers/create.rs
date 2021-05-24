@@ -46,11 +46,14 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
 
                 match create_result {
                     Ok(strings) => {
+                        
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
+                            ic_cdk::println!("{}", string);
                             return from_str(string).unwrap();
                         }).collect();
 
                         return Ok(deserialized_strings);
+                        // return Ok(vec![]);
                     },
                     Err(error) => {
                         return Err(sudograph::async_graphql::Error::from(error));

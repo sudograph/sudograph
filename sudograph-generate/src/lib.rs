@@ -188,7 +188,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             FieldValueRelationOne,
             ReadInput,
             ReadInputType,
-            ReadInputOperation
+            ReadInputOperation,
+            FieldTypeRelationInfo
         };
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
@@ -533,6 +534,8 @@ fn get_object_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a
     return object_types;
 }
 
+// TODO this search needs to exclude the relation's own entity field...
+// TODO you could have a relation to your same type, but you need to skip your original field
 fn get_opposing_relation_field<'a>(
     graphql_ast: &'a Document<'a, String>,
     relation_field: &Field<String>
@@ -542,10 +545,14 @@ fn get_opposing_relation_field<'a>(
         String::from("relation"),
         String::from("name")
     )?;
+
+    let opposing_object_type_name = get_graphql_type_name(&relation_field.field_type);
     
     let object_types = get_object_types(graphql_ast);
 
-    return object_types.iter().fold(None, |_, object_type| {
+    return object_types.iter().filter(|object_type| {
+        return object_type.name == opposing_object_type_name; // TODO a find might make more sense than a filter
+    }).fold(None, |_, object_type| {
         return object_type.fields.iter().fold(None, |result, field| {
             if result != None {
                 return result;

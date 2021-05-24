@@ -26,7 +26,9 @@ pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
 type ObjectTypeName = String;
 
+#[derive(Debug)]
 pub struct ObjectType {
+    object_type_name: String,
     field_types_store: FieldTypesStore,
     field_values_store: FieldValuesStore,
     // field_indexes_store: FieldIndexStore
@@ -38,15 +40,23 @@ pub type FieldTypesStore = BTreeMap<FieldName, FieldType>;
 type FieldName = String;
 
 // TODO time to get relations working!!!
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FieldType {
     Boolean,
     Date,
     Float, // TODO do we need to split this into sizes? What should the default be?
     Int, // TODO do we need to split this into sizes? What should the default be?
-    RelationMany(ObjectTypeName),
-    RelationOne(ObjectTypeName),
+    RelationMany(FieldTypeRelationInfo),
+    RelationOne(FieldTypeRelationInfo),
     String
+}
+
+#[derive(Debug, Clone)]
+pub struct FieldTypeRelationInfo {
+    pub object_name: String,
+    pub opposing_object_name: String,
+    pub opposing_field_name: Option<String>
+    // pub relation_name: Option<String>
 }
 
 type FieldValuesStore = BTreeMap<PrimaryKey, FieldValueStore>;
@@ -158,6 +168,9 @@ pub fn init_object_type(
     object_type_name: &str,
     field_type_inputs: Vec<FieldTypeInput>
 ) -> Result<(), Box<dyn Error>> {
+    ic_cdk::println!("{:?}", object_type_name);
+    ic_cdk::println!("{:?}", field_type_inputs);
+
     let mut field_types_store = BTreeMap::new();
 
     for field_type_input in field_type_inputs {
@@ -170,6 +183,7 @@ pub fn init_object_type(
     object_type_store.insert(
         String::from(object_type_name),
         ObjectType {
+            object_type_name: String::from(object_type_name),
             field_values_store: BTreeMap::new(),
             field_types_store
         }
@@ -270,10 +284,17 @@ pub fn convert_field_value_store_to_json_string(
                 if let Some(field_value_relation_one) = field_value_relation_one_option {
                     if let Some(relation_object_type) = object_type_store.get(&field_value_relation_one.relation_object_type_name) {
                         if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(&field_value_relation_one.relation_primary_key) {
+                            
+                            ic_cdk::println!("relation_field_value_store");
+                            ic_cdk::println!("{:?}", relation_field_value_store);
+                            
                             let relation_json_string = convert_field_value_store_to_json_string(
                                 object_type_store,
                                 relation_field_value_store
                             );
+
+                            ic_cdk::println!("relation_json_string");
+                            ic_cdk::println!("{}", relation_json_string);
 
                             // TODO we need some sort of selection setting here
                         
@@ -296,7 +317,7 @@ pub fn convert_field_value_store_to_json_string(
                         }
                     }
                     else {
-                        return result; // TODO this should probably return an error
+                        panic!();
                     }
                 }
                 else {
@@ -318,4 +339,140 @@ pub fn convert_field_value_store_to_json_string(
     );
 
     return full_json;
+}
+
+pub fn get_mutable_object_type(
+    object_type_store: &mut ObjectTypeStore,
+    object_type_name: String
+) -> Result<&mut ObjectType, Box<dyn Error>> {
+    // TODO it would be nice to use the ? syntax here
+    let object_type_option = object_type_store.get_mut(&object_type_name);
+
+    match object_type_option {
+        Some(object_type) => {
+            return Ok(object_type);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "Object type {object_type_name} not found in database",
+                    object_type_name = object_type_name
+                )
+            }));
+        }
+    };
+}
+
+pub fn get_object_type(
+    object_type_store: &ObjectTypeStore,
+    object_type_name: String
+) -> Result<&ObjectType, Box<dyn Error>> {
+    // TODO it would be nice to use the ? syntax here
+    let object_type_option = object_type_store.get(&object_type_name);
+
+    match object_type_option {
+        Some(object_type) => {
+            return Ok(object_type);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "Object type {object_type_name} not found in database",
+                    object_type_name = object_type_name
+                )
+            }));
+        }
+    };
+}
+
+pub fn get_mutable_field_value_store(
+    object_type_store: &mut ObjectTypeStore,
+    object_type_name: String,
+    id: String // TODO consider using the name primary_key instead of id
+) -> Result<&mut FieldValueStore, Box<dyn Error>> {
+
+    ic_cdk::println!("{:?}", object_type_name);
+    // ic_cdk::println!("{:?}", field_name);
+    
+    let mutable_object_type = get_mutable_object_type(
+        object_type_store,
+        String::from(&object_type_name)
+    )?;
+    
+    ic_cdk::println!("{:?}", mutable_object_type);
+
+    let mutable_field_value_store_option = mutable_object_type.field_values_store.get_mut(&id);
+
+    match mutable_field_value_store_option {
+        Some(mutable_field_value_store) => {
+            return Ok(mutable_field_value_store);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "Field value store for id {id} on object type {object_type_name} not found in database",
+                    id = id,
+                    object_type_name = String::from(&object_type_name)
+                )
+            }));
+        }
+    };
+}
+
+// pub fn get_field_value(
+//     object_type_store: &ObjectTypeStore,
+//     object_type_name: String,
+//     field_name: String,
+//     id: String
+// ) -> Result<&mut FieldValueStore, Box<dyn Error>> {
+//     let mutable_object_type = get_mutable_object_type(
+//         object_type_store,
+//         String::from(&object_type_name)
+//     )?;
+
+//     let mutable_field_values_store_option = mutable_object_type.field_values_store.get_mut(&field_name);
+
+//     match mutable_field_values_store_option {
+//         Some(mutable_field_values_store) => {
+//             return Ok(mutable_field_values_store);
+//         },
+//         None => {
+//             return Err(Box::new(SudodbError {
+//                 message: format!(
+//                     "Field values store for field {field_name} on object type {object_type_name} not found in database",
+//                     field_name = field_name,
+//                     object_type_name = String::from(&object_type_name)
+//                 )
+//             }));
+//         }
+//     };
+// }
+
+pub fn get_field_type(
+    object_type_store: &ObjectTypeStore,
+    object_type_name: String,
+    field_name: String
+) -> Result<FieldType, Box<dyn Error>> {
+    // TODO only use mutable if necessary, make more functions for immutable
+    let object_type = get_object_type(
+        object_type_store,
+        object_type_name
+    )?;
+
+    let field_type_option = object_type.field_types_store.get(&field_name);
+
+    match field_type_option {
+        Some(field_type) => {
+            return Ok(field_type.clone());
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "Field type for field {field_name} on object type {object_type_name} not found in database",
+                    field_name = field_name,
+                    object_type_name = object_type.object_type_name
+                )
+            }));
+        }
+    };
 }
