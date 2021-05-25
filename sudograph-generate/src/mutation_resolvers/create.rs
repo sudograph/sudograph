@@ -41,8 +41,8 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                         MaybeUndefined::Value(value) => Some(String::from(value.as_str())),
                         _ => None
                     },
-                    input.get_create_field_inputs(),
-                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None)),
+                    &input.get_create_field_inputs(),
+                    &convert_selection_field_to_selection_set(context.field(), SelectionSet(None)),
                     rand_store.get_mut("RNG").unwrap()
                 );
 

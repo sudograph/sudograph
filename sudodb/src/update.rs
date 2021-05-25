@@ -13,7 +13,7 @@ pub fn update(
     object_type_name: String,
     id: String,
     inputs: Vec<FieldInput>,
-    selection_set: SelectionSet
+    selection_set: &SelectionSet
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let object_type_result = object_type_store.get_mut(&object_type_name);
 

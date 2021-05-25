@@ -160,6 +160,8 @@ impl std::fmt::Display for SudodbError {
     }
 }
 
+pub type JSONString = String;
+
 // TODO we should do some type checking on relations
 // TODO it may be slightly difficult though, because we do not know the order the user will do relations in
 // TODO perhaps, once done inserting into the map, just loop through and check that all relations are accounted for
@@ -204,9 +206,9 @@ pub struct SelectionSet(pub Option<HashMap<FieldName, SelectionSet>>);
 pub fn convert_field_value_store_to_json_string(
     object_type_store: &ObjectTypeStore,
     field_value_store: &FieldValueStore,
-    selection_set: SelectionSet
-) -> String {
-    if let Some(selection_set_hash_map) = selection_set.0 {
+    selection_set: &SelectionSet
+) -> JSONString {
+    if let Some(selection_set_hash_map) = &selection_set.0 {
         let inner_json = selection_set_hash_map.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {
 
             let field_value = field_value_store.get(key).unwrap();
@@ -254,7 +256,7 @@ pub fn convert_field_value_store_to_json_string(
                                     let relation_json_string = convert_field_value_store_to_json_string(
                                         object_type_store,
                                         relation_field_value_store,
-                                        value.clone()
+                                        value
                                     );
 
                                     ic_cdk::println!("relation_json_string");
@@ -304,7 +306,7 @@ pub fn convert_field_value_store_to_json_string(
                                 let relation_json_string = convert_field_value_store_to_json_string(
                                     object_type_store,
                                     relation_field_value_store,
-                                    value.clone()
+                                    value
                                 );
     
                                 ic_cdk::println!("relation_json_string");
@@ -412,7 +414,7 @@ pub fn old_convert_field_value_store_to_json_string(
                             // let relation_field_value_store = relation_object_type.field_values_store.get(relation_primary_key);
                         
                             if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(relation_primary_key) {
-                                let relation_json_string = convert_field_value_store_to_json_string(
+                                let relation_json_string = old_convert_field_value_store_to_json_string(
                                     object_type_store,
                                     relation_field_value_store,
                                     selection_set.clone()
@@ -459,7 +461,7 @@ pub fn old_convert_field_value_store_to_json_string(
                             ic_cdk::println!("relation_field_value_store");
                             ic_cdk::println!("{:?}", relation_field_value_store);
                             
-                            let relation_json_string = convert_field_value_store_to_json_string(
+                            let relation_json_string = old_convert_field_value_store_to_json_string(
                                 object_type_store,
                                 relation_field_value_store,
                                 selection_set.clone()
@@ -516,7 +518,7 @@ pub fn old_convert_field_value_store_to_json_string(
 pub fn get_mutable_object_type(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: String
-) -> Result<&mut ObjectType, Box<dyn Error>> {
+) -> Result<&mut ObjectType, Box<dyn Error>> { // TODO not sure the result needs to be a reference
     // TODO it would be nice to use the ? syntax here
     let object_type_option = object_type_store.get_mut(&object_type_name);
 
@@ -538,7 +540,7 @@ pub fn get_mutable_object_type(
 pub fn get_object_type(
     object_type_store: &ObjectTypeStore,
     object_type_name: String
-) -> Result<&ObjectType, Box<dyn Error>> {
+) -> Result<&ObjectType, Box<dyn Error>> { // TODO not sure the result needs to be a reference
     // TODO it would be nice to use the ? syntax here
     let object_type_option = object_type_store.get(&object_type_name);
 
@@ -561,7 +563,7 @@ pub fn get_mutable_field_value_store(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: String,
     id: String // TODO consider using the name primary_key instead of id
-) -> Result<&mut FieldValueStore, Box<dyn Error>> {
+) -> Result<&mut FieldValueStore, Box<dyn Error>> { // TODO not sure the result needs to be a reference
 
     ic_cdk::println!("{:?}", object_type_name);
     // ic_cdk::println!("{:?}", field_name);
@@ -591,36 +593,92 @@ pub fn get_mutable_field_value_store(
     };
 }
 
-// pub fn get_field_value(
-//     object_type_store: &ObjectTypeStore,
-//     object_type_name: String,
-//     field_name: String,
-//     id: String
-// ) -> Result<&mut FieldValueStore, Box<dyn Error>> {
-//     let mutable_object_type = get_mutable_object_type(
-//         object_type_store,
-//         String::from(&object_type_name)
-//     )?;
+pub fn get_field_value_store(
+    object_type_store: &ObjectTypeStore,
+    object_type_name: String,
+    id: String // TODO consider using the name primary_key instead of id
+) -> Result<&FieldValueStore, Box<dyn Error>> { // TODO not sure the result needs to be a reference
+    let object_type = get_object_type(
+        object_type_store,
+        String::from(&object_type_name)
+    )?;
+    
+    let field_value_store_option = object_type.field_values_store.get(&id);
 
-//     let mutable_field_values_store_option = mutable_object_type.field_values_store.get_mut(&field_name);
+    match field_value_store_option {
+        Some(field_value_store) => {
+            return Ok(field_value_store);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "Field value store for id {id} on object type {object_type_name} not found in database",
+                    id = id,
+                    object_type_name = String::from(&object_type_name)
+                )
+            }));
+        }
+    };
+}
 
-//     match mutable_field_values_store_option {
-//         Some(mutable_field_values_store) => {
-//             return Ok(mutable_field_values_store);
-//         },
-//         None => {
-//             return Err(Box::new(SudodbError {
-//                 message: format!(
-//                     "Field values store for field {field_name} on object type {object_type_name} not found in database",
-//                     field_name = field_name,
-//                     object_type_name = String::from(&object_type_name)
-//                 )
-//             }));
-//         }
-//     };
-// }
+pub fn get_mutable_field_value(
+    mutable_field_value_store: &mut FieldValueStore,
+    object_type_name: String,
+    field_name: String,
+    id: String
+) -> Result<&mut FieldValue, Box<dyn Error>> { // TODO not sure the result needs to be a reference
+    let mutable_field_value_option = mutable_field_value_store.get_mut(&field_name);
 
-pub fn get_field_type(
+    match mutable_field_value_option {
+        Some(mutable_field_value) => {
+            return Ok(mutable_field_value);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "field value for field name {field_name} and id {id} on object type {object_type_name} not found in database",
+                    field_name = field_name,
+                    id = id,
+                    object_type_name = object_type_name
+                )
+            }));
+        }
+    };
+}
+
+// TODO we might want to pass in the field value store here
+pub fn get_field_value(
+    object_type_store: &ObjectTypeStore,
+    object_type_name: String,
+    field_name: String,
+    id: String
+) -> Result<&FieldValue, Box<dyn Error>> { // TODO not sure the result needs to be a reference
+    let field_value_store = get_field_value_store(
+        object_type_store,
+        String::from(&object_type_name),
+        String::from(&id)
+    )?;
+
+    let field_value_option = field_value_store.get(&field_name);
+
+    match field_value_option {
+        Some(field_value) => {
+            return Ok(field_value);
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "field value for field name {field_name} and id {id} on object type {object_type_name} not found in database",
+                    field_name = field_name,
+                    id = id,
+                    object_type_name = object_type_name
+                )
+            }));
+        }
+    };
+}
+
+pub fn get_field_type_for_field_name(
     object_type_store: &ObjectTypeStore,
     object_type_name: String,
     field_name: String

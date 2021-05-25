@@ -36,7 +36,7 @@ pub fn generate_delete_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                     object_store,
                     #object_type_name,
                     &input.id.as_str(),
-                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
+                    &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
                 match delete_result {
