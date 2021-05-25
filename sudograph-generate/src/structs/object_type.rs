@@ -41,13 +41,14 @@ pub fn generate_object_type_rust_structs(
 
             return quote! {
                 #[graphql(name = #field_name_string)]
+                #[serde(default)]
                 #field_name: #field_type
             };
         });
         
         return quote! {
-            #[derive(SimpleObject, Serialize, Deserialize)]
-            #[serde(crate="self::serde")]
+            #[derive(SimpleObject, Serialize, Deserialize, Default)]
+            #[serde(crate="self::serde", default)]
             struct #object_type_name {
                 #(#generated_fields),*
             }

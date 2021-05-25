@@ -27,6 +27,7 @@ pub fn generate_delete_mutation_resolvers(object_types: &Vec<ObjectType<String>>
         return quote! {
             async fn #delete_function_name(
                 &self,
+                context: &sudograph::async_graphql::Context<'_>,
                 input: #delete_input_type
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
@@ -34,7 +35,8 @@ pub fn generate_delete_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                 let delete_result = delete(
                     object_store,
                     #object_type_name,
-                    &input.id
+                    &input.id.as_str(),
+                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
                 match delete_result {

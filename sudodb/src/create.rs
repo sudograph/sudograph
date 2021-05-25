@@ -14,7 +14,8 @@ use crate::{
     get_field_type,
     get_mutable_field_value_store,
     get_mutable_object_type,
-    update
+    update,
+    SelectionSet
 };
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -31,6 +32,7 @@ use base32::{
     Alphabet
 };
 use ic_cdk;
+use std::collections::HashMap;
 
 // TODO we might want to make it so that the caller of create does not have to provide all inputs for all fields
 // TODO right now all inputs for all fields must be provided with initial values
@@ -40,6 +42,7 @@ pub fn create(
     object_type_name: &str,
     id_option: Option<String>,
     inputs: Vec<FieldInput>,
+    selection_set: SelectionSet,
     rng: &mut StdRng // TODO we need to store a seeded rng somewhere...where is the best place to store it?
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let mutable_object_type = get_mutable_object_type(
@@ -83,7 +86,8 @@ pub fn create(
 
     let json_result_string = convert_field_value_store_to_json_string(
         object_type_store,
-        &field_value_store
+        &field_value_store,
+        selection_set
     );
 
     return Ok(vec![json_result_string]);

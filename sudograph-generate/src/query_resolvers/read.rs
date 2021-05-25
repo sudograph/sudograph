@@ -27,6 +27,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
         return quote! {
             async fn #read_function_name(
                 &self,
+                context: &sudograph::async_graphql::Context<'_>,
                 input: #read_input_type
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
@@ -34,7 +35,8 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 let read_result = read(
                     object_store,
                     #object_type_name,
-                    input.get_read_inputs(String::from("")) // TODO it is weird to pass in the empty string
+                    input.get_read_inputs(String::from("")), // TODO it is weird to pass in the empty string
+                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
                 // TODO make this error handling and matching better if possible
@@ -42,6 +44,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 match read_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
+                            ic_cdk::println!("{}", string);
                             return from_str(string).unwrap();
                         }).collect();
 
