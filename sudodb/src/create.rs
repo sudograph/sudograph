@@ -170,36 +170,54 @@ fn insert_inputs_into_field_value_store(
     id: String
 ) -> Result<(), Box<dyn Error>> {
     for input in inputs {
-        match &input.field_value {
-            FieldValue::RelationMany(field_value_relation_many_option) => {
-                insert_field_value_relation_many_option_into_field_value_store(
-                    object_type_store,
-                    String::from(&object_type_name),
-                    field_value_store,
-                    String::from(&input.field_name),
-                    field_value_relation_many_option,
-                    String::from(&id)
-                )?;
-            },
-            FieldValue::RelationOne(field_value_relation_one_option) => {
-                insert_field_value_relation_one_option_into_field_value_store(
-                    object_type_store,
-                    String::from(&object_type_name),
-                    field_value_store,
-                    String::from(&input.field_name),
-                    field_value_relation_one_option,
-                    String::from(&id)
-                )?;
-            },
-            FieldValue::Scalar(field_value_scalar_option) => {
-                insert_field_value_scalar_option_into_field_value_store(
-                    field_value_store,
-                    String::from(&input.field_name),
-                    field_value_scalar_option
-                );
-            }
-        };
+        insert_input_into_field_value_store(
+            object_type_store,
+            String::from(&object_type_name),
+            field_value_store,
+            input,
+            String::from(&id)
+        )?;
     }
+
+    return Ok(());
+}
+
+fn insert_input_into_field_value_store(
+    object_type_store: &mut ObjectTypeStore,
+    object_type_name: String,
+    field_value_store: &mut FieldValueStore,
+    input: &FieldInput,
+    id: String
+) -> Result<(), Box<dyn Error>> {
+    match &input.field_value {
+        FieldValue::RelationMany(field_value_relation_many_option) => {
+            insert_field_value_relation_many_option_into_field_value_store(
+                object_type_store,
+                String::from(&object_type_name),
+                field_value_store,
+                String::from(&input.field_name),
+                field_value_relation_many_option,
+                String::from(&id)
+            )?;
+        },
+        FieldValue::RelationOne(field_value_relation_one_option) => {
+            insert_field_value_relation_one_option_into_field_value_store(
+                object_type_store,
+                String::from(&object_type_name),
+                field_value_store,
+                String::from(&input.field_name),
+                field_value_relation_one_option,
+                String::from(&id)
+            )?;
+        },
+        FieldValue::Scalar(field_value_scalar_option) => {
+            insert_field_value_scalar_option_into_field_value_store(
+                field_value_store,
+                String::from(&input.field_name),
+                field_value_scalar_option
+            );
+        }
+    };
 
     return Ok(());
 }

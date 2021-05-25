@@ -1,3 +1,10 @@
+# TODO we need to make sure we can allow for custom queries and mutations
+# TODO add a directive that allows easy interop with motoko
+
+# type Query {
+#     call_motoko(prop: String!): BlogPost! @canister(id: "asdf0as8df0as9f0asd9f0", function_name: "")
+# }
+
 type User {
     id: ID!
     authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")

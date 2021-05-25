@@ -564,17 +564,11 @@ pub fn get_mutable_field_value_store(
     object_type_name: String,
     id: String // TODO consider using the name primary_key instead of id
 ) -> Result<&mut FieldValueStore, Box<dyn Error>> { // TODO not sure the result needs to be a reference
-
-    ic_cdk::println!("{:?}", object_type_name);
-    // ic_cdk::println!("{:?}", field_name);
-    
     let mutable_object_type = get_mutable_object_type(
         object_type_store,
         String::from(&object_type_name)
     )?;
     
-    ic_cdk::println!("{:?}", mutable_object_type);
-
     let mutable_field_value_store_option = mutable_object_type.field_values_store.get_mut(&id);
 
     match mutable_field_value_store_option {
