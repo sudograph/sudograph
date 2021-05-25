@@ -1,5 +1,6 @@
 # TODO we need to make sure we can allow for custom queries and mutations
 # TODO add a directive that allows easy interop with motoko
+# TODO to get Motoko interop, I think we need that single-threaded type issue to be fixed in the Rust CDK
 
 # type Query {
 #     call_motoko(prop: String!): BlogPost! @canister(id: "asdf0as8df0as9f0asd9f0", function_name: "")
