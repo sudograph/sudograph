@@ -54,6 +54,7 @@ pub fn generate_upsert_input_rust_structs(
     return generated_upsert_input_structs;
 }
 
+// TODO we need to figure out what the upsert relation many types should really be
 fn get_rust_type_for_upsert_input<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,

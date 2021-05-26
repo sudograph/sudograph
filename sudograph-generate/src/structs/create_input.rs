@@ -203,7 +203,8 @@ fn generate_create_field_input_pusher_for_relation_many(field: &Field<String>) -
                         relation_object_type_name: String::from(#relation_object_type_name),
                         relation_primary_keys: value.connect.iter().map(|id| {
                             return String::from(id.as_str());
-                        }).collect()
+                        }).collect(),
+                        relation_primary_keys_to_remove: vec![]
                     }))
                 });
             },

@@ -125,10 +125,10 @@ fn get_update_input_rust_struct_field_rust_type(
             );
 
             if is_graphql_type_a_relation_many(graphql_ast, update_input_rust_struct_field_type) == true {
-                return quote! { MaybeUndefined<CreateRelationManyInput> }; // TODO I do not think this would ever happen
+                return quote! { MaybeUndefined<UpdateRelationManyInput> }; // TODO I do not think this would ever happen
             }
             else if is_graphql_type_a_relation_one(graphql_ast, update_input_rust_struct_field_type) == true {
-                return quote! { MaybeUndefined<CreateRelationOneInput> };
+                return quote! { MaybeUndefined<UpdateRelationOneInput> };
             }
             else {
                 if update_input_rust_struct_field_name == "id" { // TODO elsewhere this check was not doing what I thought it was
@@ -149,7 +149,7 @@ fn get_update_input_rust_struct_field_rust_type(
             return quote! { #update_input_rust_struct_field_rust_type };
         },
         Type::ListType(_) => {
-            return quote! { MaybeUndefined<CreateRelationManyInput> };
+            return quote! { MaybeUndefined<UpdateRelationManyInput> };
         }
     };
 }
@@ -189,15 +189,31 @@ fn generate_update_field_input_pusher_for_relation_many(field: &Field<String>) -
     return quote! {
         match &self.#field_name_ident {
             MaybeUndefined::Value(value) => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
-                        relation_object_type_name: String::from(#relation_object_type_name),
-                        relation_primary_keys: value.connect.iter().map(|id| {
-                            return String::from(id.as_str());
-                        }).collect()
-                    }))
-                });
+                if let Some(connect) = &value.connect {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_keys: connect.iter().map(|id| {
+                                return String::from(id.as_str());
+                            }).collect(),
+                            relation_primary_keys_to_remove: vec![]
+                        }))
+                    });
+                }
+
+                if let Some(disconnect) = &value.disconnect {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_keys: vec![],
+                            relation_primary_keys_to_remove: disconnect.iter().map(|id| {
+                                return String::from(id.as_str());
+                            }).collect()
+                        }))
+                    });
+                }
             },
             MaybeUndefined::Null => {
                 update_field_inputs.push(FieldInput {
@@ -223,13 +239,22 @@ fn generate_update_field_input_pusher_for_relation_one(
     return quote! {
         match &self.#field_name_ident {
             MaybeUndefined::Value(value) => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
-                        relation_object_type_name: String::from(#relation_object_type_name),
-                        relation_primary_key: value.connect.as_str()
-                    }))
-                });
+                if let Some(connect) = &value.connect {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_key: connect.as_str()
+                        }))
+                    });
+                }
+
+                if let Some(disconnect) = &value.disconnect {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationOne(None)
+                    });
+                }
             },
             MaybeUndefined::Null => {
                 update_field_inputs.push(FieldInput {

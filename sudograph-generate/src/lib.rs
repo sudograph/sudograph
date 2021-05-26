@@ -253,6 +253,21 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             connect: ID
         }
 
+        // TODO you can imagine having different update relation input types
+        // TODO for nullab;e versus non-nullable fields, and also the relation one input type
+        // TODO probably does not even need an id to be input for disconnect
+        #[derive(InputObject)]
+        struct UpdateRelationManyInput {
+            connect: Option<Vec<ID>>,
+            disconnect: Option<Vec<ID>>
+        }
+
+        #[derive(InputObject)]
+        struct UpdateRelationOneInput {
+            connect: Option<ID>,
+            disconnect: Option<ID>
+        }
+
         #read_boolean_input_rust_struct
         #read_date_input_rust_struct
         #read_float_input_rust_struct
@@ -266,7 +281,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_read_input_structs)*
         #(#generated_update_input_structs)*
         #(#generated_delete_input_structs)*
-        #(#generated_upsert_input_structs)*
+        // #(#generated_upsert_input_structs)*
 
         // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
@@ -335,7 +350,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
-            #(#generated_upsert_mutation_resolvers)*
+            // #(#generated_upsert_mutation_resolvers)*
             #(#generated_init_mutation_resolvers)*
         }
 

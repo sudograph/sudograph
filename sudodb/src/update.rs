@@ -1,22 +1,5 @@
-use crate::{
-    convert_field_value_store_to_json_string,
-    FieldInput,
-    FieldType,
-    FieldTypeRelationInfo,
-    FieldValue,
-    FieldValueRelationMany,
-    FieldValueRelationOne,
-    FieldValueScalar,
-    get_field_type_for_field_name,
-    get_field_value_store,
-    get_mutable_field_value,
-    get_mutable_field_value_store,
-    JSONString,
-    ObjectTypeStore,
-    SelectionSet,
-    SudodbError
-};
-use std::error::Error;
+use crate::{FieldInput, FieldType, FieldTypeRelationInfo, FieldValue, FieldValueRelationMany, FieldValueRelationOne, FieldValueScalar, JSONString, ObjectTypeStore, SelectionSet, SudodbError, convert_field_value_store_to_json_string, get_field_type_for_field_name, get_field_value, get_field_value_store, get_mutable_field_value, get_mutable_field_value_store};
+use std::{error::Error};
 
 pub fn update(
     object_type_store: &mut ObjectTypeStore,
@@ -181,6 +164,18 @@ fn insert_field_value_relation_many_into_field_value_store(
                             current_field_value_relation_many.relation_primary_keys.push(String::from(primary_key));
                         }
                     }
+
+                    // TODO we really need to use hashmaps for the relation primary keys
+
+                    for primary_key_to_remove in &field_value_relation_many.relation_primary_keys_to_remove {
+                        let primary_key_to_remove_index_option = current_field_value_relation_many.relation_primary_keys.iter().position(|primary_key| {
+                            return primary_key == primary_key_to_remove;
+                        });
+
+                        if let Some(primary_key_to_remove_index) = primary_key_to_remove_index_option {
+                            current_field_value_relation_many.relation_primary_keys.remove(primary_key_to_remove_index);
+                        }
+                    }
                 },
                 None => {
                     field_value_store.insert(
@@ -230,7 +225,21 @@ fn insert_field_value_relation_many_opposing_all_into_field_value_store(
                             &field_type_relation_info,
                             opposing_field_name,
                             opposing_primary_key,
-                            id
+                            id,
+                            true
+                        )?;
+
+                    }
+
+                    for opposing_primary_key_to_remove in &field_value_relation_many.relation_primary_keys_to_remove {
+                        insert_field_value_relation_opposing_into_field_value_store(
+                            object_type_store,
+                            object_type_name,
+                            &field_type_relation_info,
+                            opposing_field_name,
+                            opposing_primary_key_to_remove,
+                            id,
+                            false
                         )?;
                     }
                 },
@@ -278,10 +287,46 @@ fn insert_field_value_relation_one_option_into_field_value_store(
                 object_type_name,
                 field_name,
                 field_value_relation_one,
-                id
+                id,
+                true
             )?;
         },
         None => {
+            let current_field_value_option = field_value_store.get(field_name);
+
+            if let Some(current_field_value) = current_field_value_option {
+                match current_field_value {
+                    FieldValue::RelationOne(field_value_relation_one_option) => {
+                        if let Some(field_value_relation_one) = field_value_relation_one_option {
+
+                            // TODO cloning is weird, but I was able to get around the mutable borrowing issue for now
+                            let cloned = field_value_relation_one.clone();
+
+                            insert_field_value_opposing_relation_one_all_into_field_value_store(
+                                object_type_store,
+                                object_type_name,
+                                field_name,
+                                &FieldValueRelationOne {
+                                    relation_object_type_name: String::from(cloned.relation_object_type_name),
+                                    relation_primary_key: String::from(cloned.relation_primary_key)
+                                },
+                                id,
+                                false
+                            )?;
+                        }
+                    },
+                    _ => ()
+                };
+            }
+
+            // TODO it would be nice to not have to retrieve this for every input, but it is hard
+            // TODO to figure out how to not have two mutable borrows from object_type_store
+            let field_value_store = get_mutable_field_value_store(
+                object_type_store,
+                String::from(object_type_name),
+                String::from(id)
+            )?;
+
             field_value_store.insert(
                 String::from(field_name),
                 FieldValue::RelationOne(None)
@@ -297,7 +342,8 @@ fn insert_field_value_opposing_relation_one_all_into_field_value_store(
     object_type_name: &str,
     field_name: &str,
     field_value_relation_one: &FieldValueRelationOne,
-    id: &str
+    id: &str,
+    insert: bool
 ) -> Result<(), Box<dyn Error>> {
     let field_type = get_field_type_for_field_name(
         object_type_store,
@@ -315,7 +361,8 @@ fn insert_field_value_opposing_relation_one_all_into_field_value_store(
                         &field_type_relation_info,
                         opposing_field_name,
                         &field_value_relation_one.relation_primary_key,
-                        id
+                        id,
+                        insert
                     )?;
                 },
                 None => ()
@@ -341,7 +388,8 @@ fn insert_field_value_relation_opposing_into_field_value_store(
     field_type_relation_info: &FieldTypeRelationInfo,
     opposing_field_name: &str,
     opposing_primary_key: &str,
-    id: &str
+    id: &str,
+    insert: bool
 ) -> Result<(), Box<dyn Error>> {
     let opposing_field_value_store = get_mutable_field_value_store(
         object_type_store,
@@ -360,9 +408,20 @@ fn insert_field_value_relation_opposing_into_field_value_store(
         FieldValue::RelationMany(opposing_field_value_relation_many_option) => {
             match opposing_field_value_relation_many_option {
                 Some(opposing_field_value_relation_many) => {
-                    // TODO instead of using a vector here I think we should actually use a hashmap...that would probably more efficient
-                    if opposing_field_value_relation_many.relation_primary_keys.contains(&String::from(id)) == false {
-                        opposing_field_value_relation_many.relation_primary_keys.push(String::from(id));
+                    if insert == true {
+                        // TODO instead of using a vector here I think we should actually use a hashmap...that would probably more efficient
+                        if opposing_field_value_relation_many.relation_primary_keys.contains(&String::from(id)) == false {
+                            opposing_field_value_relation_many.relation_primary_keys.push(String::from(id));
+                        }
+                    }
+                    else {
+                        let primary_key_to_remove_index_option = opposing_field_value_relation_many.relation_primary_keys.iter().position(|primary_key| {
+                            return primary_key == id;
+                        });
+
+                        if let Some(primary_key_to_remove_index) = primary_key_to_remove_index_option {
+                            opposing_field_value_relation_many.relation_primary_keys.remove(primary_key_to_remove_index);
+                        }
                     }
                 },
                 None => {
@@ -370,7 +429,8 @@ fn insert_field_value_relation_opposing_into_field_value_store(
                         String::from(opposing_field_name),
                         FieldValue::RelationMany(Some(FieldValueRelationMany {
                             relation_object_type_name: String::from(object_type_name),
-                            relation_primary_keys: vec![String::from(id)]
+                            relation_primary_keys: vec![String::from(id)],
+                            relation_primary_keys_to_remove: vec![]
                         }))
                     );
                 }
@@ -379,7 +439,16 @@ fn insert_field_value_relation_opposing_into_field_value_store(
         FieldValue::RelationOne(opposing_field_value_relation_one_option) => {
             match opposing_field_value_relation_one_option {
                 Some(opposing_field_value_relation_one) => {
-                    opposing_field_value_relation_one.relation_primary_key = String::from(id);
+
+                    if insert == true {
+                        opposing_field_value_relation_one.relation_primary_key = String::from(id);
+                    }
+                    else {
+                        opposing_field_value_store.insert(
+                            String::from(opposing_field_name),
+                            FieldValue::RelationOne(None)
+                        );
+                    }
                 },
                 None => {
                     opposing_field_value_store.insert(
