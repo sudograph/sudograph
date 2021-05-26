@@ -41,6 +41,7 @@ pub type FieldTypesStore = BTreeMap<FieldName, FieldType>;
 pub type FieldName = String;
 
 // TODO time to get relations working!!!
+// TODO it might be nice to have a FieldType Scalar that is itself an enum of the scalar types, or something
 #[derive(Debug, Clone)]
 pub enum FieldType {
     Boolean,
