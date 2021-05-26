@@ -8,7 +8,10 @@ use graphql_parser::schema::{
     Document,
     Type
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 
 pub fn generate_read_input_rust_structs(
     graphql_ast: &Document<String>,
@@ -78,7 +81,10 @@ pub fn generate_read_input_rust_structs(
             }
 
             impl #read_input_name {
-                fn get_read_inputs(&self) -> Vec<ReadInput> {
+                fn get_read_inputs(
+                    &self,
+                    field_name: String
+                ) -> Vec<ReadInput> {
                     let mut read_inputs = vec![];
 
                     #(#temps)*
@@ -90,8 +96,9 @@ pub fn generate_read_input_rust_structs(
                             input_operation: ReadInputOperation::Equals,
                             field_name: String::from("and"),
                             field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
+                            relation_object_type_name: String::from(""), // TODO this needs to be filled in
                             and: and.iter().flat_map(|read_entity_input| {
-                                return read_entity_input.get_read_inputs();
+                                return read_entity_input.get_read_inputs(String::from("and"));
                             }).collect(),
                             or: vec![]
                         });
@@ -104,9 +111,10 @@ pub fn generate_read_input_rust_structs(
                             input_operation: ReadInputOperation::Equals,
                             field_name: String::from("or"),
                             field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
+                            relation_object_type_name: String::from(""), // TODO this needs to be filled in
                             and: vec![],
                             or: or.iter().flat_map(|read_entity_input| {
-                                return read_entity_input.get_read_inputs();
+                                return read_entity_input.get_read_inputs(String::from("or"));
                             }).collect()
                         });
                     }
@@ -147,7 +155,11 @@ fn get_rust_type_for_read_input<'a>(
                 list_type
             );
 
-            return quote! { Option<Vec<#rust_type>> };
+            return quote! { #rust_type };
+            // return quote! { Option<#rust_type> };
+            // return quote! { Option<#rust_type> };
+            // return quote! { #rust_type };
+            // return quote! { Option<Vec<#rust_type>> };
         }
     };
 }
@@ -175,17 +187,33 @@ fn get_rust_type_for_read_input_named_type<'a>(
             return quote! { ReadStringInput };
         },
         _ => {
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                let relation_name = format_ident!(
-                    "{}",
-                    String::from("Read") + named_type + "Input"
-                );
-                
-                return quote! { #relation_name };
+            // TODO once we enable cross-relational filtering, we will need to create type-specific inputs here
+            // TODO we need to be careful about infinite recursion, we will probably have to exclude referring back to the original type
+            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
+                return quote! { ReadRelationInput };
+            }
+            else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
+                return quote! { ReadRelationInput };
             }
             else {
                 panic!();
             }
         }
+        // _ => {
+        //     if
+        //         is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true ||
+        //         is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true
+        //     {
+        //         let relation_name = format_ident!(
+        //             "{}",
+        //             String::from("Read") + named_type + "Input"
+        //         );
+                
+        //         return quote! { #relation_name };
+        //     }
+        //     else {
+        //         panic!();
+        //     }
+        // }
     }
 }

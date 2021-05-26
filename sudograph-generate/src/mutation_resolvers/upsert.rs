@@ -5,12 +5,12 @@ use quote::{
 };
 use graphql_parser::schema::{
     ObjectType,
-    Type,
     Document
 };
 use crate::{
-    is_graphql_type_a_relation,
-    is_graphql_type_nullable
+    is_graphql_type_nullable,
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
 };
 
 pub fn generate_upsert_mutation_resolvers(
@@ -62,7 +62,15 @@ pub fn generate_upsert_mutation_resolvers(
                 field.name
             );
 
-            if field_name_string == "id" || is_graphql_type_nullable(&field.field_type) == true {
+            if
+                (
+                    field_name_string == "id" ||
+                    is_graphql_type_nullable(&field.field_type) == true
+                ) &&
+                is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == false
+                // &&
+                // is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == false
+            {
                 return quote! {
                     #field_name: match input.#field_name {
                         MaybeUndefined::Value(value) => Some(value),
@@ -72,9 +80,17 @@ pub fn generate_upsert_mutation_resolvers(
                 };
             }
             else {
-                return quote! {
-                    #field_name: if let MaybeUndefined::Value(value) = input.#field_name { value } else { panic!("Should not happen") }
-                };
+                if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
+                    return quote! {
+                        #field_name: if let MaybeUndefined::Value(value) = input.#field_name { Some(value) } else { panic!("Should not happen") }
+                    };
+                }
+                else {
+                    // TODO something around here is breaking as we try to make relation many always nullable in the create inputs
+                    return quote! {
+                        #field_name: if let MaybeUndefined::Value(value) = input.#field_name { value } else { panic!("Should not happen") }
+                    };
+                }
             }
         });
 

@@ -11,7 +11,10 @@ use graphql_parser::schema::{
     Type,
     Document
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 
 pub fn generate_object_type_rust_structs(
     graphql_ast: &Document<String>,
@@ -122,7 +125,10 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
             return quote! { String };
         },
         _ => {
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
+            if
+                is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true ||
+                is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true
+            {
                 let relation_name = format_ident!(
                     "{}",
                     named_type

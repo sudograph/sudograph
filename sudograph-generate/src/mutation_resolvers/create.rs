@@ -8,7 +8,11 @@ use graphql_parser::schema::{
     Type,
     Document
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one,
+    get_graphql_type_name
+};
 
 pub fn generate_create_mutation_resolvers(
     graphql_ast: &Document<String>,
@@ -59,17 +63,23 @@ pub fn generate_create_mutation_resolvers(
                 field_name
             );
 
-            if is_graphql_type_a_relation(
-                graphql_ast,
-                &field.field_type
-            ) == true {
+            if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
+                let relation_object_type_name = get_graphql_type_name(&field.field_type);
+
                 return Some(quote! {
                     FieldInput {
                         field_name: String::from(#field_name),
-                        field_value: FieldValue::Relation(FieldValueRelation {
-                            relation_object_type_name: String::from(""), // TODO we need this to work
-                            relation_primary_keys: vec![]
-                        })
+                        field_value: input.#field_name_identifier.sudo_serialize(Some(String::from(#relation_object_type_name)))
+                    }
+                });
+            }
+            else if is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == true {
+                let relation_object_type_name = get_graphql_type_name(&field.field_type);
+
+                return Some(quote! {
+                    FieldInput {
+                        field_name: String::from(#field_name),
+                        field_value: input.#field_name_identifier.sudo_serialize(Some(String::from(#relation_object_type_name)))
                     }
                 });
             }
@@ -81,7 +91,7 @@ pub fn generate_create_mutation_resolvers(
                     return Some(quote! {
                         FieldInput {
                             field_name: String::from(#field_name),
-                            field_value: input.#field_name_identifier.sudo_serialize()
+                            field_value: input.#field_name_identifier.sudo_serialize(None)
                         }
                     });
                 }
@@ -195,14 +205,15 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
             return quote! { FieldType::String };
         },
         _ => {
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                // let relation_name = String::from(named_type); // TODO this might not be necessary
-                return quote! { FieldType::Relation(String::from(#named_type)) };
-                // return quote! { FieldType::String };
+            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
+                return quote! { FieldType::RelationMany(String::from(#named_type)) };
             }
-            else {
-                panic!();
+
+            if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
+                return quote! { FieldType::RelationOne(String::from(#named_type)) };
             }
+
+            panic!();
         }
     }
 }

@@ -8,7 +8,10 @@ use graphql_parser::schema::{
     Document,
     Type
 };
-use crate::is_graphql_type_a_relation;
+use crate::{
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 use crate::structs::object_type::get_rust_type_for_object_type_named_type;
 
 pub fn generate_update_input_rust_structs(
@@ -65,7 +68,7 @@ pub fn generate_update_input_rust_structs(
                         MaybeUndefined::Value(value) => {
                             update_inputs.push(FieldInput {
                                 field_name: String::from(#field_name_string),
-                                field_value: value.sudo_serialize()
+                                field_value: value.sudo_serialize(None)
                             });
                         },
                         MaybeUndefined::Null => {
@@ -118,10 +121,11 @@ fn get_rust_type_for_update_input<'a>(
                 named_type
             );
 
-            if is_graphql_type_a_relation(graphql_ast, graphql_type) == true {
-                // TODO this is just a placeholder for now, I will implement creating relations later...
-                // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
-                return quote! { Option<bool> };
+            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
+                return quote! { MaybeUndefined<RelationManyInput> }; // TODO I do not think this would ever happen
+            }
+            else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
+                return quote! { MaybeUndefined<RelationOneInput> };
             }
             else {
                 if
@@ -146,23 +150,15 @@ fn get_rust_type_for_update_input<'a>(
             return quote! { #rust_type };
         },
         Type::ListType(list_type) => {
-            let rust_type = get_rust_type_for_update_input(
-                graphql_ast,
-                list_type,
-                false,
-                field_name
-            );
+            // let rust_type = get_rust_type_for_update_input(
+            //     graphql_ast,
+            //     list_type,
+            //     is_non_null_type,
+            //     field_name
+            // );
 
-            // TODO this is just a placeholder for now, I will implement creating relations later...
-            // TODO we might want to keep it simple for now, just allowing for connecting an id for now...
-            return quote! { Option<bool> };
-
-            // if is_non_null_type == true {
-            //     return quote! { Vec<#rust_type> };
-            // }
-            // else {
-            //     return quote! { Option<Vec<#rust_type>> };
-            // }
+            return quote! { MaybeUndefined<RelationManyInput> };
+            // return quote! { #rust_type };
         }
     };
 }
