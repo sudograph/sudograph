@@ -49,7 +49,8 @@ use graphql_parser::schema::{
     TypeDefinition,
     ObjectType,
     Type,
-    Document
+    Document,
+    Field
 };
 use structs::object_type::generate_object_type_rust_structs;
 use structs::create_input::generate_create_input_rust_structs;
@@ -92,23 +93,23 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
 
-    let object_type_definitions = get_object_type_definitions(
+    let object_types = get_object_types(
         &graphql_ast
     );
 
     let generated_object_type_structs = generate_object_type_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_create_input_structs = generate_create_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_read_input_structs = generate_read_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let read_boolean_input_rust_struct = get_read_boolean_input_rust_struct();
@@ -121,51 +122,34 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let generated_update_input_structs = generate_update_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_delete_input_structs = generate_delete_input_rust_structs(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_delete_input_structs = generate_delete_input_rust_structs(&object_types);
 
     let generated_upsert_input_structs = generate_upsert_input_rust_structs(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_query_resolvers = generate_read_query_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_query_resolvers = generate_read_query_resolvers(&object_types);
 
-    let generated_create_mutation_resolvers = generate_create_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
-
-    let generated_update_mutation_resolvers = generate_update_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
-
-    let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(
-        &graphql_ast,
-        &object_type_definitions
-    );
+    let generated_create_mutation_resolvers = generate_create_mutation_resolvers(&object_types);
+    let generated_update_mutation_resolvers = generate_update_mutation_resolvers(&object_types);
+    let generated_delete_mutation_resolvers = generate_delete_mutation_resolvers(&object_types);
 
     let generated_upsert_mutation_resolvers = generate_upsert_mutation_resolvers(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
     let generated_init_mutation_resolvers = generate_init_mutation_resolvers(
         &graphql_ast,
-        &object_type_definitions
+        &object_types
     );
 
-    let generated_init_mutations = object_type_definitions.iter().fold(String::from(""), |result, object_type_definition| {
-        let object_type_name = &object_type_definition.name;
+    let generated_init_mutations = object_types.iter().fold(String::from(""), |result, object_type| {
+        let object_type_name = &object_type.name;
         
         let init_function_name = String::from("init") + object_type_name;
 
@@ -204,7 +188,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             FieldValueRelationOne,
             ReadInput,
             ReadInputType,
-            ReadInputOperation
+            ReadInputOperation,
+            FieldTypeRelationInfo
         };
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
@@ -265,116 +250,47 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue;
+            fn sudo_serialize(&self) -> FieldValue;
         }
 
         impl SudoSerialize for bool {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Boolean(self.clone())));
             }
         }
 
         impl SudoSerialize for f32 {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Float(self.clone())));
             }
         }
 
         impl SudoSerialize for ID {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
             }
         }
 
         impl SudoSerialize for i32 {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Int(self.clone())));
             }
         }
 
         impl SudoSerialize for String {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(self.clone())));
             }
         }
 
         impl<T: SudoSerialize> SudoSerialize for Option<T> {
-            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+            fn sudo_serialize(&self) -> FieldValue {
                 match self {
                     Some(value) => {
-                        return value.sudo_serialize(relation_object_type_name);
+                        return value.sudo_serialize();
                     },
                     None => {
                         return FieldValue::Scalar(None);
-                    }
-                }
-            }
-        }
-
-        // TODO I do not think it makes sense at all to use this serialize thing for the relation types
-        // TODO the serializing does not seem to make as much sense for the relations
-        trait SudoSerializeRelationOne {
-            fn sudo_serialize_relation_one(&self, relation_object_type_name: String) -> FieldValue;
-        }
-
-        // TODO the serializing does not seem to make as much sense for the relations
-        trait SudoSerializeRelationMany {
-            fn sudo_serialize_relation_many(&self, relation_object_type_name: String) -> FieldValue;
-        }
-
-        impl SudoSerialize for CreateRelationManyInput {
-            fn sudo_serialize(
-                &self,
-                relation_object_type_name: Option<String>
-            ) -> FieldValue {
-                return FieldValue::RelationMany(Some(FieldValueRelationMany {
-                    relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_keys: self.connect.iter().map(|id| {
-                        return String::from(id.as_str());
-                    }).collect()
-                }));
-            }
-        }
-
-        impl SudoSerialize for CreateRelationOneInput {
-            fn sudo_serialize(
-                &self,
-                relation_object_type_name: Option<String>
-            ) -> FieldValue {
-                return FieldValue::RelationOne(Some(FieldValueRelationOne {
-                    relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_key: String::from(self.connect.as_str())
-                }));
-            }
-        }
-
-        impl<T: SudoSerializeRelationOne> SudoSerializeRelationOne for Option<T> {
-            fn sudo_serialize_relation_one(
-                &self,
-                relation_object_type_name: String
-            ) -> FieldValue {
-                match self {
-                    Some(value) => {
-                        return value.sudo_serialize_relation_one(relation_object_type_name);
-                    },
-                    None => {
-                        return FieldValue::RelationOne(None);
-                    }
-                }
-            }
-        }
-
-        impl<T: SudoSerializeRelationMany> SudoSerializeRelationMany for Option<T> {
-            fn sudo_serialize_relation_many(
-                &self,
-                relation_object_type_name: String
-            ) -> FieldValue {
-                match self {
-                    Some(value) => {
-                        return value.sudo_serialize_relation_many(relation_object_type_name);
-                    },
-                    None => {
-                        return FieldValue::RelationMany(None);
                     }
                 }
             }
@@ -532,11 +448,11 @@ fn is_graphql_type_a_relation_many(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
-    let object_type_definitions = get_object_type_definitions(graphql_ast);
+    let object_types = get_object_types(graphql_ast);
     let graphql_type_name = get_graphql_type_name(graphql_type);
 
-    let graphql_type_is_a_relation = object_type_definitions.iter().any(|object_type_definition| {
-        return object_type_definition.name == graphql_type_name;
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
     });
 
     let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
@@ -554,11 +470,11 @@ fn is_graphql_type_a_relation_one(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
-    let object_type_definitions = get_object_type_definitions(graphql_ast);
+    let object_types = get_object_types(graphql_ast);
     let graphql_type_name = get_graphql_type_name(graphql_type);
 
-    let graphql_type_is_a_relation = object_type_definitions.iter().any(|object_type_definition| {
-        return object_type_definition.name == graphql_type_name;
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
     });
 
     let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
@@ -592,7 +508,7 @@ fn is_graphql_type_a_list_type(
     };
 }
 
-fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a, String>> {
+fn get_object_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a, String>> {
     let type_definitions: Vec<TypeDefinition<String>> = graphql_ast.definitions.iter().filter_map(|definition| {
         match definition {
             Definition::TypeDefinition(type_definition) => {
@@ -604,10 +520,10 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
         };
     }).collect();
 
-    let object_type_definitions: Vec<ObjectType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
+    let object_types: Vec<ObjectType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
         match type_definition {
-            TypeDefinition::Object(object_type_definition) => {
-                return Some(object_type_definition);
+            TypeDefinition::Object(object_type) => {
+                return Some(object_type);
             },
             _ => {
                 return None;
@@ -615,5 +531,61 @@ fn get_object_type_definitions<'a>(graphql_ast: &Document<'a, String>) -> Vec<Ob
         }
     }).collect();
 
-    return object_type_definitions;
+    return object_types;
+}
+
+// TODO this search needs to exclude the relation's own entity field...
+// TODO you could have a relation to your same type, but you need to skip your original field
+fn get_opposing_relation_field<'a>(
+    graphql_ast: &'a Document<'a, String>,
+    relation_field: &Field<String>
+) -> Option<Field<'a, String>> {
+    let relation_name = get_directive_argument_value_from_field(
+        relation_field,
+        String::from("relation"),
+        String::from("name")
+    )?;
+
+    let opposing_object_type_name = get_graphql_type_name(&relation_field.field_type);
+    
+    let object_types = get_object_types(graphql_ast);
+
+    return object_types.iter().filter(|object_type| {
+        return object_type.name == opposing_object_type_name; // TODO a find might make more sense than a filter
+    }).fold(None, |_, object_type| {
+        return object_type.fields.iter().fold(None, |result, field| {
+            if result != None {
+                return result;
+            }
+
+            let opposing_relation_name = get_directive_argument_value_from_field(
+                field,
+                String::from("relation"),
+                String::from("name")
+            )?;
+
+            if opposing_relation_name == relation_name {
+                return Some(field.clone());
+            }
+            else {
+                return result;
+            }
+        });
+    });
+}
+
+fn get_directive_argument_value_from_field(
+    field: &Field<String>,
+    directive_name: String,
+    argument_name: String
+) -> Option<String> {
+    let directive = field.directives.iter().find(|directive| {
+        return directive.name == directive_name;
+    })?;
+
+    let argument = directive.arguments.iter().find(|argument| {
+        return argument.0 == argument_name;
+    })?;
+
+    return Some(argument.1.to_string());
 }

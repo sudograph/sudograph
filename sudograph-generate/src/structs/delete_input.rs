@@ -1,21 +1,15 @@
-use graphql_parser::schema::{
-    Document,
-    ObjectType
-};
+use graphql_parser::schema::ObjectType;
 use proc_macro2::TokenStream;
 use quote::{
     format_ident,
     quote
 };
 
-pub fn generate_delete_input_rust_structs(
-    graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
-) -> Vec<TokenStream> {
-    let generated_delete_input_structs = object_type_definitions.iter().map(|object_type_definition| {
+pub fn generate_delete_input_rust_structs(object_types: &Vec<ObjectType<String>>) -> Vec<TokenStream> {
+    let generated_delete_input_structs = object_types.iter().map(|object_type| {
         let delete_input_name = format_ident!(
             "{}",
-            String::from("Delete") + &object_type_definition.name + "Input"
+            String::from("Delete") + &object_type.name + "Input"
         );
         
         return quote! {

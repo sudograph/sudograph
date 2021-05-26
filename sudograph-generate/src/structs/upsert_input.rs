@@ -16,15 +16,15 @@ use crate::structs::object_type::get_rust_type_for_object_type_named_type;
 
 pub fn generate_upsert_input_rust_structs(
     graphql_ast: &Document<String>,
-    object_type_definitions: &Vec<ObjectType<String>>
+    object_types: &Vec<ObjectType<String>>
 ) -> Vec<TokenStream> {
-    let generated_upsert_input_structs = object_type_definitions.iter().map(|object_type_definition| {
+    let generated_upsert_input_structs = object_types.iter().map(|object_type| {
         let upsert_input_name = format_ident!(
             "{}",
-            String::from("Upsert") + &object_type_definition.name + "Input"
+            String::from("Upsert") + &object_type.name + "Input"
         );
 
-        let generated_fields = object_type_definition.fields.iter().map(|field| {
+        let generated_fields = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
                 "{}",

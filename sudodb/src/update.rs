@@ -8,14 +8,14 @@ use std::error::Error;
 
 pub fn update(
     object_type_store: &mut ObjectTypeStore,
-    object_type_name: &str,
-    id: &str,
+    object_type_name: String,
+    id: String,
     inputs: Vec<FieldInput>
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let object_type_result = object_type_store.get_mut(object_type_name);
+    let object_type_result = object_type_store.get_mut(&object_type_name);
 
     if let Some(object_type) = object_type_result {
-        let field_values_map_result = object_type.field_values_store.get_mut(id);
+        let field_values_map_result = object_type.field_values_store.get_mut(&id);
 
         if let Some(field_values_map) = field_values_map_result {
             for input in inputs {
