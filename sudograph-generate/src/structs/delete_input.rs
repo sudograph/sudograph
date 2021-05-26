@@ -21,7 +21,7 @@ pub fn generate_delete_input_rust_structs(
         return quote! {
             #[derive(InputObject)]
             struct #delete_input_name {
-                id: String
+                id: ID
             }
         };
     }).collect();

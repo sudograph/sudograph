@@ -110,7 +110,7 @@ pub fn generate_create_mutation_resolvers(
                 let create_result = create(
                     object_store,
                     #object_type_name,
-                    input.id.clone(), // TODO we might want to get rid of this?
+                    if let Some(id) = input.id { Some(String::from(id.as_str())) } else { None }, // TODO we might want to get rid of this?
                     vec![
                         #(#create_field_inputs),* // TODO we want to change this to only put values in if they exist, similar to the read input read values thing
                     ],
@@ -197,6 +197,9 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
         },
         "Float" => {
             return quote! { FieldType::Float };
+        },
+        "ID" => {
+            return quote! { FieldType::String };
         },
         "Int" => {
             return quote! { FieldType::Int };

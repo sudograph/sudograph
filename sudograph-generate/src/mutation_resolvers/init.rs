@@ -131,6 +131,9 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
         "Float" => {
             return quote! { FieldType::Float };
         },
+        "ID" => {
+            return quote! { FieldType::String };
+        },
         "Int" => {
             return quote! { FieldType::Int };
         },

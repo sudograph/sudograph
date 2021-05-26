@@ -180,6 +180,9 @@ fn get_rust_type_for_read_input_named_type<'a>(
         "Float" => {
             return quote! { ReadFloatInput };
         },
+        "ID" => {
+            return quote! { ReadIDInput };
+        },
         "Int" => {
             return quote! { ReadIntInput };
         },

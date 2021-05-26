@@ -1,41 +1,46 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn get_read_relation_input_rust_struct() -> TokenStream {
+pub fn get_read_id_input_rust_struct() -> TokenStream {
     return quote! {
         #[derive(InputObject)]
-        struct ReadRelationInput {
-            id: ReadIDInput
+        struct ReadIDInput {
+            eq: MaybeUndefined<ID>,
+            gt: MaybeUndefined<ID>,
+            gte: MaybeUndefined<ID>,
+            lt: MaybeUndefined<ID>,
+            lte: MaybeUndefined<ID>,
+            contains: MaybeUndefined<ID>
         }
 
-        impl ReadRelationInput {
+        impl ReadIDInput {
             fn get_read_inputs(
                 &self,
                 field_name: String
             ) -> Vec<ReadInput> {
                 let fields = [
                     (
-                        &self.id.eq,
+                        &self.eq,
                         ReadInputOperation::Equals
                     ),
                     (
-                        &self.id.gt,
+                        &self.gt,
                         ReadInputOperation::GreaterThan
                     ),
                     (
-                        &self.id.gte,
+                        &self.gte,
                         ReadInputOperation::GreaterThanOrEqualTo
                     ),
                     (
-                        &self.id.lt,
+                        &self.lt,
                         ReadInputOperation::LessThan
                     ),
                     (
-                        &self.id.lte,
+                        &self.lte,
                         ReadInputOperation::LessThanOrEqualTo
                     ),
                     (
-                        &self.id.contains,
+                        &self.contains,
                         ReadInputOperation::Contains
                     )
                 ];
@@ -67,7 +72,7 @@ pub fn get_read_relation_input_rust_struct() -> TokenStream {
                         MaybeUndefined::Undefined => {
                             return None;
                         }
-                    };
+                    }
                 }).collect();
 
                 return read_inputs;

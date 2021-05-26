@@ -15,6 +15,7 @@ mod structs {
     pub mod read_boolean_input;
     pub mod read_date_input;
     pub mod read_float_input;
+    pub mod read_id_input;
     pub mod read_int_input;
     pub mod read_string_input;
     pub mod read_relation_input;
@@ -56,6 +57,7 @@ use structs::read_input::generate_read_input_rust_structs;
 use structs::read_boolean_input::get_read_boolean_input_rust_struct;
 use structs::read_date_input::get_read_date_input_rust_struct;
 use structs::read_float_input::get_read_float_input_rust_struct;
+use structs::read_id_input::get_read_id_input_rust_struct;
 use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
 use structs::read_relation_input::get_read_relation_input_rust_struct;
@@ -112,6 +114,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_boolean_input_rust_struct = get_read_boolean_input_rust_struct();
     let read_date_input_rust_struct = get_read_date_input_rust_struct();
     let read_float_input_rust_struct = get_read_float_input_rust_struct();
+    let read_id_input_rust_struct = get_read_id_input_rust_struct();
     let read_int_input_rust_struct = get_read_int_input_rust_struct();
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
     let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
@@ -182,7 +185,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             Object,
             MaybeUndefined,
             Schema,
-            EmptySubscription
+            EmptySubscription,
+            ID
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -236,17 +240,18 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         #[derive(InputObject)]
         struct RelationManyInput {
-            connect: Vec<String>
+            connect: Vec<ID>
         }
 
         #[derive(InputObject)]
         struct RelationOneInput {
-            connect: String
+            connect: ID
         }
 
         #read_boolean_input_rust_struct
         #read_date_input_rust_struct
         #read_float_input_rust_struct
+        #read_id_input_rust_struct
         #read_int_input_rust_struct
         #read_string_input_rust_struct
         #read_relation_input_rust_struct
@@ -272,6 +277,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         impl SudoSerialize for f32 {
             fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::Float(self.clone())));
+            }
+        }
+
+        impl SudoSerialize for ID {
+            fn sudo_serialize(&self, relation_object_type_name: Option<String>) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
             }
         }
 
@@ -318,7 +329,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             ) -> FieldValue {
                 return FieldValue::RelationMany(Some(FieldValueRelationMany {
                     relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_keys: self.connect.clone()
+                    relation_primary_keys: self.connect.iter().map(|id| {
+                        return String::from(id.as_str());
+                    }).collect()
                 }));
             }
         }
@@ -330,7 +343,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             ) -> FieldValue {
                 return FieldValue::RelationOne(Some(FieldValueRelationOne {
                     relation_object_type_name: relation_object_type_name.unwrap(),
-                    relation_primary_key: self.connect.clone()
+                    relation_primary_key: String::from(self.connect.as_str())
                 }));
             }
         }
