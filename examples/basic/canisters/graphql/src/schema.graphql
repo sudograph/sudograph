@@ -8,15 +8,16 @@
 
 type User {
     id: ID!
-    authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
-    editing_blog_posts: [BlogPost!]! @relation(name: "editing blog posts")
+    blog_posts: [BlogPost!]! @relation(name: "blog posts")
+    # authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
+    # editing_blog_posts: [BlogPost!]! @relation(name: "editing blog posts")
     username: String!
 }
 
 type BlogPost {
     id: ID!
-    author: User! @relation(name: "authored blog posts")
-    editors: [User!]! @relation(name: "editing blog posts")
-    published: Boolean!
+    author: User @relation(name: "blog posts")
     title: String!
+    # editors: [User!]! @relation(name: "editing blog posts")
+    # published: Boolean!
 }

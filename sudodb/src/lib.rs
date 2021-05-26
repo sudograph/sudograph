@@ -87,7 +87,8 @@ pub enum FieldValueScalar {
 #[derive(Clone, Debug)]
 pub struct FieldValueRelationMany {
     pub relation_object_type_name: ObjectTypeName,
-    pub relation_primary_keys: Vec<PrimaryKey>
+    pub relation_primary_keys: Vec<PrimaryKey>,
+    pub relation_primary_keys_to_remove: Vec<PrimaryKey> // TODO this is a really bad way of doing this, what we really need to do is have the FieldInput have its own types, and we can have a specific type for removing fields
 }
 
 #[derive(Clone, Debug)]

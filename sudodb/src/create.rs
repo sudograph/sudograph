@@ -410,7 +410,8 @@ fn insert_field_value_relation_opposing_into_field_value_store(
                         String::from(&opposing_field_name),
                         FieldValue::RelationMany(Some(FieldValueRelationMany {
                             relation_object_type_name: String::from(&object_type_name),
-                            relation_primary_keys: vec![String::from(&id)]
+                            relation_primary_keys: vec![String::from(&id)],
+                            relation_primary_keys_to_remove: vec![]
                         }))
                     );
                 }
