@@ -528,8 +528,8 @@ fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
     };
 }
 
-fn is_graphql_type_a_relation_many<'a>(
-    graphql_ast: &'a Document<String>,
+fn is_graphql_type_a_relation_many(
+    graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
     let object_type_definitions = get_object_type_definitions(graphql_ast);
@@ -550,8 +550,8 @@ fn is_graphql_type_a_relation_many<'a>(
     ;
 }
 
-fn is_graphql_type_a_relation_one<'a>(
-    graphql_ast: &'a Document<String>,
+fn is_graphql_type_a_relation_one(
+    graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
     let object_type_definitions = get_object_type_definitions(graphql_ast);
@@ -572,8 +572,8 @@ fn is_graphql_type_a_relation_one<'a>(
     ;
 }
 
-fn is_graphql_type_a_list_type<'a>(
-    graphql_ast: &'a Document<String>,
+fn is_graphql_type_a_list_type(
+    graphql_ast: &Document<String>,
     graphql_type: &Type<String>
 ) -> bool {
     match graphql_type {

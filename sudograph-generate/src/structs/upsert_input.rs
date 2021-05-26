@@ -34,7 +34,6 @@ pub fn generate_upsert_input_rust_structs(
             let field_type = get_rust_type_for_upsert_input(
                 &graphql_ast,
                 &field.field_type,
-                false,
                 &field.name
             );
 
@@ -58,7 +57,6 @@ pub fn generate_upsert_input_rust_structs(
 fn get_rust_type_for_upsert_input<'a>(
     graphql_ast: &'a Document<String>,
     graphql_type: &Type<String>,
-    is_non_null_type: bool,
     field_name: &str // TODO this needs to be put elsewhere too
 ) -> TokenStream {
     match graphql_type {
@@ -76,23 +74,13 @@ fn get_rust_type_for_upsert_input<'a>(
                 return quote! { MaybeUndefined<CreateRelationOneInput> };
             }
             else {
-                // if
-                    // is_non_null_type == true ||
-                    // field_name == "id" // TODO elsewhere this check was not doing what I thought it was
-                // {
-                    // return quote! { #rust_type_for_named_type };
-                // }
-                // else {
-                    // return quote! { #rust_type_for_named_type };
-                    return quote! { MaybeUndefined<#rust_type_for_named_type> };
-                // }
+                return quote! { MaybeUndefined<#rust_type_for_named_type> };
             }
         },
         Type::NonNullType(non_null_type) => {
             let rust_type = get_rust_type_for_upsert_input(
                 graphql_ast,
                 non_null_type,
-                false,
                 field_name
             );
             

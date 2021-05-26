@@ -25,7 +25,11 @@ use base32::{
     encode as base32_encode,
     Alphabet
 };
+use ic_cdk;
 
+// TODO we might want to make it so that the caller of create does not have to provide all inputs for all fields
+// TODO right now all inputs for all fields must be provided with initial values
+// TODO you could imagine this create function putting in default values for nullable fields that are not present
 pub fn create(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
@@ -56,15 +60,10 @@ pub fn create(
                 match field_type {
                     FieldType::RelationMany(_) => {
                         if let FieldValue::RelationMany(field_value_relation_many_option) = input.field_value {
-                            if let Some(field_value_relation) = field_value_relation_many_option {
-                                field_values_map.insert(
-                                    input.field_name,
-                                    FieldValue::RelationMany(Some(FieldValueRelationMany {
-                                        relation_object_type_name: String::from(field_value_relation.relation_object_type_name),
-                                        relation_primary_keys: field_value_relation.relation_primary_keys // TODO I think we need to check that these primary keys exist in the relation object
-                                    }))
-                                );
-                            }
+                            field_values_map.insert(
+                                input.field_name,
+                                FieldValue::RelationMany(field_value_relation_many_option)
+                            );
                         }
                         else {
                             return Err(Box::new(SudodbError {
@@ -76,15 +75,10 @@ pub fn create(
                     },
                     FieldType::RelationOne(_) => {
                         if let FieldValue::RelationOne(field_value_relation_one_option) = input.field_value {
-                            if let Some(field_value_relation) = field_value_relation_one_option {
-                                field_values_map.insert(
-                                    input.field_name,
-                                    FieldValue::RelationOne(Some(FieldValueRelationOne {
-                                        relation_object_type_name: String::from(field_value_relation.relation_object_type_name),
-                                        relation_primary_key: field_value_relation.relation_primary_key // TODO I think we need to check that these primary keys exist in the relation object
-                                    }))
-                                );
-                            }
+                            field_values_map.insert(
+                                input.field_name,
+                                FieldValue::RelationOne(field_value_relation_one_option)
+                            );
                         }
                         else {
                             return Err(Box::new(SudodbError {

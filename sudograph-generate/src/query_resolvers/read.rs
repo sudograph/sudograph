@@ -1,11 +1,11 @@
-use proc_macro2::TokenStream;
 use graphql_parser::schema::{
-    ObjectType,
-    Document
+    Document,
+    ObjectType
 };
+use proc_macro2::TokenStream;
 use quote::{
-    quote,
-    format_ident
+    format_ident,
+    quote
 };
 
 pub fn generate_read_query_resolvers(

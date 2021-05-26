@@ -1,16 +1,15 @@
-use proc_macro2::TokenStream;
-use quote::{
-    quote,
-    format_ident
+use crate::{
+    get_graphql_type_name
 };
 use graphql_parser::schema::{
+    Document,
     ObjectType,
-    Type,
-    Document
+    Type
 };
-use crate::{
-    is_graphql_type_a_relation_many,
-    is_graphql_type_a_relation_one
+use proc_macro2::TokenStream;
+use quote::{
+    format_ident,
+    quote
 };
 
 pub fn generate_init_mutation_resolvers(
@@ -28,9 +27,8 @@ pub fn generate_init_mutation_resolvers(
         let create_field_type_inputs = object_type_definition.fields.iter().map(|field| {
             let field_name = &field.name;
             let field_type = get_rust_type_for_sudodb_field_type(
-                &graphql_ast,
-                &field.field_type,
-                false
+                graphql_ast,
+                &field.field_type
             );
 
             return quote! {
@@ -45,13 +43,7 @@ pub fn generate_init_mutation_resolvers(
             async fn #init_function_name(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
 
-                // TODO we should probably handle the result here
-                // TODO where are we going to put this actually?
-                // TODO the init for all of the object types should really only happen once
-
                 if object_store.contains_key(#object_type_name) == false {
-                    // TODO where should we put this?
-                    // TODO perhaps this should be in all queries and mutations?
                     init_object_type(
                         object_store,
                         #object_type_name,
@@ -71,8 +63,7 @@ pub fn generate_init_mutation_resolvers(
 
 fn get_rust_type_for_sudodb_field_type<'a>(
     graphql_ast: &'a Document<String>,
-    graphql_type: &Type<String>,
-    is_non_null_type: bool
+    graphql_type: &Type<String>
 ) -> TokenStream {
     match graphql_type {
         Type::NamedType(named_type) => {
@@ -82,35 +73,20 @@ fn get_rust_type_for_sudodb_field_type<'a>(
                 named_type
             );
 
-            // if is_non_null_type == true {
             return quote! { #rust_type_for_named_type };
-            // }
-            // else {
-            //     return quote! { Option<#rust_type_for_named_type> };
-            // }
         },
         Type::NonNullType(non_null_type) => {
             let rust_type = get_rust_type_for_sudodb_field_type(
                 graphql_ast,
-                non_null_type,
-                true
+                non_null_type
             );
+
             return quote! { #rust_type };
         },
         Type::ListType(list_type) => {
-            let rust_type = get_rust_type_for_sudodb_field_type(
-                graphql_ast,
-                list_type,
-                false
-            );
+            let named_type = get_graphql_type_name(list_type);
 
-            // TODO we might need to do something interesting here
-            // if is_non_null_type == true {
-            return quote! { #rust_type };
-            // }
-            // else {
-            //     return quote! { Option<Vec<#rust_type>> };
-            // }
+            return quote! { FieldType::RelationMany(String::from(#named_type)) };
         }
     };
 }
@@ -141,15 +117,7 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
             return quote! { FieldType::String };
         },
         _ => {
-            if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
-                return quote! { FieldType::RelationMany(String::from(#named_type)) };
-            }
-
-            if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
-                return quote! { FieldType::RelationOne(String::from(#named_type)) };
-            }
-
-            panic!();
+            return quote! { FieldType::RelationOne(String::from(#named_type)) };
         }
     }
 }

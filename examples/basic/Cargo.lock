@@ -1623,6 +1623,7 @@ version = "0.1.0"
 dependencies = [
  "base32",
  "chrono",
+ "ic-cdk",
  "rand 0.8.3",
  "sha2",
 ]
