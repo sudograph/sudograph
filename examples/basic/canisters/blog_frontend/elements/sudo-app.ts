@@ -4,9 +4,19 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 import { BlogPost } from '../types';
-import graphql from 'ic:canisters/graphql';
 import './sudo-blog-post.ts';
 import './sudo-draft.ts';
+import {
+    gql,
+    sudograph
+} from 'sudograph';
+
+const {
+    query,
+    mutation
+} = sudograph({
+    canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai'
+});
 
 type State = Readonly<{
     blogPosts: ReadonlyArray<BlogPost>;
@@ -59,7 +69,7 @@ class SudoApp extends HTMLElement {
         ];
     }
 
-    async draftPublished(e) {
+    async draftPublished(e: any) {
         const publishedDraftId: string | symbol = e.detail;
 
         await this.fetchAndSetBlogPostsAndDrafts();
@@ -133,7 +143,7 @@ class SudoApp extends HTMLElement {
                                 <div class="blog-post-container">
                                     <sudo-draft
                                         .draft=${draft}
-                                        @draft-published=${async (e) => await this.draftPublished(e)}
+                                        @draft-published=${async (e: any) => await this.draftPublished(e)}
                                     ></sudo-draft>
                                 </div>
                             `;
@@ -148,8 +158,9 @@ class SudoApp extends HTMLElement {
 
 window.customElements.define('sudo-app', SudoApp);
 
+// TODO redo these functions to use variables
 async function fetchBlogPosts(): Promise<ReadonlyArray<BlogPost>> {
-    const resultString = await graphql.graphql_query(`
+    const result = await query(gql`
         query {
             readBlogPost(input: {
                 live: {
@@ -168,13 +179,14 @@ async function fetchBlogPosts(): Promise<ReadonlyArray<BlogPost>> {
         }
     `);
 
-    const resultJSON = JSON.parse(resultString);
+    console.log('result', result);
 
-    return resultJSON.data.readBlogPost;
+    // TODO handle errors
+    return result.data.readBlogPost;
 }
 
 async function fetchDrafts(): Promise<ReadonlyArray<BlogPost>> {
-    const resultString = await graphql.graphql_query(`
+    const result = await query(gql`
         query {
             readBlogPost(input: {
                 live: {
@@ -193,7 +205,8 @@ async function fetchDrafts(): Promise<ReadonlyArray<BlogPost>> {
         }
     `);
 
-    const resultJSON = JSON.parse(resultString);
+    console.log('result', result);
 
-    return resultJSON.data.readBlogPost;
+    // TODO handle errors
+    return result.data.readBlogPost;
 }

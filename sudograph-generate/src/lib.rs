@@ -170,8 +170,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             MaybeUndefined,
             Schema,
             EmptySubscription,
-            scalar
-            // ID
+            scalar,
+            Variables,
+            Request
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -243,6 +244,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(ID);
 
+        #[derive(Serialize, Deserialize, Default)]
+        #[serde(crate="self::serde")]
+        struct Date(String);
+
+        scalar!(Date);
+
         #[derive(InputObject)]
         struct CreateRelationManyInput {
             connect: Vec<ID>
@@ -302,7 +309,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         impl SudoSerialize for ID {
             fn sudo_serialize(&self) -> FieldValue {
+                // TODO I do not think we actually need the as_str method anymore, ID is a tuple struct I believe
                 return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
+            }
+        }
+
+        impl SudoSerialize for Date {
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::Date(String::from(&self.0))));
             }
         }
 
@@ -355,7 +369,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         }
 
         #[query]
-        async fn graphql_query(query: String) -> String {
+        async fn graphql_query(query_string: String, variables_json_string: String) -> String {
             // TODO figure out how to create global variable to store the schema in
             // TODO we can probably just store this in a map or something with ic storage
             let schema = Schema::new(
@@ -364,9 +378,15 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                 EmptySubscription
             );
 
-            ic_print("graphql_query");
+            // TODO it would be nice to print these out prettily
+            // TODO also, it would be nice to turn off these kinds of logs
+            // TODO I am thinking about having directives on the type Query set global things
+            ic_cdk::println!("query_string: {:?}", query_string);
+            ic_cdk::println!("variables_json_string: {:?}", variables_json_string);
 
-            let response = schema.execute(query).await;
+            let request = Request::new(query_string).variables(Variables::from_json(sudograph::serde_json::from_str(&variables_json_string).expect("This should work")));
+
+            let response = schema.execute(request).await;
 
             let json_result = to_json_string(&response);
 
@@ -374,7 +394,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         }
 
         #[update]
-        async fn graphql_mutation(query: String) -> String {
+        async fn graphql_mutation(mutation_string: String, variables_json_string: String) -> String {
+            // TODO I think this cross-canister call is making the mutations take forever
             let call_result: Result<(Vec<u8>,), _> = ic_cdk::api::call::call(ic_cdk::export::Principal::management_canister(), "raw_rand", ()).await;
 
             if let Ok(result) = call_result {
@@ -396,7 +417,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
             ic_print("graphql_mutation");
 
-            let response = schema.execute(query).await;
+            let request = Request::new(mutation_string).variables(Variables::from_json(sudograph::serde_json::from_str(&variables_json_string).expect("This should work")));
+
+            let response = schema.execute(request).await;
 
             let json_result = to_json_string(&response);
 

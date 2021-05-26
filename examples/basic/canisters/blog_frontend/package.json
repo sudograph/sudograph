@@ -1,5 +1,5 @@
 {
-  "name": "playground",
+  "name": "blog_frontend",
   "version": "0.0.0",
   "description": "",
   "scripts": {
@@ -8,10 +8,12 @@
   "keywords": [],
   "author": "Jordan Last <jordan.michael.last@gmail.com>",
   "license": "MIT",
-  "devDependencies": {
-    "snowpack": "3.4.0"
-  },
   "dependencies": {
+    "lit-html": "1.4.1",
+    "reduxular": "0.0.6",
     "sudograph": "0.2.0-beta.0"
+  },
+  "devDependencies": {
+    "snowpack": "3.5.1"
   }
 }

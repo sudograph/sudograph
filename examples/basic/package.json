@@ -3,6 +3,6 @@
     "version": "0.0.0",
     "description": "",
     "scripts": {
-        "build": "cd canisters/playground && npm run build"
+        "build": "cd canisters/playground && npm run build && cd ../blog_frontend && npm run build"
     }
 }

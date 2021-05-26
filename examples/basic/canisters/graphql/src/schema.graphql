@@ -6,18 +6,29 @@
 #     call_motoko(prop: String!): BlogPost! @canister(id: "asdf0as8df0as9f0asd9f0", function_name: "")
 # }
 
-type User {
-    id: ID!
-    blog_posts: [BlogPost!]! @relation(name: "blog posts")
-    # authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
-    # editing_blog_posts: [BlogPost!]! @relation(name: "editing blog posts")
-    username: String!
-}
+# type User {
+#     id: ID!
+#     blog_posts: [BlogPost!]! @relation(name: "blog posts")
+#     # authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
+#     # editing_blog_posts: [BlogPost!]! @relation(name: "editing blog posts")
+#     username: String!
+# }
+
+# type BlogPost {
+#     id: ID!
+#     author: User @relation(name: "blog posts")
+#     title: String!
+#     # editors: [User!]! @relation(name: "editing blog posts")
+#     # published: Boolean!
+# }
 
 type BlogPost {
     id: ID!
-    author: User @relation(name: "blog posts")
+    body: String!
+    created_at: Date!
+    live: Boolean!
+    num_words: Int!
+    published_at: Date
     title: String!
-    # editors: [User!]! @relation(name: "editing blog posts")
-    # published: Boolean!
+    updated_at: Date!
 }

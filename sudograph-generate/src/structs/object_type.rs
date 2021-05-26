@@ -116,8 +116,7 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
             return quote! { bool };
         },
         "Date" => {
-            // TODO should we create some kind of custom Rust type for Date?
-            return quote! { String }; // TODO this should probably actually be a date
+            return quote! { Date };
         },
         "Float" => {
             return quote! { f32 };

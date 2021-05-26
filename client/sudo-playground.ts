@@ -3,9 +3,8 @@ import ReactDOM from 'react-dom';
 import GraphiQL from 'graphiql-sudograph';
 import { parse } from 'graphql';
 import {
-    Actor,
-    HttpAgent
-} from '@dfinity/agent';
+    sudograph
+} from './sudograph';
 
 class SudoPlayground extends HTMLElement {
     get canisterId() {
@@ -17,29 +16,26 @@ class SudoPlayground extends HTMLElement {
 
         this.innerHTML = `
             <link href="https://unpkg.com/graphiql/graphiql.min.css" rel="stylesheet" />
-            <div id="graphiql" style="height: 100vh;"></div>
         `;
     }
 
     async connectedCallback() {
-        const idlFactory = ({ IDL }) => {
-            return IDL.Service({
-                'graphql_mutation' : IDL.Func([IDL.Text], [IDL.Text], []),
-                'graphql_query' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
-            });
-        };
+        const div = document.createElement('div');
+        div.style.height = '100vh';
 
+        document.body.appendChild(div);
+
+        // TODO the playground fails to render properly sometimes, this timeout seems to help most of the time
+        // TODO I have tried solving this multiple times, if you want to try again here's a good issue to start with: https://github.com/graphql/graphiql/issues/770
+        // (window as any).g.refresh();
         setTimeout(() => {
             ReactDOM.render(
                 React.createElement(
                     GraphiQL, {
-                        fetcher: graphQLFetcher(
-                            idlFactory,
-                            this.canisterId
-                        )
+                        fetcher: graphQLFetcher(this.canisterId)
                     }
                 ),
-                document.getElementById('graphiql'),
+                div
             );
         }, 1000);
     }
@@ -47,27 +43,29 @@ class SudoPlayground extends HTMLElement {
 
 window.customElements.define('sudo-playground', SudoPlayground);
 
-function graphQLFetcher(
-    idlFactory,
-    canisterId
-) {
+function graphQLFetcher(canisterId: string) {
     return async (graphQLParams) => {
-        const agent = new HttpAgent();
-        await agent.fetchRootKey();
-        const graphqlActor = Actor.createActor(idlFactory, {
-            agent,
+        const {
+            query,
+            mutation
+        } = sudograph({
             canisterId
         });
-    
+
         const queryOrMutation = getQueryOrMutation(graphQLParams.query)
         const result = (
             queryOrMutation === 'QUERY' ?
-            await graphqlActor.graphql_query(graphQLParams.query) :
-            await graphqlActor.graphql_mutation(graphQLParams.query)
+            await query(
+                graphQLParams.query,
+                graphQLParams.variables
+            ) :
+            await mutation(
+                graphQLParams.query,
+                graphQLParams.variables
+            )
         );
     
-        const resultJSON = JSON.parse(result);
-        return resultJSON;
+        return result;
     };
 
 }
@@ -80,5 +78,5 @@ function getQueryOrMutation(queryString) {
         return 'QUERY';
     }
 
-    return firstDefinition.operation === 'query' ? 'QUERY' : 'MUTATION';
+    return (firstDefinition as any).operation === 'query' ? 'QUERY' : 'MUTATION';
 }

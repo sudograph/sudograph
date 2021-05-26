@@ -4,8 +4,17 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 import { BlogPost } from '../types';
-import graphql from 'ic:canisters/graphql';
-import { v4 as uuid } from 'uuid';
+import {
+    gql,
+    sudograph
+} from 'sudograph';
+
+const {
+    query,
+    mutation
+} = sudograph({
+    canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai'
+});
 
 type State = {
     bodyValue: string;
@@ -108,48 +117,75 @@ window.customElements.define('sudo-draft', SudoDraft);
 
 async function updateDraft(draft: BlogPost): Promise<string> {
     if (typeof draft.id === 'symbol') {
-        const id = uuid();
-
-        const result = await graphql.graphql_mutation(`
-            mutation {
+        const result = await mutation(gql`
+            mutation (
+                $body: String!
+                $created_at: Date!
+                $live: Boolean!
+                $num_words: Int!
+                $title: String!
+                $updated_at: Date!
+            ) {
                 createBlogPost(input: {
-                    id: "${id}"
-                    body: "${draft.body}"
-                    created_at: "${new Date().toISOString()}"
-                    live: ${draft.live}
-                    num_words: ${draft.body.split(' ').length}
+                    body: $body
+                    created_at: $created_at
+                    live: $live
+                    num_words: $num_words
                     published_at: null
-                    title: "${draft.title}"
-                    updated_at: "${new Date().toISOString()}"
+                    title: $title
+                    updated_at: $updated_at
                 }) {
                     id
                 }
             }
-        `);
+        `, {
+            body: draft.body,
+            created_at: new Date().toISOString(),
+            live: draft.live,
+            num_words: draft.body.split(' ').length,
+            title: draft.title,
+            updated_at: new Date().toISOString()
+        });
 
         console.log('result', result);
 
-        return id;
+        return result.data.createBlogPost.id;
     }
     else {
-        const result = await graphql.graphql_mutation(`
-            mutation {
+        const result = await mutation(gql`
+            mutation (
+                $id: ID!
+                $body: String!
+                $live: Boolean!
+                $num_words: Int!
+                $published_at: Date!
+                $title: String!
+                $updated_at: Date!
+            ) {
                 updateBlogPost(input: {
-                    id: "${draft.id}"
-                    body: "${draft.body}"
-                    live: ${draft.live}
-                    num_words: ${draft.body.split(' ').length}
-                    published_at: "${new Date().toISOString()}"
-                    title: "${draft.title}"
-                    updated_at: "${new Date().toISOString()}"
+                    id: $id
+                    body: $body
+                    live: $live
+                    num_words: $num_words
+                    published_at: $published_at
+                    title: $title
+                    updated_at: $updated_at
                 }) {
                     id
                 }
             }
-        `);
+        `, {
+            id: draft.id,
+            body: draft.body,
+            live: draft.live,
+            num_words: draft.body.split(' ').length,
+            published_at: new Date().toISOString(),
+            title: draft.title,
+            updated_at: new Date().toISOString()
+        });
 
         console.log('result', result);
 
-        return draft.id;
+        return result.data.updateBlogPost.id;
     }
 }

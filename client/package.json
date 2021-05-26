@@ -1,0 +1,23 @@
+{
+  "name": "sudograph",
+  "version": "0.2.0-beta.0",
+  "main": "build/sudograph.js",
+  "module": "build/sudograph.js",
+  "description": "",
+  "scripts": {
+    "build": "snowpack build --polyfill-node"
+  },
+  "keywords": [],
+  "author": "Jordan Last <jordan.michael.last@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@dfinity/agent": "0.8.9",
+    "graphiql-sudograph": "1.4.1",
+    "graphql": "15.5.0",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  },
+  "devDependencies": {
+    "snowpack": "3.5.1"
+  }
+}
