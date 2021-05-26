@@ -70,10 +70,10 @@ fn get_rust_type_for_upsert_input<'a>(
             );
 
             if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
-                return quote! { MaybeUndefined<RelationManyInput> }; // TODO I do not think this would ever happen
+                return quote! { MaybeUndefined<CreateRelationManyInput> }; // TODO I do not think this would ever happen
             }
             else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
-                return quote! { MaybeUndefined<RelationOneInput> };
+                return quote! { MaybeUndefined<CreateRelationOneInput> };
             }
             else {
                 // if
@@ -99,7 +99,7 @@ fn get_rust_type_for_upsert_input<'a>(
             return quote! { #rust_type };
         },
         Type::ListType(_) => {
-            return quote! { MaybeUndefined<RelationManyInput> };
+            return quote! { MaybeUndefined<CreateRelationManyInput> };
         }
     };
 }

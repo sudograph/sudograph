@@ -70,14 +70,14 @@ fn get_rust_type_for_create_input<'a>(
             );
 
             if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
-                return quote! { Option<RelationManyInput> }; // TODO I do not think this would ever happen
+                return quote! { Option<CreateRelationManyInput> }; // TODO I do not think this would ever happen
             }
             else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
                 if is_non_null_type == true {
-                    return quote! { RelationOneInput };
+                    return quote! { CreateRelationOneInput };
                 }
                 else {
-                    return quote! { Option<RelationOneInput> };
+                    return quote! { Option<CreateRelationOneInput> };
                 }
             }
             else {
@@ -102,7 +102,7 @@ fn get_rust_type_for_create_input<'a>(
             return quote! { #rust_type };
         },
         Type::ListType(_) => {
-            return quote! { Option<RelationManyInput> };
+            return quote! { Option<CreateRelationManyInput> };
         }
     };
 }

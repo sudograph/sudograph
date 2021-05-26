@@ -239,12 +239,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         const temp: &str = include_str!(#schema_absolute_file_path_string);
 
         #[derive(InputObject)]
-        struct RelationManyInput {
+        struct CreateRelationManyInput {
             connect: Vec<ID>
         }
 
         #[derive(InputObject)]
-        struct RelationOneInput {
+        struct CreateRelationOneInput {
             connect: ID
         }
 
@@ -322,7 +322,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             fn sudo_serialize_relation_many(&self, relation_object_type_name: String) -> FieldValue;
         }
 
-        impl SudoSerialize for RelationManyInput {
+        impl SudoSerialize for CreateRelationManyInput {
             fn sudo_serialize(
                 &self,
                 relation_object_type_name: Option<String>
@@ -336,7 +336,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             }
         }
 
-        impl SudoSerialize for RelationOneInput {
+        impl SudoSerialize for CreateRelationOneInput {
             fn sudo_serialize(
                 &self,
                 relation_object_type_name: Option<String>
