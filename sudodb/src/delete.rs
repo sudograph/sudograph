@@ -11,7 +11,7 @@ pub fn delete(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     id: &str,
-    selection_set: SelectionSet
+    selection_set: &SelectionSet
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let object_type_option = object_type_store.get_mut(object_type_name);
 

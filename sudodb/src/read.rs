@@ -31,7 +31,7 @@ pub fn read(
     object_type_store: &ObjectTypeStore,
     object_type_name: &str,
     inputs: Vec<ReadInput>,
-    selection_set: SelectionSet
+    selection_set: &SelectionSet
 ) -> Result<Vec<String>, Box<dyn Error>> { // TODO I think I want this to return a list of JSON strings...GraphQL can handle type checking the actual values I hope
     let object_type_result = object_type_store.get(object_type_name);
 
@@ -46,7 +46,7 @@ pub fn read(
             return convert_field_value_store_to_json_string(
                 object_type_store,
                 field_value_store,
-                selection_set.clone()
+                selection_set
             );
         }).collect();
     

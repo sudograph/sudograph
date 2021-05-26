@@ -36,7 +36,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                     object_store,
                     #object_type_name,
                     input.get_read_inputs(String::from("")), // TODO it is weird to pass in the empty string
-                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
+                    &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
                 // TODO make this error handling and matching better if possible
