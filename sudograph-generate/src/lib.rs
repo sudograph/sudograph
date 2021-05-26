@@ -170,7 +170,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             MaybeUndefined,
             Schema,
             EmptySubscription,
-            ID
+            scalar
+            // ID
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -189,7 +190,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             ReadInput,
             ReadInputType,
             ReadInputOperation,
-            FieldTypeRelationInfo
+            FieldTypeRelationInfo,
+            SelectionSet
         };
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
@@ -203,7 +205,10 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             post_upgrade
         };
         use std::error::Error;
-        use std::collections::BTreeMap;
+        use std::collections::{
+            BTreeMap,
+            HashMap
+        };
         use sudograph::rand::{
             Rng,
             SeedableRng,
@@ -222,6 +227,21 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         type RandStore = BTreeMap<String, StdRng>;
 
         const temp: &str = include_str!(#schema_absolute_file_path_string);
+
+        // We are creating our own custom ID scalar so that we can derive the Default trait
+        // Default traits are needed so that serde has default values when the selection set
+        // Does not provide all required values
+        #[derive(Serialize, Deserialize, Default)]
+        #[serde(crate="self::serde")]
+        struct ID(String);
+
+        impl ID {
+            fn as_str(&self) -> String {
+                return String::from(&self.0);
+            }
+        }
+
+        scalar!(ID);
 
         #[derive(InputObject)]
         struct CreateRelationManyInput {
@@ -413,6 +433,30 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             }
 
             return array;
+        }
+
+        fn convert_selection_field_to_selection_set(
+            selection_field: sudograph::async_graphql::context::SelectionField<'_>,
+            selection_set: SelectionSet
+        ) -> SelectionSet {
+            let selection_fields: Vec<sudograph::async_graphql::context::SelectionField<'_>> = selection_field.selection_set().collect();
+
+            if selection_fields.len() == 0 {
+                return selection_set;
+            }
+
+            let mut hash_map = HashMap::new();
+
+            for selection_field in selection_fields {
+                let child_selection_set = convert_selection_field_to_selection_set(
+                    selection_field,
+                    SelectionSet(None)
+                );
+            
+                hash_map.insert(String::from(selection_field.name()), child_selection_set);
+            }
+
+            return SelectionSet(Some(hash_map));
         }
     };
 

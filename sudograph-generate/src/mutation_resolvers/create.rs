@@ -27,6 +27,7 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
         return quote! {
             async fn #create_function_name(
                 &self,
+                context: &sudograph::async_graphql::Context<'_>,
                 input: #create_input_type
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let rand_store = storage::get_mut::<RandStore>();
@@ -41,19 +42,18 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                         _ => None
                     },
                     input.get_create_field_inputs(),
+                    convert_selection_field_to_selection_set(context.field(), SelectionSet(None)),
                     rand_store.get_mut("RNG").unwrap()
                 );
 
                 match create_result {
                     Ok(strings) => {
-                        
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
                             ic_cdk::println!("{}", string);
                             return from_str(string).unwrap();
                         }).collect();
 
                         return Ok(deserialized_strings);
-                        // return Ok(vec![]);
                     },
                     Err(error) => {
                         return Err(sudograph::async_graphql::Error::from(error));

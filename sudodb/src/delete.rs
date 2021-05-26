@@ -1,14 +1,17 @@
 use crate::{
     ObjectTypeStore,
     SudodbError,
-    convert_field_value_store_to_json_string
+    convert_field_value_store_to_json_string,
+    SelectionSet
 };
 use std::error::Error;
+use std::collections::HashMap;
 
 pub fn delete(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
-    id: &str
+    id: &str,
+    selection_set: SelectionSet
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let object_type_option = object_type_store.get_mut(object_type_name);
 
@@ -23,7 +26,8 @@ pub fn delete(
 
             let json_result_string = convert_field_value_store_to_json_string(
                 object_type_store,
-                &cloned
+                &cloned,
+                selection_set
             );
     
             return Ok(vec![json_result_string]); // TODO this should return a string of the result
