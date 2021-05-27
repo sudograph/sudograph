@@ -40,8 +40,8 @@ class SudoApp extends HTMLElement {
 
     async fetchAndSetBlogPostsAndDrafts() {
         let promises: ReadonlyArray<Promise<ReadonlyArray<BlogPost>>> = [
-            fetchBlogPosts(),
-            fetchDrafts()
+            fetchBlogPosts(true),
+            fetchBlogPosts(false)
         ];
 
         const results = await Promise.all(promises);
@@ -158,13 +158,12 @@ class SudoApp extends HTMLElement {
 
 window.customElements.define('sudo-app', SudoApp);
 
-// TODO redo these functions to use variables
-async function fetchBlogPosts(): Promise<ReadonlyArray<BlogPost>> {
+async function fetchBlogPosts(live: boolean): Promise<ReadonlyArray<BlogPost>> {
     const result = await query(gql`
-        query {
+        query ($live: Boolean!) {
             readBlogPost(input: {
                 live: {
-                    eq: true
+                    eq: $live
                 }
             }) {
                 id
@@ -177,33 +176,9 @@ async function fetchBlogPosts(): Promise<ReadonlyArray<BlogPost>> {
                 updated_at
             }
         }
-    `);
-
-    console.log('result', result);
-
-    // TODO handle errors
-    return result.data.readBlogPost;
-}
-
-async function fetchDrafts(): Promise<ReadonlyArray<BlogPost>> {
-    const result = await query(gql`
-        query {
-            readBlogPost(input: {
-                live: {
-                    eq: false
-                }
-            }) {
-                id
-                body
-                created_at
-                live
-                num_words
-                published_at
-                title
-                updated_at
-            }
-        }
-    `);
+    `, {
+        live
+    });
 
     console.log('result', result);
 

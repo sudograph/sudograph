@@ -54,6 +54,9 @@ class SudoDraft extends HTMLElement {
         };
     }
 
+    // TODO publishing an already saved draft does not seem to work correctly
+    // TODO figure out how to iterate more quickly on the frontend...we might want to not use
+    // TODO the replica in development if we want to move quickly
     async publishDraft() {
         if (this.store.draft === 'NOT_SET') {
             return;
