@@ -7,6 +7,8 @@ use chrono::prelude::{
 use crate::{
     convert_field_value_store_to_json_string,
     FieldValue,
+    FieldValueRelationMany,
+    FieldValueRelationOne,
     FieldValueScalar,
     FieldValueStore,
     FieldValuesStore,
@@ -22,10 +24,8 @@ use crate::{
 };
 use std::error::Error;
 
-const ERROR_PREFIX: &str = "Sudodb::read::error - ";
+const ERROR_PREFIX: &str = "sudodb::read";
 
-// TODO prefix all errors with Sudodb::...or something like that
-// TODO let's try to make this the simplest experience ever
 pub fn read(
     object_type_store: &ObjectTypeStore,
     object_type_name: &str,
@@ -60,6 +60,8 @@ fn find_field_value_stores_for_inputs(
     inputs: &Vec<ReadInput>
 ) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
     // TODO I believe the result in the fold here needs to be mutable for efficiency...not sure, but perhaps
+    // TODO this is a simple linear search, and thus I believe in the worst case we have O(n) performance
+    // TODO I believe this is where the indexing will need to be implemented
     let field_value_stores = field_values_store.values().try_fold(vec![], |mut result, field_value_store| {
         let inputs_match: bool = field_value_store_matches_inputs(
             field_value_store,
@@ -70,12 +72,9 @@ fn find_field_value_stores_for_inputs(
 
         if inputs_match == true {
             result.push(field_value_store.clone());
+        }
 
-            return Ok(result);
-        }
-        else {
-            return Ok(result);
-        }
+        return Ok(result);
     });
 
     return field_value_stores;
@@ -123,9 +122,38 @@ fn field_value_store_matches_inputs(
         let field_type_option = field_types_store.get(&input.field_name);
         let field_value_option = field_value_store.get(&input.field_name);    
 
-        // TODO what if I split based on the scalar types here?
         if let (Some(field_type), Some(field_value)) = (field_type_option, field_value_option) {
             match field_type {
+                FieldType::Boolean => {
+                    return field_value_scalar_boolean_matches_input(
+                        field_value,
+                        input
+                    );
+                },
+                FieldType::Date => {
+                    return field_value_scalar_date_matches_input(
+                        field_value,
+                        input
+                    );
+                },
+                FieldType::Float => {
+                    return field_value_scalar_float_matches_input(
+                        field_value,
+                        input
+                    );
+                },
+                FieldType::Int => {
+                    return field_value_scalar_int_matches_input(
+                        field_value,
+                        input
+                    );
+                },
+                FieldType::String => {
+                    return field_value_scalar_string_matches_input(
+                        field_value,
+                        input
+                    );
+                },
                 FieldType::RelationMany(field_type_relation_info) => {
                     return field_value_relation_many_matches_input(
                         field_value,
@@ -134,12 +162,6 @@ fn field_value_store_matches_inputs(
                 },
                 FieldType::RelationOne(field_type_relation_info) => {
                     return field_value_relation_one_matches_input(
-                        field_value,
-                        input
-                    );
-                },
-                _ => {
-                    return field_value_matches_input(
                         field_value,
                         input
                     );
@@ -156,6 +178,311 @@ fn field_value_store_matches_inputs(
             }));
         }
     });
+}
+
+fn field_value_scalar_boolean_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_boolean = get_field_value_scalar_boolean(field_value_scalar)?;
+            let input_field_value_scalar_boolean = get_field_value_scalar_boolean(input_field_value_scalar)?;
+
+            return field_value_scalar_boolean_matches_input_field_value_scalar_boolean(
+                field_value_scalar_boolean,
+                input_field_value_scalar_boolean,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_boolean_matches_input_field_value_scalar_boolean(
+    field_value_scalar_boolean: bool,
+    input_field_value_scalar_boolean: bool,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_boolean == input_field_value_scalar_boolean);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_boolean_matches_input_field_value_scalar_boolean",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
+}
+
+fn field_value_scalar_date_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_date = get_field_value_scalar_date(field_value_scalar)?;
+            let input_field_value_scalar_date = get_field_value_scalar_date(input_field_value_scalar)?;
+
+            return field_value_scalar_date_matches_input_field_value_scalar_date(
+                &field_value_scalar_date,
+                &input_field_value_scalar_date,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_date_matches_input_field_value_scalar_date(
+    field_value_scalar_date: &str,
+    input_field_value_scalar_date: &str,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_date_parsed = field_value_scalar_date.parse::<DateTime<Utc>>()?;
+    let input_field_value_scalar_date_parsed = input_field_value_scalar_date.parse::<DateTime<Utc>>()?;
+
+    match input_operation {
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_date_parsed == input_field_value_scalar_date_parsed);
+        },
+        ReadInputOperation::GreaterThan => {
+            return Ok(field_value_scalar_date_parsed > input_field_value_scalar_date_parsed);
+        },
+        ReadInputOperation::GreaterThanOrEqualTo => {
+            return Ok(field_value_scalar_date_parsed >= input_field_value_scalar_date_parsed);
+        },
+        ReadInputOperation::LessThan => {
+            return Ok(field_value_scalar_date < input_field_value_scalar_date);
+        },
+        ReadInputOperation::LessThanOrEqualTo => {
+            return Ok(field_value_scalar_date <= input_field_value_scalar_date);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_date_matches_input_field_value_scalar_date",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
+}
+
+fn field_value_scalar_float_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_float = get_field_value_scalar_float(field_value_scalar)?;
+            let input_field_value_scalar_float = get_field_value_scalar_float(input_field_value_scalar)?;
+
+            return field_value_scalar_float_matches_input_field_value_scalar_float(
+                field_value_scalar_float,
+                input_field_value_scalar_float,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_float_matches_input_field_value_scalar_float(
+    field_value_scalar_float: f32,
+    input_field_value_scalar_float: f32,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_float == input_field_value_scalar_float);
+        },
+        ReadInputOperation::GreaterThan => {
+            return Ok(field_value_scalar_float > input_field_value_scalar_float);
+        },
+        ReadInputOperation::GreaterThanOrEqualTo => {
+            return Ok(field_value_scalar_float >= input_field_value_scalar_float);
+        },
+        ReadInputOperation::LessThan => {
+            return Ok(field_value_scalar_float < input_field_value_scalar_float);
+        },
+        ReadInputOperation::LessThanOrEqualTo => {
+            return Ok(field_value_scalar_float <= input_field_value_scalar_float);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_float_matches_input_field_value_scalar_float",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
+}
+
+fn field_value_scalar_int_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_int = get_field_value_scalar_int(field_value_scalar)?;
+            let input_field_value_scalar_int = get_field_value_scalar_int(input_field_value_scalar)?;
+
+            return field_value_scalar_int_matches_input_field_value_scalar_int(
+                field_value_scalar_int,
+                input_field_value_scalar_int,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_int_matches_input_field_value_scalar_int(
+    field_value_scalar_int: i32,
+    input_field_value_scalar_int: i32,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_int == input_field_value_scalar_int);
+        },
+        ReadInputOperation::GreaterThan => {
+            return Ok(field_value_scalar_int > input_field_value_scalar_int);
+        },
+        ReadInputOperation::GreaterThanOrEqualTo => {
+            return Ok(field_value_scalar_int >= input_field_value_scalar_int);
+        },
+        ReadInputOperation::LessThan => {
+            return Ok(field_value_scalar_int < input_field_value_scalar_int);
+        },
+        ReadInputOperation::LessThanOrEqualTo => {
+            return Ok(field_value_scalar_int <= input_field_value_scalar_int);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_int_matches_input_field_value_scalar_int",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
+}
+
+fn field_value_scalar_string_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_string = get_field_value_scalar_string(field_value_scalar)?;
+            let input_field_value_scalar_string = get_field_value_scalar_string(input_field_value_scalar)?;
+
+            return field_value_scalar_string_matches_input_field_value_scalar_string(
+                &field_value_scalar_string,
+                &input_field_value_scalar_string,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_string_matches_input_field_value_scalar_string(
+    field_value_scalar_string: &str,
+    input_field_value_scalar_string: &str,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Contains => {
+            return Ok(field_value_scalar_string.contains(input_field_value_scalar_string));
+        },
+        ReadInputOperation::EndsWith => {
+            return Ok(field_value_scalar_string.ends_with(input_field_value_scalar_string));
+        },
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_string == input_field_value_scalar_string);
+        },
+        ReadInputOperation::GreaterThan => {
+            return Ok(field_value_scalar_string > input_field_value_scalar_string);
+        },
+        ReadInputOperation::GreaterThanOrEqualTo => {
+            return Ok(field_value_scalar_string >= input_field_value_scalar_string);
+        },
+        ReadInputOperation::LessThan => {
+            return Ok(field_value_scalar_string < input_field_value_scalar_string);
+        },
+        ReadInputOperation::LessThanOrEqualTo => {
+            return Ok(field_value_scalar_string <= input_field_value_scalar_string);
+        },
+        ReadInputOperation::StartsWith => {
+            return Ok(field_value_scalar_string.starts_with(input_field_value_scalar_string));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_string_matches_input_field_value_scalar_string",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
 }
 
 // TODO it really should not be that hard to have cross-relational filtering on all fields
@@ -330,508 +657,138 @@ fn field_value_relation_one_matches_input(
     // return Ok(true);
 }
 
-// TODO try to make this much less verbose if possible
-// TODO consider if we even need the result here, now that we are not parsing anymore
-fn field_value_matches_input(
-    field_value: &FieldValue,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-
-    // TODO this is super verbose, so if we can simplify it
+fn get_field_value_scalar_option(field_value: &FieldValue) -> Result<&Option<FieldValueScalar>, Box<dyn Error>> {
     match field_value {
         FieldValue::Scalar(field_value_scalar_option) => {
-            match field_value_scalar_option {
-                Some(field_value_scalar) => {
-                    match field_value_scalar {
-                        FieldValueScalar::Boolean(field_value_scalar_boolean) => {
-                            return field_value_matches_input_for_type_boolean(
-                                field_value_scalar_boolean,
-                                input
-                            );
-                        },
-                        FieldValueScalar::Date(field_value_scalar_date) => {
-                            return field_value_matches_input_for_type_date(
-                                field_value_scalar_date,
-                                input
-                            );
-                        },
-                        FieldValueScalar::Float(field_value_scalar_float) => {
-                            return field_value_matches_input_for_type_float(
-                                field_value_scalar_float,
-                                input
-                            );
-                        },
-                        FieldValueScalar::Int(field_value_scalar_boolean) => {
-                            return field_value_matches_input_for_type_int(
-                                field_value_scalar_boolean,
-                                input
-                            );
-                        },
-                        FieldValueScalar::String(field_value_scalar_boolean) => {
-                            return field_value_matches_input_for_type_string(
-                                field_value_scalar_boolean,
-                                input
-                            );
-                        }
-                    };
-                },
-                None => {
-                    // return Ok(false);
-                    match &input.input_operation {
-                        ReadInputOperation::Equals => {
-                            match &input.field_value {
-                                FieldValue::Scalar(input_field_value_scalar_option) => {
-                                    match input_field_value_scalar_option {
-                                        Some(_) => {
-                                            return Ok(false);
-                                        },
-                                        None => {
-                                            // TODO this is too liberal...
-                                            // TODO for example, if a date is null and you asked for all dates greater than null, then this will return true
-                                            // TODO actually...maybe that is correct?
-                                            return Ok(true);
-                                        }
-                                    };
-                                },
-                                FieldValue::RelationMany(_) => {
-                                    // TODO we might even want to panic here
-                                    return Ok(false);
-                                },
-                                FieldValue::RelationOne(_) => {
-                                    // TODO we might even want to panic here
-                                    return Ok(false);
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                }
-            }
+            return Ok(field_value_scalar_option);
         },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return &Option<FieldValueScalar>",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_option"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_boolean(field_value_scalar: &FieldValueScalar) -> Result<bool, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::Boolean(field_value_scalar_boolean) => {
+            return Ok(*field_value_scalar_boolean);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return bool",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_boolean"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_date(field_value_scalar: &FieldValueScalar) -> Result<String, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::Date(field_value_scalar_date) => {
+            return Ok(String::from(field_value_scalar_date));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return String",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_date"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_float(field_value_scalar: &FieldValueScalar) -> Result<f32, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::Float(field_value_scalar_float) => {
+            return Ok(*field_value_scalar_float);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return f32",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_float"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_int(field_value_scalar: &FieldValueScalar) -> Result<i32, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::Int(field_value_scalar_int) => {
+            return Ok(*field_value_scalar_int);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return i32",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_int"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_string(field_value_scalar: &FieldValueScalar) -> Result<String, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::String(field_value_scalar_string) => {
+            return Ok(String::from(field_value_scalar_string));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return String",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_string"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_relation_many_option(field_value: &FieldValue) -> Result<&Option<FieldValueRelationMany>, Box<dyn Error>> {
+    match field_value {
         FieldValue::RelationMany(field_value_relation_many_option) => {
-            // TODO we might even want to panic here
-            return Ok(false); // TODO relation filtering not yet implemented
+            return Ok(field_value_relation_many_option);
         },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return &Option<FieldValueRelationMany>",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_relation_many_option"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_relation_one_option(field_value: &FieldValue) -> Result<&Option<FieldValueRelationOne>, Box<dyn Error>> {
+    match field_value {
         FieldValue::RelationOne(field_value_relation_one_option) => {
-            // TODO we might even want to panic here
-            return Ok(false); // TODO relation filtering not yet implemented
+            return Ok(field_value_relation_one_option);
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return &Option<FieldValueRelationOne>",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_relation_one_option"
+                )
+            }));
         }
-    }
-}
-
-fn field_value_matches_input_for_type_boolean(
-    field_value_scalar_boolean: &bool,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-    match &input.field_value {
-        FieldValue::Scalar(input_field_value_scalar_option) => {
-            match input_field_value_scalar_option {
-                Some(input_field_value_scalar) => {
-                    match input_field_value_scalar {
-                        FieldValueScalar::Boolean(input_field_value_scalar_boolean) => {
-                            match input.input_operation {
-                                ReadInputOperation::Contains => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation contains is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::EndsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation ends with is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::Equals => {
-                                    return Ok(field_value_scalar_boolean == input_field_value_scalar_boolean);
-                                },
-                                ReadInputOperation::GreaterThan => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::GreaterThanOrEqualTo => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::In => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThan => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThanOrEqualTo => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type boolean",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::StartsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation starts with is not implemented for field type date",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                },
-                None => {
-                    return Ok(false);
-                }
-            };
-        },
-        FieldValue::RelationMany(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        },
-        FieldValue::RelationOne(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        }
-    }
-}
-
-// TODO the strings here need to be converted into dates for comparison
-fn field_value_matches_input_for_type_date(
-    field_value_scalar_date_string: &String,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-    let field_value_scalar_date = field_value_scalar_date_string.parse::<DateTime<Utc>>()?;
-
-    match &input.field_value {
-        FieldValue::Scalar(input_field_value_scalar_option) => {
-            match input_field_value_scalar_option {
-                Some(input_field_value_scalar) => {
-                    match input_field_value_scalar {
-                        FieldValueScalar::Date(input_field_value_scalar_date_string) => {
-                            let input_field_value_scalar_date = input_field_value_scalar_date_string.parse::<DateTime<Utc>>()?;
-
-                            match input.input_operation {
-                                ReadInputOperation::Contains => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation contains is not implemented for field type date",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::EndsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation ends with is not implemented for field type date",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::Equals => {
-                                    return Ok(field_value_scalar_date == input_field_value_scalar_date);
-                                },
-                                ReadInputOperation::GreaterThan => {
-                                    return Ok(field_value_scalar_date > input_field_value_scalar_date);
-                                },
-                                ReadInputOperation::GreaterThanOrEqualTo => {
-                                    return Ok(field_value_scalar_date >= input_field_value_scalar_date);
-                                },
-                                ReadInputOperation::In => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type date",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThan => {
-                                    return Ok(field_value_scalar_date < input_field_value_scalar_date);
-                                },
-                                ReadInputOperation::LessThanOrEqualTo => {
-                                    return Ok(field_value_scalar_date <= input_field_value_scalar_date);
-                                },
-                                ReadInputOperation::StartsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation starts with is not implemented for field type date",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                },
-                None => {
-                    return Ok(false);
-                }
-            };
-        },
-        FieldValue::RelationMany(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        },
-        FieldValue::RelationOne(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        }
-    }
-}
-
-fn field_value_matches_input_for_type_float(
-    field_value_scalar_float: &f32,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-    match &input.field_value {
-        FieldValue::Scalar(input_field_value_scalar_option) => {
-            match input_field_value_scalar_option {
-                Some(input_field_value_scalar) => {
-                    match input_field_value_scalar {
-                        FieldValueScalar::Float(input_field_value_scalar_float) => {
-                            match input.input_operation {
-                                ReadInputOperation::Contains => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation contains is not implemented for field type float",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::EndsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation ends with is not implemented for field type float",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::Equals => {
-                                    return Ok(field_value_scalar_float == input_field_value_scalar_float);
-                                },
-                                ReadInputOperation::GreaterThan => {
-                                    return Ok(field_value_scalar_float > input_field_value_scalar_float);
-                                },
-                                ReadInputOperation::GreaterThanOrEqualTo => {
-                                    return Ok(field_value_scalar_float >= input_field_value_scalar_float);
-                                },
-                                ReadInputOperation::In => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type float",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThan => {
-                                    return Ok(field_value_scalar_float < input_field_value_scalar_float);
-                                },
-                                ReadInputOperation::LessThanOrEqualTo => {
-                                    return Ok(field_value_scalar_float <= input_field_value_scalar_float);
-                                },
-                                ReadInputOperation::StartsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation starts with is not implemented for field type float",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                },
-                None => {
-                    return Ok(false);
-                }
-            };
-        },
-        FieldValue::RelationMany(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        },
-        FieldValue::RelationOne(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        }
-    }
-}
-
-fn field_value_matches_input_for_type_int(
-    field_value_scalar_int: &i32,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-    match &input.field_value {
-        FieldValue::Scalar(input_field_value_scalar_option) => {
-            match input_field_value_scalar_option {
-                Some(input_field_value_scalar) => {
-                    match input_field_value_scalar {
-                        FieldValueScalar::Int(input_field_value_scalar_int) => {
-                            match input.input_operation {
-                                ReadInputOperation::Contains => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation contains is not implemented for field type int",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::EndsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation ends with is not implemented for field type int",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::Equals => {
-                                    return Ok(field_value_scalar_int == input_field_value_scalar_int);
-                                },
-                                ReadInputOperation::GreaterThan => {
-                                    return Ok(field_value_scalar_int > input_field_value_scalar_int);
-                                },
-                                ReadInputOperation::GreaterThanOrEqualTo => {
-                                    return Ok(field_value_scalar_int >= input_field_value_scalar_int);
-                                },
-                                ReadInputOperation::In => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type int",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThan => {
-                                    return Ok(field_value_scalar_int < input_field_value_scalar_int);
-                                },
-                                ReadInputOperation::LessThanOrEqualTo => {
-                                    return Ok(field_value_scalar_int <= input_field_value_scalar_int);
-                                },
-                                ReadInputOperation::StartsWith => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation starts with is not implemented for field type int",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                },
-                None => {
-                    return Ok(false);
-                }
-            };
-        },
-        FieldValue::RelationMany(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        },
-        FieldValue::RelationOne(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        }
-    }
-}
-
-fn field_value_matches_input_for_type_string(
-    field_value_scalar_string: &String,
-    input: &ReadInput
-) -> Result<bool, Box<dyn Error>> {
-    match &input.field_value {
-        FieldValue::Scalar(input_field_value_scalar_option) => {
-            match input_field_value_scalar_option {
-                Some(input_field_value_scalar) => {
-                    match input_field_value_scalar {
-                        FieldValueScalar::String(input_field_value_scalar_string) => {
-                            match input.input_operation {
-                                ReadInputOperation::Contains => {
-                                    return Ok(field_value_scalar_string.contains(input_field_value_scalar_string));
-                                },
-                                ReadInputOperation::EndsWith => {
-                                    return Ok(field_value_scalar_string.ends_with(input_field_value_scalar_string));
-                                },
-                                ReadInputOperation::Equals => {
-                                    return Ok(field_value_scalar_string == input_field_value_scalar_string);
-                                },
-                                ReadInputOperation::GreaterThan => {
-                                    return Ok(field_value_scalar_string > input_field_value_scalar_string);
-                                },
-                                ReadInputOperation::GreaterThanOrEqualTo => {
-                                    return Ok(field_value_scalar_string >= input_field_value_scalar_string);
-                                },
-                                ReadInputOperation::In => {
-                                    return Err(Box::new(SudodbError {
-                                        message: format!(
-                                            "{error_prefix}read input operation in is not implemented for field type string",
-                                            error_prefix = ERROR_PREFIX
-                                        )
-                                    }));
-                                },
-                                ReadInputOperation::LessThan => {
-                                    return Ok(field_value_scalar_string < input_field_value_scalar_string);
-                                },
-                                ReadInputOperation::LessThanOrEqualTo => {
-                                    return Ok(field_value_scalar_string <= input_field_value_scalar_string);
-                                },
-                                ReadInputOperation::StartsWith => {
-                                    return Ok(field_value_scalar_string.starts_with(input_field_value_scalar_string));
-                                }
-                            };
-                        },
-                        _ => {
-                            return Ok(false);
-                        }
-                    };
-                },
-                None => {
-                    return Ok(false);
-                }
-            };
-        },
-        FieldValue::RelationMany(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        },
-        FieldValue::RelationOne(_) => {
-            // TODO we might even want to panic here
-            return Ok(false);
-        }
-    }
+    };
 }
