@@ -1,3 +1,5 @@
+ANNOUNCEMENT: v0.2.0 is imminent, and it will have greatly improved documentation. If you want to get started before then, please see examples/basic or DM me on Twitter or Telegram @lastmjs
+
 # Sudograph
 
 Sudograph is a [GraphQL](https://graphql.org/) database for the [Internet Computer](https://dfinity.org/).
