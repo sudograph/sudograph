@@ -1,6 +1,7 @@
 {
   "name": "sudograph",
   "version": "0.2.0-beta.0",
+  "bin": "bin.js",
   "main": "build/sudograph.js",
   "module": "build/sudograph.js",
   "description": "",
@@ -15,7 +16,8 @@
     "graphiql-sudograph": "1.4.1",
     "graphql": "15.5.0",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "yeoman-environment": "^3.4.1"
   },
   "devDependencies": {
     "snowpack": "3.5.1"
