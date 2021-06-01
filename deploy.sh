@@ -42,13 +42,13 @@ sed -E -i "s/(^sudodb = \{ version = \")(.*)(\", path = \"\.\/sudodb\" \})/\1$VE
 sed -E -i "s/(^sudograph-generate = \{ version = \")(.*)(\", path = \"\.\/sudograph-generate\" \})/\1$VERSION\3/" Cargo.toml
 cargo build
 
-echo -e "commit and push final changes"
+# echo -e "commit and push final changes"
 
 git add --all
 git commit -am "updating to version $VERSION"
 git push origin main
 
-echo -e "create and push git tag"
+# echo -e "create and push git tag"
 
 git tag v$VERSION
 git push origin v$VERSION
