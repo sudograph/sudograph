@@ -396,6 +396,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #[update]
         async fn graphql_mutation(mutation_string: String, variables_json_string: String) -> String {
             // TODO I think this cross-canister call is making the mutations take forever
+            // TODO once the async types are fixed in ic_cdk, update and we should be able to move the randomness into the
+            // TODO create resolver itself, so only it will need to do this call and take forever to do so
             let call_result: Result<(Vec<u8>,), _> = ic_cdk::api::call::call(ic_cdk::export::Principal::management_canister(), "raw_rand", ()).await;
 
             if let Ok(result) = call_result {
