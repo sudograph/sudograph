@@ -96,6 +96,7 @@ pub fn generate_upsert_mutation_resolvers(
             }
         });
 
+        // TODO upserts shouldn't be too bad, but they are just a tad complicated and we can safely ignore them for now
         let upsert_to_update_input_conversions = object_type.fields.iter().map(|field| {
             let field_name_string = &field.name;
             let field_name = format_ident!(
@@ -103,13 +104,46 @@ pub fn generate_upsert_mutation_resolvers(
                 field.name
             );
 
-            if field_name_string != "id" {
-                return quote! {
-                    #field_name: input.#field_name
-                };
+            // if field_name_string != "id" {
+            //     return quote! {
+            //         #field_name: input.#field_name
+            //     };
+            // }
+            // else {
+            //     return quote! {};
+            // }
+
+            if is_graphql_type_a_relation_many(graphql_ast, &field.field_type) == true {
+                return quote! { #field_name: input.#field_name }; // TODO I do not think this would ever happen
+            }
+            else if is_graphql_type_a_relation_one(graphql_ast, &field.field_type) == true {
+                if is_graphql_type_nullable(&field.field_type) == true {
+                    return quote! { #field_name: input.#field_name };
+                }
+                else {
+                    return quote! {
+                        #field_name: match input.#field_name {
+                            MaybeUndefined::Value(value) => value,
+                            _ => panic!("Should not happen")
+                        }
+                    };
+                }
             }
             else {
-                return quote! {};
+                if
+                    is_graphql_type_nullable(&field.field_type) == true ||
+                    field_name_string == "id"
+                {
+                    return quote! { #field_name: input.#field_name };
+                }
+                else {
+                    return quote! {
+                        #field_name: match input.#field_name {
+                            MaybeUndefined::Value(value) => value,
+                            _ => panic!("Should not happen")
+                        }
+                    };
+                }
             }
         });
 
