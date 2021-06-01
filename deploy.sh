@@ -51,6 +51,10 @@ echo -e "create and push git tag"
 git tag v$VERSION
 git push origin v$VERSION
 
+echo -e "sleeping for 30 seconds before final publish to ensure sudodb and sudograph-generate crates are fully registered on crates.io"
+
+sleep 30
+
 echo -e "crate: sudodb, publish"
 
 cd sudodb
