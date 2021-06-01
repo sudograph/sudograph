@@ -6,4 +6,4 @@ let environment = yeoman.createEnv();
 
 environment.register(require.resolve('generator-sudograph'));
 
-env.run();
+environment.run('sudograph:app');

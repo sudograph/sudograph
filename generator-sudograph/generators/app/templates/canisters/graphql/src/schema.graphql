@@ -1,0 +1,12 @@
+type User {
+    id: ID!
+    username: String!
+    blogPosts: [BlogPost!]! @relation(name: "users and blog posts")
+}
+
+type BlogPost {
+    id: ID!
+    publishedAt: Date
+    title: String!
+    author: User! @relation(name: "users and blog posts")
+}
