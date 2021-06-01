@@ -75,6 +75,7 @@ pub enum FieldValue {
     RelationOne(Option<FieldValueRelationOne>)
 }
 
+// TODO do we want ID to be a scalar type as well?
 #[derive(Clone, Debug)]
 pub enum FieldValueScalar {
     Boolean(bool),
@@ -99,7 +100,7 @@ pub struct FieldValueRelationOne {
 
 // type FieldIndexStore = BTreeMap<FieldValue, PrimaryKey>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ReadInputOperation {
     Contains,
     EndsWith,
