@@ -250,6 +250,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(Date);
 
+        // TODO each object type and each field will probably need their own relation inputs
+        // TODO the relation inputs are going to have connect, disconnect, create, update, delete, etc
         #[derive(InputObject)]
         struct CreateRelationManyInput {
             connect: Vec<ID>
@@ -260,9 +262,6 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             connect: ID
         }
 
-        // TODO you can imagine having different update relation input types
-        // TODO for nullab;e versus non-nullable fields, and also the relation one input type
-        // TODO probably does not even need an id to be input for disconnect
         #[derive(InputObject)]
         struct UpdateRelationManyInput {
             connect: Option<Vec<ID>>,
@@ -270,9 +269,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         }
 
         #[derive(InputObject)]
-        struct UpdateRelationOneInput {
+        struct UpdateNullableRelationOneInput {
             connect: Option<ID>,
-            disconnect: Option<ID>
+            disconnect: Option<bool>
+        }
+
+        #[derive(InputObject)]
+        struct UpdateNonNullableRelationOneInput {
+            connect: ID
         }
 
         #read_boolean_input_rust_struct

@@ -6,6 +6,7 @@ use crate::{
     get_graphql_type_name,
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one,
+    is_graphql_type_nullable,
     structs::object_type::get_rust_type_for_object_type_named_type
 };
 use graphql_parser::schema::{
@@ -102,7 +103,8 @@ fn generate_update_input_rust_struct_field(
     let update_input_rust_struct_field_rust_type = get_update_input_rust_struct_field_rust_type(
         graphql_ast,
         String::from(&field.name),
-        &field.field_type
+        &field.field_type,
+        false
     );
 
     return quote! {
@@ -114,7 +116,8 @@ fn generate_update_input_rust_struct_field(
 fn get_update_input_rust_struct_field_rust_type(
     graphql_ast: &Document<String>,
     update_input_rust_struct_field_name: String,
-    update_input_rust_struct_field_type: &Type<String>
+    update_input_rust_struct_field_type: &Type<String>,
+    is_non_null_type: bool
 ) -> TokenStream {
     match update_input_rust_struct_field_type {
         Type::NamedType(named_type) => {
@@ -128,7 +131,12 @@ fn get_update_input_rust_struct_field_rust_type(
                 return quote! { MaybeUndefined<UpdateRelationManyInput> }; // TODO I do not think this would ever happen
             }
             else if is_graphql_type_a_relation_one(graphql_ast, update_input_rust_struct_field_type) == true {
-                return quote! { MaybeUndefined<UpdateRelationOneInput> };
+                if is_non_null_type == true {
+                    return quote! { MaybeUndefined<UpdateNonNullableRelationOneInput> };
+                }
+                else {
+                    return quote! { MaybeUndefined<UpdateNullableRelationOneInput> };
+                }
             }
             else {
                 if update_input_rust_struct_field_name == "id" { // TODO elsewhere this check was not doing what I thought it was
@@ -143,7 +151,8 @@ fn get_update_input_rust_struct_field_rust_type(
             let update_input_rust_struct_field_rust_type = get_update_input_rust_struct_field_rust_type(
                 graphql_ast,
                 update_input_rust_struct_field_name,
-                non_null_type
+                non_null_type,
+                true
             );
 
             return quote! { #update_input_rust_struct_field_rust_type };
@@ -236,35 +245,54 @@ fn generate_update_field_input_pusher_for_relation_one(
     );
     let relation_object_type_name = get_graphql_type_name(&field.field_type);
 
-    return quote! {
-        match &self.#field_name_ident {
-            MaybeUndefined::Value(value) => {
-                if let Some(connect) = &value.connect {
-                    update_field_inputs.push(FieldInput {
-                        field_name: String::from(#field_name_string),
-                        field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
-                            relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_key: connect.as_str()
-                        }))
-                    });
-                }
-
-                if let Some(disconnect) = &value.disconnect {
+    // TODO I am not sure if we can interpolate based on a boolean, if so we could probably simplify this
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    if let Some(connect) = &value.connect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
+                                relation_object_type_name: String::from(#relation_object_type_name),
+                                relation_primary_key: connect.as_str()
+                            }))
+                        });
+                    }
+    
+                    if let Some(disconnect) = &value.disconnect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationOne(None)
+                        });
+                    }
+                },
+                MaybeUndefined::Null => {
                     update_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
                         field_value: FieldValue::RelationOne(None)
                     });
-                }
-            },
-            MaybeUndefined::Null => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationOne(None)
-                });
-            },
-            _ => ()
+                },
+                _ => ()
+            };
         };
-    };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_key: value.connect.as_str()
+                        }))
+                    });
+                },
+                _ => ()
+            };
+        };
+    }
 }
 
 fn generate_update_field_input_pusher_for_scalar(field: &Field<String>) -> TokenStream {
