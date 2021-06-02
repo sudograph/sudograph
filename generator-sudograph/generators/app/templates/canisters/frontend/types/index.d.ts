@@ -10,3 +10,26 @@ export type BlogPost = {
     title: string;
     author: User;
 };
+
+export type BlogPostInputTexts = {
+    [userId: string]: string;
+};
+
+export interface UsernameInputTextChangedEvent extends CustomEvent {
+    detail: Readonly<{
+        usernameInputText: string;
+    }>;
+}
+
+export interface CreateBlogPostEvent extends CustomEvent {
+    detail: Readonly<{
+        userId: string;
+    }>;
+}
+
+export interface BlogPostInputTextChangedEvent extends CustomEvent {
+    detail: Readonly<{
+        userId: string;
+        blogPostInputText: string;
+    }>;
+}
