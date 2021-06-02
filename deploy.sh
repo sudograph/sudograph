@@ -10,6 +10,20 @@ cd generator-sudograph
 sed -E -i "s/(\"version\": \")(.*)(\")/\1$VERSION\3/" package.json
 npm install
 
+cd generators/app/templates/canisters
+
+cd frontend
+sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+cd ..
+
+cd graphql
+sed -E -i "s/(^sudograph = \")(.*)(\")/\1$VERSION\3/" Cargo.toml
+cd ..
+
+cd playground
+sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+cd ../../../../..
+
 if [[ "$VERSION" == *"-beta."* ]];
 then
     npm publish --tag beta
@@ -56,13 +70,13 @@ sed -E -i "s/(^sudodb = \{ version = \")(.*)(\", path = \"\.\/sudodb\" \})/\1$VE
 sed -E -i "s/(^sudograph-generate = \{ version = \")(.*)(\", path = \"\.\/sudograph-generate\" \})/\1$VERSION\3/" Cargo.toml
 cargo build
 
-# echo -e "commit and push final changes"
+echo -e "commit and push final changes"
 
 git add --all
 git commit -am "updating to version $VERSION"
 git push origin main
 
-# echo -e "create and push git tag"
+echo -e "create and push git tag"
 
 git tag v$VERSION
 git push origin v$VERSION
