@@ -25,7 +25,14 @@ cd client
 sed -E -i "s/(\"version\": \")(.*)(\")/\1$VERSION\3/" package.json
 sed -E -i "s/(\"generator-sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
 npm install
-npm publish
+
+if [[ "$VERSION" == *"-beta."* ]];
+then
+    npm publish --tag beta
+else
+    npm publish
+fi
+
 cd ..
 
 echo -e "crate: sudodb, prepare"
