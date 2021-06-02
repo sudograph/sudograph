@@ -9,7 +9,14 @@ echo -e "npm package: generator-sudograph, prepare and publish"
 cd generator-sudograph
 sed -E -i "s/(\"version\": \")(.*)(\")/\1$VERSION\3/" package.json
 npm install
-npm publish
+
+if [[ "$VERSION" == *"-beta."* ]];
+then
+    npm publish --tag beta
+else
+    npm publish
+fi
+
 cd ..
 
 echo -e "npm package: sudograph, prepare and publish"
