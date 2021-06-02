@@ -78,7 +78,9 @@ class SudoDraft extends HTMLElement {
 
         // TODO instantly update instead of doing another network request
         this.dispatchEvent(new CustomEvent('draft-published', {
-            detail: this.store.draft.id
+            detail: this.store.draft.id,
+            bubbles: true,
+            composed: true
         }));
     }
 
