@@ -32,25 +32,7 @@ class FrontendButton extends HTMLElement {
             this.store.intervalId === -1
         ) {
             const intervalId = setInterval(() => {
-                if (this.store.ellipsis === '') {
-                    this.store.ellipsis = '.';
-                    return;
-                }
-
-                if (this.store.ellipsis === '.') {
-                    this.store.ellipsis = '..';
-                    return;
-                }
-
-                if (this.store.ellipsis === '..') {
-                    this.store.ellipsis = '...';
-                    return;
-                }
-
-                if (this.store.ellipsis === '...') {
-                    this.store.ellipsis = '';
-                    return;
-                }
+                this.setEllipsis();
             }, 500);
 
             this.store.intervalId = intervalId;
@@ -59,6 +41,28 @@ class FrontendButton extends HTMLElement {
         if (this.store.loading === false) {
             clearInterval(this.store.intervalId);
             this.store.intervalId = InitialState.intervalId;
+        }
+    }
+
+    setEllipsis() {
+        if (this.store.ellipsis === '') {
+            this.store.ellipsis = '.';
+            return;
+        }
+
+        if (this.store.ellipsis === '.') {
+            this.store.ellipsis = '..';
+            return;
+        }
+
+        if (this.store.ellipsis === '..') {
+            this.store.ellipsis = '...';
+            return;
+        }
+
+        if (this.store.ellipsis === '...') {
+            this.store.ellipsis = '';
+            return;
         }
     }
 
@@ -79,6 +83,7 @@ class FrontendButton extends HTMLElement {
                         bubbles: true,
                         composed: true
                     }))}
+                    .disabled=${state.loading}
                 >
                     ${buttonText}
                 </button>

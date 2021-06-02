@@ -5,18 +5,21 @@ import {
 import { createObjectStore } from 'reduxular';
 import {
     User,
-    BlogPostInputTexts
+    BlogPostInputTexts,
+    BlogPostsAreSaving
 } from '../types/index.d';
-import './frontend-create-blog-post';
+import './frontend-blog-posts';
 
 type State = Readonly<{
-    users: ReadonlyArray<User>;
+    blogPostsAreSaving: BlogPostsAreSaving;
     blogPostInputTexts: BlogPostInputTexts;
+    users: ReadonlyArray<User>;
 }>;
 
 const InitialState: State = {
-    users: [],
-    blogPostInputTexts: {}
+    blogPostsAreSaving: {},
+    blogPostInputTexts: {},
+    users: []
 };
 
 class FrontendUsers extends HTMLElement {
@@ -40,23 +43,14 @@ class FrontendUsers extends HTMLElement {
                 <div>
                     ${state.users.map((user) => {
                         return html`
-                            <div>Username: ${user.username}</div>
-                            <div>Blog posts:</div>
+                            <h2>${user.username}</h2>
 
-                            <div>
-                                <frontend-create-blog-post
-                                    .userId=${user.id}
-                                    .blogPostInputText=${state.blogPostInputTexts[user.id] ?? ''}
-                                ></frontend-create-blog-post>
-                            </div>
-
-                            <div>
-                                ${user.blogPosts.map((blogPost) => {
-                                    return html`<div>${blogPost.title}</div>`;
-                                })}
-                            </div>
-
-                            <br>
+                            <frontend-blog-posts
+                                .userId=${user.id}
+                                .loading=${state.blogPostsAreSaving[user.id] ?? false}
+                                .blogPostInputText=${state.blogPostInputTexts[user.id] ?? ''}
+                                .blogPosts=${user.blogPosts}
+                            ></frontend-blog-posts>
                         `;
                     })}
                 </div>

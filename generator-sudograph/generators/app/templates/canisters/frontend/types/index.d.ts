@@ -15,6 +15,10 @@ export type BlogPostInputTexts = {
     [userId: string]: string;
 };
 
+export type BlogPostsAreSaving = {
+    [userId: string]: boolean;
+};
+
 export interface UsernameInputTextChangedEvent extends CustomEvent {
     detail: Readonly<{
         usernameInputText: string;

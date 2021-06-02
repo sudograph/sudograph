@@ -4,11 +4,12 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 import {
-    BlogPostInputTexts,
+    BlogPostsAreSaving,
     BlogPostInputTextChangedEvent,
+    BlogPostInputTexts,
+    CreateBlogPostEvent,
     User,
-    UsernameInputTextChangedEvent,
-    CreateBlogPostEvent
+    UsernameInputTextChangedEvent
 } from '../types/index.d';
 import {
     gql,
@@ -25,17 +26,19 @@ const {
 });
 
 type State = Readonly<{
-    loading: boolean;
-    users: ReadonlyArray<User>;
-    usernameInputText: string;
+    blogPostsAreSaving: BlogPostsAreSaving;
     blogPostInputTexts: BlogPostInputTexts;
+    userIsSaving: boolean;
+    usernameInputText: string;
+    users: ReadonlyArray<User>;
 }>;
 
 const InitialState: State = {
-    loading: false,
-    users: [],
+    blogPostsAreSaving: {},
+    blogPostInputTexts: {},
+    userIsSaving: false,
     usernameInputText: '',
-    blogPostInputTexts: {}
+    users: []
 };
 
 class FrontendApp extends HTMLElement {
@@ -54,9 +57,47 @@ class FrontendApp extends HTMLElement {
     }
 
     async createUserAndUpdateUsers() {
-        // Here we perform an optimistic update
-        // We assume that the update call to the canister will succeed
-        // We immediately update the users array 
+        this.store.userIsSaving = true;
+
+        this.addUnsavedUserToUsers();
+        
+        const success = await createUser(this.store.usernameInputText);
+        
+        if (success === true) {
+            this.store.usernameInputText = '';
+            await this.fetchAndSetUsers();
+        }
+        else {
+            this.removeUnsavedUserFromUsers();
+            alert('User was not saved successfully');
+        }
+
+        this.store.userIsSaving = false;
+    }
+
+    async createBlogPostAndUpdateUsers(userId: string) {
+        this.setBlogPostIsSaving(userId, true);
+
+        this.addUnsavedBlogPostToUsers(userId);
+
+        const success = await createBlogPost(
+            userId,
+            this.store.blogPostInputTexts[userId]
+        );
+
+        if (success === true) {
+            this.setBlogPostInputText(userId, '');
+            await this.fetchAndSetUsers();
+        }
+        else {
+            this.removeUnsavedBlogPostFromUsers(userId);
+            alert('Blog post was not saved successfully');
+        }
+
+        this.setBlogPostIsSaving(userId, false);
+    }
+
+    addUnsavedUserToUsers() {
         this.store.users = [
             {
                 id: 'NOT_SET',
@@ -65,45 +106,64 @@ class FrontendApp extends HTMLElement {
             },
             ...this.store.users
         ];
-        
-        this.store.loading = true;
-        
-        const success = await createUser(this.store.usernameInputText);
-        
-        if (success === true) {
-            // If the update call succeeds, then we clear the input
-            this.store.usernameInputText = '';
-            await this.fetchAndSetUsers();
-        }
-        else {
-            // If the update call does not succeed, we remove the optimistically created user
-            // The input will still have the username text in it
-            // This will allow the user to try again
-            this.store.users = this.store.users.filter((user) => user.id !== 'NOT_SET');
-            alert('User was not saved successfully');
-        }
-
-        this.store.loading = false;
     }
 
-    async createBlogPostAndUpdateUsers(userId: string) {
-        // TODO add in loading
-        // TODO add in input clearing
-        const success = await createBlogPost(
-            userId,
-            this.store.blogPostInputTexts[userId]
-        );
+    removeUnsavedUserFromUsers() {
+        this.store.users = this.store.users.filter((user) => user.id !== 'NOT_SET');
+    }
 
-        if (success === true) {
-            this.store.blogPostInputTexts = {
-                ...this.store.blogPostInputTexts,
-                [userId]: '' // TODO or we could remove the key using that destructure remove syntax
-            };
-            await this.fetchAndSetUsers();
-        }
-        else {
-            alert('Blog post was not saved successfully');
-        }
+    setBlogPostIsSaving(
+        userId: string,
+        isSaving: boolean
+    ) {
+        this.store.blogPostsAreSaving = {
+            ...this.store.blogPostsAreSaving,
+            [userId]: isSaving
+        };
+    }
+
+    addUnsavedBlogPostToUsers(userId: string) {
+        this.store.users = this.store.users.map((user) => {
+            if (user.id === userId) {
+                return {
+                    ...user,
+                    blogPosts: [
+                        ...user.blogPosts,
+                        {
+                            id: 'NOT_SET',
+                            title: this.store.blogPostInputTexts[userId],
+                            publishedAt: new Date(),
+                            author: user
+                        }
+                    ]
+                };
+            }
+
+            return user;
+        });
+    }
+
+    removeUnsavedBlogPostFromUsers(userId: string) {
+        this.store.users = this.store.users.map((user) => {
+            if (user.id === userId) {
+                return {
+                    ...user,
+                    blogPosts: user.blogPosts.filter((blogPost) => blogPost.id !== 'NOT_SET')
+                };
+            }
+
+            return user;
+        });
+    }
+
+    setBlogPostInputText(
+        userId: string,
+        blogPostInputText: string
+    ) {
+        this.store.blogPostInputTexts = {
+            ...this.store.blogPostInputTexts,
+            [userId]: blogPostInputText
+        };
     }
 
     render(state: State) {
@@ -112,26 +172,37 @@ class FrontendApp extends HTMLElement {
                 .main-container {
                     width: 100%;
                     height: 100%;
+                    display: flex;
+                }
+
+                .frontend-create-user-container {
+                    flex: 1;
+                }
+
+                .frontend-users-container {
+                    flex: 1;
                 }
             </style>
 
             <div class="main-container">
-                <frontend-create-user
-                    .loading=${state.loading}
-                    .usernameInputText=${state.usernameInputText}
-                    @username-input-text-changed=${(e: UsernameInputTextChangedEvent) => this.store.usernameInputText = e.detail.usernameInputText}
-                    @create-user=${() => this.createUserAndUpdateUsers()}
-                ></frontend-create-user>
+                <div class="frontend-create-user-container">
+                    <frontend-create-user
+                        .loading=${state.userIsSaving}
+                        .usernameInputText=${state.usernameInputText}
+                        @create-user=${() => this.createUserAndUpdateUsers()}
+                        @username-input-text-changed=${(e: UsernameInputTextChangedEvent) => this.store.usernameInputText = e.detail.usernameInputText}
+                    ></frontend-create-user>
+                </div>
 
-                <frontend-users
-                    .users=${state.users}
-                    .blogPostInputTexts=${state.blogPostInputTexts}
-                    @blog-post-input-text-changed=${(e: BlogPostInputTextChangedEvent) => this.store.blogPostInputTexts = {
-                        ...this.store.blogPostInputTexts,
-                        [e.detail.userId]: e.detail.blogPostInputText
-                    }}
-                    @create-blog-post=${(e: CreateBlogPostEvent) => this.createBlogPostAndUpdateUsers(e.detail.userId)}
-                ></frontend-users>
+                <div class="frontend-users-container">
+                    <frontend-users
+                        .blogPostsAreSaving=${state.blogPostsAreSaving}
+                        .blogPostInputTexts=${state.blogPostInputTexts}
+                        .users=${state.users}
+                        @blog-post-input-text-changed=${(e: BlogPostInputTextChangedEvent) => this.setBlogPostInputText(e.detail.userId, e.detail.blogPostInputText)}
+                        @create-blog-post=${(e: CreateBlogPostEvent) => this.createBlogPostAndUpdateUsers(e.detail.userId)}
+                    ></frontend-users>
+                </div>
             </div>
         `;
     }
