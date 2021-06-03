@@ -1,4 +1,5 @@
 use crate::{
+    get_graphql_type_name,
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one
 };
@@ -54,20 +55,46 @@ pub fn generate_read_input_rust_structs(
             //     &field.field_type
             // );
 
-            return quote! {
-                if let Some(field_value) = &self.#field_name {
-                    // read_inputs.push(ReadInput {
+            // TODO we can group relation many and one together for now, but we might want to add any, some, none, etc for relation many in the future
+            if
+                is_graphql_type_a_relation_many(graphql_ast, &field.field_type) ||
+                is_graphql_type_a_relation_one(graphql_ast, &field.field_type)
+            {
+                let relation_object_type_name = get_graphql_type_name(&field.field_type);
 
-                    // });
-                    
+                return quote! {
+                    if let Some(field_value) = &self.#field_name {                    
+                        let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
+    
+                        // for field_read_input in field_read_inputs {
+                        //     read_inputs.push(field_read_input);
+                        // }
+                        
+                        // TODO do this immutably if possible
+                        // TODO we really need a much different type for relations versus scalars on read inputs
+                        // TODO they do not seem to have much in common
+                        read_inputs.push(ReadInput {
+                            input_type: ReadInputType::Relation,
+                            input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::Scalar(None), // TODO relations?
+                            relation_object_type_name: String::from(#relation_object_type_name), // TODO this needs to be filled in
+                            relation_read_inputs: field_read_inputs, // TODO I think here I can just call get_read_inputs on the read input
+                            and: vec![],
+                            or: vec![]
+                        });
+                    }
+                };
+            }
+
+            return quote! {
+                if let Some(field_value) = &self.#field_name {                    
                     let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
 
                     // TODO do this immutably if possible
                     for field_read_input in field_read_inputs {
                         read_inputs.push(field_read_input);
                     }
-
-                    // for 
                 }
             };
         });
@@ -97,6 +124,7 @@ pub fn generate_read_input_rust_structs(
                             field_name: String::from("and"),
                             field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
                             relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                            relation_read_inputs: vec![],
                             and: and.iter().flat_map(|read_entity_input| {
                                 return read_entity_input.get_read_inputs(String::from("and"));
                             }).collect(),
@@ -112,6 +140,7 @@ pub fn generate_read_input_rust_structs(
                             field_name: String::from("or"),
                             field_value: FieldValue::Scalar(None), // TODO this does not matter in the and case
                             relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                            relation_read_inputs: vec![],
                             and: vec![],
                             or: or.iter().flat_map(|read_entity_input| {
                                 return read_entity_input.get_read_inputs(String::from("or"));
@@ -193,13 +222,22 @@ fn get_rust_type_for_read_input_named_type<'a>(
             return quote! { ReadStringInput };
         },
         _ => {
+            let graphql_type_name = get_graphql_type_name(graphql_type);
+
+            let relation_read_input_type_name_ident = format_ident!(
+                "{}",
+                String::from("Read") + &graphql_type_name + "Input"
+            );
+
             // TODO once we enable cross-relational filtering, we will need to create type-specific inputs here
             // TODO we need to be careful about infinite recursion, we will probably have to exclude referring back to the original type
             if is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true {
                 return quote! { ReadRelationInput };
+                // return quote! { #relation_read_input_type_name_ident };
             }
             else if is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true {
                 return quote! { ReadRelationInput };
+                // return quote! { #relation_read_input_type_name_ident };
             }
             else {
                 panic!();

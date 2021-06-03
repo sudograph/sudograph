@@ -1,19 +1,19 @@
-// TODO clean up this whole file, it's really messy and confusing
-
 use chrono::prelude::{
     DateTime,
     Utc
 };
 use crate::{
     convert_field_value_store_to_json_string,
+    FieldType,
+    FieldTypeRelationInfo,
+    FieldTypesStore,
     FieldValue,
     FieldValueRelationMany,
     FieldValueRelationOne,
     FieldValueScalar,
     FieldValueStore,
     FieldValuesStore,
-    FieldType,
-    FieldTypesStore,
+    get_field_value_store,
     get_object_type,
     JSONString,
     ObjectTypeStore,
@@ -38,6 +38,7 @@ pub fn read(
     )?;
 
     let field_value_stores = find_field_value_stores_for_inputs(
+        object_type_store,
         &object_type.field_values_store,
         &object_type.field_types_store,
         &inputs
@@ -55,6 +56,7 @@ pub fn read(
 }
 
 fn find_field_value_stores_for_inputs(
+    object_type_store: &ObjectTypeStore,
     field_values_store: &FieldValuesStore,
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>
@@ -64,6 +66,7 @@ fn find_field_value_stores_for_inputs(
     // TODO I believe this is where the indexing will need to be implemented
     let field_value_stores = field_values_store.values().try_fold(vec![], |mut result, field_value_store| {
         let inputs_match: bool = field_value_store_matches_inputs(
+            object_type_store,
             field_value_store,
             field_types_store,
             &inputs,
@@ -81,6 +84,7 @@ fn find_field_value_stores_for_inputs(
 }
 
 fn field_value_store_matches_inputs(
+    object_type_store: &ObjectTypeStore,
     field_value_store: &FieldValueStore,
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>,
@@ -103,6 +107,7 @@ fn field_value_store_matches_inputs(
 
         if input.field_name == "and" {
             return field_value_store_matches_inputs(
+                object_type_store,
                 field_value_store,
                 field_types_store,
                 &input.and,
@@ -112,6 +117,7 @@ fn field_value_store_matches_inputs(
 
         if input.field_name == "or" {
             return field_value_store_matches_inputs(
+                object_type_store,
                 field_value_store,
                 field_types_store,
                 &input.or,
@@ -156,12 +162,16 @@ fn field_value_store_matches_inputs(
                 },
                 FieldType::RelationMany(field_type_relation_info) => {
                     return field_value_relation_many_matches_input(
+                        object_type_store, // TODO not sure we need all of these params
+                        field_type_relation_info,
                         field_value,
                         input
                     );
                 },
                 FieldType::RelationOne(field_type_relation_info) => {
                     return field_value_relation_one_matches_input(
+                        object_type_store, // TODO not sure we need all of these params
+                        field_type_relation_info,
                         field_value,
                         input
                     );
@@ -485,176 +495,91 @@ fn field_value_scalar_string_matches_input_field_value_scalar_string(
     };
 }
 
-// TODO it really should not be that hard to have cross-relational filtering on all fields
-// TODO use recursion to get this done
+// TODO we will need to loop through each foreign primary key here
+// TODO this is where the inefficiency lies as well
+// TODO we will need to really understand indexes and how to optimize this
+// TODO what should we do if the ask for a null relation?
+// TODO like give me all blog posts where author is null?
 fn field_value_relation_many_matches_input(
-    field_value_relation_many: &FieldValue,
+    object_type_store: &ObjectTypeStore,
+    field_type_relation_info: &FieldTypeRelationInfo, // TODO these parameters could be made more elegant, I am not sure I need field_type_relation_info, the input should also have what we need
+    field_value: &FieldValue,
     input: &ReadInput
 ) -> Result<bool, Box<dyn Error>> {
-    match field_value_relation_many {
-        FieldValue::RelationMany(field_value_relation_many_option) => {
-            match &input.field_value {
-                // TODO we are only supporting filtering by id right now, this will look much different once we
-                // TODO add generic cross-relational filtering
-                // TODO do not implement cross-relational filtering until reading is cleaned up a lot
-                FieldValue::Scalar(input_field_value_scalar_option) => {
-                    // if let (
-                    //     Some(field_value_relation_many),
-                    //     Some(input_field_value_relation_many)
-                    // ) = (
-                    //     field_value_relation_many_option,
-                    //     input_field_value_relation_many_option
-                    // ) {
-                    //     return field_value_relation_many.
-                    // }
-                    // else {
+    let relation_object_type = get_object_type(
+        object_type_store,
+        String::from(&field_type_relation_info.opposing_object_name)
+    )?;
 
-                    // }
+    let field_value_relation_many_option = get_field_value_relation_many_option(field_value)?;
 
-                    if let Some(field_value_relation_many) = field_value_relation_many_option {
-                        if let Some(input_field_value_scalar) = input_field_value_scalar_option {
-                            
-                            match input_field_value_scalar {
-                                FieldValueScalar::String(field_value_scalar_string) => {
-                                    return Ok(field_value_relation_many.relation_primary_keys.contains(field_value_scalar_string));
-                                },
-                                _ => {
-                                    return Ok(false);
-                                }
-                                // FieldValue::Scalar(test)
-                            };
-                        }
-                        else {
-                            return Ok(false);
-                        }
-                    }
-                    else {
-                        if let Some(input_field_value_scalar) = input_field_value_scalar_option {
-                            return Ok(false);
-                        }
-                        else {
-                            return Ok(true);
-                        }
-                    }
-                },
-                _ => {
-                    // TODO return an error
-                    return Ok(false);
+    // TODO we should have an input when the relation is null
+    match field_value_relation_many_option {
+        Some(field_value_relation_many) => {
+            // TODO does this make sense for filtering with many relationships? It's just an any?
+            return field_value_relation_many.relation_primary_keys.iter().try_fold(false, |result, relation_primary_key| {
+                if result == true {
+                    return Ok(true);
                 }
-            };
 
-            // match &input.input_operation {
-            //     ReadInputOperation::Equals => {
-            //         match &input.field_value {
-            //             FieldValue::RelationMany(field_value_relation_many_option) => {
-            //                 // return field_value_relation_many_option == None;
-
-            //                 // if let Some(field_value_relation_many_option)
-            //             },
-            //             _ => {
-
-            //             }
-            //         };
-
-            //         // return 
-            //     },
-            //     _ => {
-            //         // TODO do something
-            //     }
-            // };
+                let relation_field_value_store = get_field_value_store(
+                    object_type_store,
+                    String::from(&field_type_relation_info.opposing_object_name),
+                    String::from(relation_primary_key)
+                )?;
+    
+                return field_value_store_matches_inputs(
+                    object_type_store,
+                    relation_field_value_store,
+                    &relation_object_type.field_types_store,
+                    &input.relation_read_inputs,
+                    false
+                );
+            });
         },
-        _ => {
-            // TODO I think this should panic?
+        None => {
             return Ok(false);
         }
     };
-
-    // return Ok(true);
 }
 
+// TODO what should we do if the ask for a null relation?
+// TODO like give me all blog posts where author is null?
 fn field_value_relation_one_matches_input(
-    field_value_relation_one: &FieldValue,
+    object_type_store: &ObjectTypeStore,
+    field_type_relation_info: &FieldTypeRelationInfo, // TODO these parameters could be made more elegant, I am not sure I need field_type_relation_info, the input should also have what we need
+    field_value: &FieldValue,
     input: &ReadInput
 ) -> Result<bool, Box<dyn Error>> {
-    match field_value_relation_one {
-        FieldValue::RelationOne(field_value_relation_one_option) => {
-            match &input.field_value {
-                // TODO we are only supporting filtering by id right now, this will look much different once we
-                // TODO add generic cross-relational filtering
-                // TODO do not implement cross-relational filtering until reading is cleaned up a lot
-                FieldValue::Scalar(input_field_value_scalar_option) => {
-                    // if let (
-                    //     Some(field_value_relation_many),
-                    //     Some(input_field_value_relation_many)
-                    // ) = (
-                    //     field_value_relation_many_option,
-                    //     input_field_value_relation_many_option
-                    // ) {
-                    //     return field_value_relation_many.
-                    // }
-                    // else {
+    let relation_object_type = get_object_type(
+        object_type_store,
+        String::from(&field_type_relation_info.opposing_object_name)
+    )?;
 
-                    // }
+    let field_value_relation_one_option = get_field_value_relation_one_option(field_value)?;
 
-                    if let Some(field_value_relation_one) = field_value_relation_one_option {
-                        if let Some(input_field_value_scalar) = input_field_value_scalar_option {
-                            
-                            match input_field_value_scalar {
-                                FieldValueScalar::String(field_value_scalar_string) => {
-                                    return Ok(field_value_relation_one.relation_primary_key == String::from(field_value_scalar_string));
-                                },
-                                _ => {
-                                    return Ok(false);
-                                }
-                                // FieldValue::Scalar(test)
-                            };
-                        }
-                        else {
-                            return Ok(false);
-                        }
-                    }
-                    else {
-                        if let Some(input_field_value_scalar) = input_field_value_scalar_option {
-                            return Ok(false);
-                        }
-                        else {
-                            return Ok(true);
-                        }
-                    }
-                },
-                _ => {
-                    // TODO return an error
-                    return Ok(false);
-                }
-            };
+    // TODO it would be nice to get rid of this double match
+    // TODO we should have an input when the relation is null
+    match field_value_relation_one_option {
+        Some(field_value_relation_one) => {
+            let relation_field_value_store = get_field_value_store(
+                object_type_store,
+                String::from(&field_type_relation_info.opposing_object_name),
+                String::from(&field_value_relation_one.relation_primary_key)
+            )?;
 
-            // match &input.input_operation {
-            //     ReadInputOperation::Equals => {
-            //         match &input.field_value {
-            //             FieldValue::RelationMany(field_value_relation_many_option) => {
-            //                 // return field_value_relation_many_option == None;
-
-            //                 // if let Some(field_value_relation_many_option)
-            //             },
-            //             _ => {
-
-            //             }
-            //         };
-
-            //         // return 
-            //     },
-            //     _ => {
-            //         // TODO do something
-            //     }
-            // };
+            return field_value_store_matches_inputs(
+                object_type_store,
+                relation_field_value_store,
+                &relation_object_type.field_types_store,
+                &input.relation_read_inputs,
+                false
+            );
         },
-        _ => {
-            // TODO I think this should panic?
+        None => {
             return Ok(false);
         }
     };
-
-    // return Ok(true);
 }
 
 fn get_field_value_scalar_option(field_value: &FieldValue) -> Result<&Option<FieldValueScalar>, Box<dyn Error>> {
