@@ -1,46 +1,12 @@
-# TODO we need to make sure we can allow for custom queries and mutations
-# TODO add a directive that allows easy interop with motoko
-# TODO to get Motoko interop, I think we need that single-threaded type issue to be fixed in the Rust CDK
-
-# type Query {
-#     call_motoko(prop: String!): BlogPost! @canister(id: "asdf0as8df0as9f0asd9f0", function_name: "")
-# }
-
 type User {
     id: ID!
     username: String!
-    blog_posts: [BlogPost!]! @relation(name: "User:blog_posts and BlogPost:author")
-    # parent: User
-    # best_blog_post: BlogPost @relation(name: "User:best_blog_post and BlogPost:best_author")
-    # best_blog_post: BlogPost! @relation(name: "User:best_blog_post and BlogPost:best_author")
-    # username: String!
-    # published_blog_posts: [BlogPost!]!
-    # blog_posts_0: [BlogPost!]!
-    # blog_posts_1: [BlogPost!]
-    # authored_blog_posts: [BlogPost!]! @relation(name: "authored blog posts")
-    # editing_blog_posts: [BlogPost!]! @relation(name: "editing blog posts")
+    blogPosts: [BlogPost!]! @relation(name: "User:blogPosts and BlogPost:author")
 }
 
 type BlogPost {
     id: ID!
+    publishedAt: Date
     title: String!
-    author: User @relation(name: "User:blog_posts and BlogPost:author")
-    # best_author: User @relation(name: "User:best_blog_post and BlogPost:best_author")
-    # best_author: User! @relation(name: "User:best_blog_post and BlogPost:best_author")
-#     # title: String!
-#     # author_0: User!
-#     # author_1: User
-#     # editors: [User!]! @relation(name: "editing blog posts")
-#     # published: Boolean!
+    author: User! @relation(name: "User:blogPosts and BlogPost:author")
 }
-
-# type BlogPost {
-#     id: ID!
-#     body: String!
-#     created_at: Date!
-#     live: Boolean!
-#     num_words: Int!
-#     published_at: Date
-#     title: String!
-#     updated_at: Date!
-# }

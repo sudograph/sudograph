@@ -85,10 +85,12 @@ fn generate_read_input_rust_struct_field(
     object_type: &ObjectType<String>,
     field: &Field<String>
 ) -> TokenStream {
+    let read_input_rust_struct_field_name_string = &field.name;
     let read_input_rust_struct_field_name = format_ident!(
         "{}",
         field.name
     );
+
     let read_input_rust_struct_field_rust_type = get_read_input_rust_struct_field_rust_type(
         graphql_ast,
         object_type,
@@ -97,7 +99,7 @@ fn generate_read_input_rust_struct_field(
     );
 
     return quote! {
-        #[graphql(name = #read_input_rust_struct_field_name)]
+        #[graphql(name = #read_input_rust_struct_field_name_string)]
         #read_input_rust_struct_field_name: #read_input_rust_struct_field_rust_type
     };
 }
