@@ -24,7 +24,7 @@ type User {
 type BlogPost {
     id: ID!
     title: String!
-    author: User! @relation(name: "User:blog_posts and BlogPost:author")
+    author: User @relation(name: "User:blog_posts and BlogPost:author")
     # best_author: User @relation(name: "User:best_blog_post and BlogPost:best_author")
     # best_author: User! @relation(name: "User:best_blog_post and BlogPost:best_author")
 #     # title: String!
