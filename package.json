@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "GraphQL database for the Internet Computer",
   "scripts": {
-    "deploy": "chmod +x deploy.sh && ./deploy.sh",
+    "publish": "chmod +x publish.sh && ./publish.sh",
     "book-serve": "cd sudograph-book && mdbook serve",
     "book-build": "cd sudograph-book && mdbook build",
     "test-macro": "cargo expand --bin sudograph"
