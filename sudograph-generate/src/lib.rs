@@ -677,3 +677,16 @@ fn get_directive_argument_value_from_field(
 
     return Some(argument.1.to_string());
 }
+
+fn get_object_type_from_field<'a>(
+    graphql_ast: &Document<'a, String>,
+    field: &Field<String>
+) -> Option<ObjectType<'a, String>> {
+    let object_type_name = get_graphql_type_name(&field.field_type);
+
+    let object_types = get_object_types(graphql_ast);
+
+    return object_types.into_iter().find(|object_type| {
+        return object_type.name == object_type_name;
+    }).clone();
+}
