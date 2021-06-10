@@ -49,6 +49,7 @@ pub fn get_read_date_input_rust_struct() -> TokenStream {
                                 field_name: String::from(&field_name),
                                 field_value: field_value.sudo_serialize(), // TODO relations?
                                 relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                                relation_read_inputs: vec![],
                                 and: vec![],
                                 or: vec![]
                             });
@@ -60,6 +61,7 @@ pub fn get_read_date_input_rust_struct() -> TokenStream {
                                 field_name: String::from(&field_name),
                                 field_value: FieldValue::Scalar(None), // TODO relations?
                                 relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                                relation_read_inputs: vec![],
                                 and: vec![],
                                 or: vec![]
                             });

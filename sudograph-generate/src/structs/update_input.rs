@@ -224,12 +224,6 @@ fn generate_update_field_input_pusher_for_relation_many(field: &Field<String>) -
                     });
                 }
             },
-            MaybeUndefined::Null => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationMany(None)
-                });
-            },
             _ => ()
         };
     };

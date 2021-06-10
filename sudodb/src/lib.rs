@@ -117,6 +117,7 @@ pub enum ReadInputOperation {
 // TODO think if we are using the best structure below
 // TODO some of these are redundant depending on what we're doing
 // TODO should we have a ReadInputScalar and ReadInputRelation?
+#[derive(Debug)]
 pub struct ReadInput {
     // TODO not sure we need input_type since FieldValue has that information inside of it
     pub input_type: ReadInputType, // TODO I think we might not need this
@@ -124,12 +125,14 @@ pub struct ReadInput {
     pub field_name: String,
     pub field_value: FieldValue,
     pub relation_object_type_name: ObjectTypeName, // TODO this field is not necessary for scalars
+    pub relation_read_inputs: Vec<ReadInput>, // TODO this field is not necessary for scalars
     pub and: Vec<ReadInput>, // TODO should we make and and or options?
     pub or: Vec<ReadInput>
     // TODO I think I will need the field type here
 }
 
 // TODO we might want to get rid of this type
+#[derive(Debug)]
 pub enum ReadInputType {
     Scalar,
     Relation

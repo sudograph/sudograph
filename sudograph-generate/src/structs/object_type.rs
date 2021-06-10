@@ -140,7 +140,7 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
                     named_type
                 );
                 
-                return quote! { #relation_name };
+                return quote! { Box<#relation_name> };
             }
             else {
                 panic!();
