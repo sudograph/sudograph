@@ -9,11 +9,11 @@
 type User {
     id: ID!
     username: String!
+    blog_posts: [BlogPost!]! @relation(name: "User:blog_posts and BlogPost:author")
     # parent: User
-    best_blog_post: BlogPost @relation(name: "User:best_blog_post and BlogPost:best_author")
+    # best_blog_post: BlogPost @relation(name: "User:best_blog_post and BlogPost:best_author")
     # best_blog_post: BlogPost! @relation(name: "User:best_blog_post and BlogPost:best_author")
     # username: String!
-    # blog_posts: [BlogPost!]! @relation(name: "users and blog posts")
     # published_blog_posts: [BlogPost!]!
     # blog_posts_0: [BlogPost!]!
     # blog_posts_1: [BlogPost!]
@@ -24,10 +24,10 @@ type User {
 type BlogPost {
     id: ID!
     title: String!
-    best_author: User @relation(name: "User:best_blog_post and BlogPost:best_author")
+    author: User! @relation(name: "User:blog_posts and BlogPost:author")
+    # best_author: User @relation(name: "User:best_blog_post and BlogPost:best_author")
     # best_author: User! @relation(name: "User:best_blog_post and BlogPost:best_author")
 #     # title: String!
-#     # author: User! @relation(name: "users and blog posts")
 #     # author_0: User!
 #     # author_1: User
 #     # editors: [User!]! @relation(name: "editing blog posts")

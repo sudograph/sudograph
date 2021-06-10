@@ -1,4 +1,21 @@
-use crate::{FieldInput, FieldType, FieldTypeRelationInfo, FieldValue, FieldValueRelationMany, FieldValueRelationOne, FieldValueScalar, JSONString, ObjectTypeStore, SelectionSet, SudodbError, convert_field_value_store_to_json_string, get_field_type_for_field_name, get_field_value, get_field_value_store, get_mutable_field_value, get_mutable_field_value_store};
+use crate::{
+    FieldInput,
+    FieldType,
+    FieldTypeRelationInfo,
+    FieldValue,
+    FieldValueRelationMany,
+    FieldValueRelationOne,
+    FieldValueScalar,
+    JSONString,
+    ObjectTypeStore,
+    SelectionSet,
+    SudodbError,
+    convert_field_value_store_to_json_string,
+    get_field_type_for_field_name,
+    get_field_value_store,
+    get_mutable_field_value,
+    get_mutable_field_value_store
+};
 use std::{error::Error};
 
 pub fn update(
@@ -57,30 +74,30 @@ fn insert_input_into_field_value_store(
     id: &str
 ) -> Result<(), Box<dyn Error>> {
     match &input.field_value {
-        FieldValue::RelationMany(field_value_relation_many_option) => {
+        FieldValue::RelationMany(input_field_value_relation_many_option) => {
             insert_field_value_relation_many_option_into_field_value_store(
                 object_type_store,
                 object_type_name,
                 &input.field_name,
-                field_value_relation_many_option,
+                input_field_value_relation_many_option,
                 id
             )?;
         },
-        FieldValue::RelationOne(field_value_relation_one_option) => {
-            insert_field_value_relation_one_option_into_field_value_store(
+        FieldValue::RelationOne(input_field_value_relation_one_option) => {
+            insert_input_field_value_relation_one_option_into_field_value_store(
                 object_type_store,
                 object_type_name,
                 &input.field_name,
-                field_value_relation_one_option,
+                input_field_value_relation_one_option,
                 id
             )?;
         },
-        FieldValue::Scalar(field_value_scalar_option) => {
+        FieldValue::Scalar(input_field_value_scalar_option) => {
             insert_field_value_scalar_option_into_field_value_store(
                 object_type_store,
                 object_type_name,
                 &input.field_name,
-                field_value_scalar_option,
+                input_field_value_scalar_option,
                 id
             )?;
         }
@@ -123,6 +140,8 @@ fn insert_field_value_relation_many_option_into_field_value_store(
             )?;
         },
         None => {
+            // TODO I think I need to insert null into both sides of the relationship
+
             field_value_store.insert(
                 String::from(field_name),
                 FieldValue::RelationMany(None)
@@ -228,7 +247,6 @@ fn insert_field_value_relation_many_opposing_all_into_field_value_store(
                             id,
                             true
                         )?;
-
                     }
 
                     for opposing_primary_key_to_remove in &field_value_relation_many.relation_primary_keys_to_remove {
@@ -260,39 +278,74 @@ fn insert_field_value_relation_many_opposing_all_into_field_value_store(
     return Ok(());
 }
 
-fn insert_field_value_relation_one_option_into_field_value_store(
+fn insert_input_field_value_relation_one_option_into_field_value_store(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     field_name: &str,
-    field_value_relation_one_option: &Option<FieldValueRelationOne>,
+    input_field_value_relation_one_option: &Option<FieldValueRelationOne>,
     id: &str
 ) -> Result<(), Box<dyn Error>> {
     // TODO it would be nice to not have to retrieve this for every input, but it is hard
     // TODO to figure out how to not have two mutable borrows from object_type_store
-    let field_value_store = get_mutable_field_value_store(
+    let mutable_field_value_store = get_mutable_field_value_store(
         object_type_store,
         String::from(object_type_name),
         String::from(id)
     )?;
 
-    match field_value_relation_one_option {
-        Some(field_value_relation_one) => {
+    match input_field_value_relation_one_option {
+        Some(input_field_value_relation_one) => {
+            let current_field_value_option = mutable_field_value_store.get(field_name);
+
+            if let Some(current_field_value) = current_field_value_option {
+                match current_field_value {
+                    FieldValue::RelationOne(field_value_relation_one_option) => {
+                        if let Some(field_value_relation_one) = field_value_relation_one_option {
+
+                            // TODO cloning is weird, but I was able to get around the mutable borrowing issue for now
+                            let cloned = field_value_relation_one.clone();
+
+                            insert_field_value_opposing_relation_one_all_into_field_value_store(
+                                object_type_store,
+                                object_type_name,
+                                field_name,
+                                &FieldValueRelationOne {
+                                    relation_object_type_name: String::from(cloned.relation_object_type_name),
+                                    relation_primary_key: String::from(cloned.relation_primary_key)
+                                },
+                                id,
+                                false
+                            )?;
+                        }
+                    },
+                    _ => ()
+                };
+            }
+
+            // TODO it would be nice to not have to retrieve this for every input, but it is hard
+            // TODO to figure out how to not have two mutable borrows from object_type_store
+            let field_value_store = get_mutable_field_value_store(
+                object_type_store,
+                String::from(object_type_name),
+                String::from(id)
+            )?;
+
             field_value_store.insert(
                 String::from(field_name),
-                FieldValue::RelationOne(Some(field_value_relation_one.clone()))
+                FieldValue::RelationOne(Some(input_field_value_relation_one.clone()))
             );
 
             insert_field_value_opposing_relation_one_all_into_field_value_store(
                 object_type_store,
                 object_type_name,
                 field_name,
-                field_value_relation_one,
+                input_field_value_relation_one,
                 id,
                 true
             )?;
         },
         None => {
-            let current_field_value_option = field_value_store.get(field_name);
+            let current_field_value_option = mutable_field_value_store.get(field_name);
 
             if let Some(current_field_value) = current_field_value_option {
                 match current_field_value {
@@ -478,23 +531,23 @@ fn insert_field_value_relation_opposing_into_field_value_store(
 }
 
 fn insert_field_value_scalar_option_into_field_value_store(
-    object_type_store: &mut ObjectTypeStore,
+    mutable_object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     field_name: &str,
-    field_value_scalar_option: &Option<FieldValueScalar>,
+    input_field_value_scalar_option: &Option<FieldValueScalar>,
     id: &str
 ) -> Result<(), Box<dyn Error>> {
     // TODO it would be nice to not have to retrieve this for every input, but it is hard
     // TODO to figure out how to not have two mutable borrows from object_type_store
-    let field_value_store = get_mutable_field_value_store(
-        object_type_store,
+    let mutable_field_value_store = get_mutable_field_value_store(
+        mutable_object_type_store,
         String::from(object_type_name),
         String::from(id)
     )?;
 
-    field_value_store.insert(
+    mutable_field_value_store.insert(
         String::from(field_name),
-        FieldValue::Scalar(field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+        FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
     );
 
     return Ok(());
