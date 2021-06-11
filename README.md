@@ -77,7 +77,7 @@ cd my-new-project
 npx sudograph
 ```
 
-## Local deployment
+### Local deployment
 
 Start up an IC replica and deploy:
 
@@ -95,15 +95,15 @@ dfx deploy
 
 Make sure to run `dfx deploy` for your first deploy. For quicker deployments after the first, you can run `dfx deploy graphql` if you've only changed your schema or the Rust code within the graphql canister. `dfx deploy graphql` will only deploy the graphql canister, which contains the generated database.
 
-### playground canister
+#### playground canister
 
 Start executing GraphQL queries and mutations against your database by going to the following URL in a Chromium browser: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000).
 
-### frontend canister
+#### frontend canister
 
 View a simple frontend application that communicates with the graphql canister by going to the following URL in a Chromium browser: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000).
 
-### graphql canister
+#### graphql canister
 
 You can execute queries against the graphql canister from the command line if you wish:
 
@@ -115,7 +115,7 @@ dfx canister call graphql graphql_query ''
 dfx canister call graphql graphql_mutation ''
 ```
 
-## Production deployment
+### Production deployment
 
 Before deploying to production you should understand that Sudograph is alpha/beta software. There are missing features and potential bugs. There is also no way to easily migrate data (if you change your schema, you'll need to delete your state and start over). But if you must deploy to production, here is the command:
 
