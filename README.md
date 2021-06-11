@@ -26,7 +26,7 @@ Once deployed, you can visit the following canisters from a Chromium browser:
 
 If the above did not work, try the full installation steps below.
 
-## Installation
+## Quick start
 
 ### Prerequisites
 
