@@ -31,6 +31,11 @@ else
     npm publish
 fi
 
+# TODO instead of sleeping we could probably poll in a loop using some kind of npm API check
+echo -e "sleeping for 30 seconds to ensure generator-sudograph is fully registered on npm"
+
+sleep 30
+
 cd ..
 
 echo -e "npm package: sudograph, prepare and publish"
