@@ -20,6 +20,10 @@ dfx start --background
 dfx deploy
 ```
 
+Once deployed, you can visit the following canisters from a Chromium browser:
+* playground: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000)
+* frontend: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000)
+
 If the above did not work, try the full installation steps below.
 
 ## Installation
@@ -93,11 +97,11 @@ Make sure to run `dfx deploy` for your first deploy. For quicker deployments aft
 
 ### playground canister
 
-Start executing GraphQL queries and mutations against your database by going to the following URL in a Chromium browser: `http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000`.
+Start executing GraphQL queries and mutations against your database by going to the following URL in a Chromium browser: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000).
 
 ### frontend canister
 
-View a simple frontend application that communicates with the graphql canister by going to the following URL in a Chromium browser: `http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000`.
+View a simple frontend application that communicates with the graphql canister by going to the following URL in a Chromium browser: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000).
 
 ### graphql canister
 
