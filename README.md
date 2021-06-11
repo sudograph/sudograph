@@ -2,11 +2,11 @@
 
 Sudograph is a [GraphQL](https://graphql.org/) database for the [Internet Computer](https://dfinity.org/) (IC).
 
-Its goal is to become the simplest way to develop applications for the Internet Computer. Developers start by defining a [GraphQL schema](https://graphql.org/learn/schema/) using the [GraphQL SDL](https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl). Once the schema is defined, it can be included within a canister and deployed to the Internet Computer. An entire relational database is generated from the schema, with GraphQL queries and mutations enabling a variety of [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations, including advanced querying over relational data.
+Its goal is to become the simplest way to develop applications for the IC. Developers start by defining a [GraphQL schema](https://graphql.org/learn/schema/) using the [GraphQL SDL](https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl). Once the schema is defined, it can be included within a canister and deployed to the IC. An entire relational database is generated from the schema, with GraphQL queries and mutations enabling a variety of [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations, including advanced querying over relational data.
 
 ## Documentation
 
-For full documentation, see [The Sudograph Book](), which is hosted entirely on the Internet Computer by the way.
+For full documentation, see [The Sudograph Book](), which is hosted entirely on the IC by the way.
 
 ## Quickest of quick starts
 
@@ -75,10 +75,10 @@ npx sudograph
 
 ## Local deployment
 
-Start up an Internet Computer replica and deploy:
+Start up an IC replica and deploy:
 
 ```bash
-# Open a terminal and run the following command to start a local Internet Computer replica
+# Open a terminal and run the following command to start a local IC replica
 dfx start
 
 # Alternatively to the above command, you can run the replica in the background
