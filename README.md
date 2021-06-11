@@ -10,7 +10,7 @@ For full documentation, see [The Sudograph Book](), which is hosted entirely on 
 
 ## Quickest of quick starts
 
-If you've already got Node.js, npm, Rust, the wasm32-unknown-unknown target, and dfx 0.7.0 installed then just run the following commands:
+If you've already got Node.js, npm, Rust, the wasm32-unknown-unknown Rust compilation target, and dfx 0.7.0 installed then just run the following commands:
 
 ```bash
 mkdir my-new-project
@@ -20,7 +20,7 @@ dfx start --background
 dfx deploy
 ```
 
-If the above did not work, try following the full installation steps below.
+If the above did not work, try the full installation steps below.
 
 ## Installation
 
