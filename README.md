@@ -109,10 +109,10 @@ You can execute queries against the graphql canister from the command line if yo
 
 ```bash
 # send a query to the graphql canister
-dfx canister call graphql graphql_query ''
+dfx canister call graphql graphql_query '("query { readUser(input: {}) { id } }", "{}")'
 
 # send a mutation to the graphql canister
-dfx canister call graphql graphql_mutation ''
+dfx canister call graphql graphql_mutation '("mutation { createUser(input: { username: \"lastmjs\" }) { id } }", "{}")'
 ```
 
 ### Production deployment
@@ -126,18 +126,21 @@ dfx deploy --network ic
 ## Major limitations
 
 - [ ] No paging or ordering of records
+- [ ] No custom scalars, only Int, Float, String, ID, Boolean, and Date are available
 - [ ] Filtering is limited to the top level selection set
 - [ ] Limited to a single canister ~4GB of storage
 - [ ] Very inneficient querying, be careful once you get into the 100,000s or 1,000,000s of records
 - [ ] No automatic migrations, once you deploy the schema is final unless you implement your own migrations
 - [ ] No authorization at the schema level, deal with it through your own custom authorization at the canister function level
 - [ ] No automated tests
+- [ ] No subscriptions
 
 ## Concrete roadmap
 
 The following are very likely to be implemented by Sudograph in the short to medium term future:
 
 - [ ] Paging and ordering of records
+- [ ] Custom scalars
 - [ ] Filtering, paging, and ordering at every selection set level
 - [ ] Robust automated tests
 - [ ] Efficient querying i.e. indexes
