@@ -6,7 +6,7 @@ Its goal is to become the simplest way to develop applications for the IC. Devel
 
 ## Documentation
 
-For full documentation, see [The Sudograph Book](), which is hosted entirely on the IC by the way.
+For full documentation, see [The Sudograph Book](https://i67uk-hiaaa-aaaae-qaaka-cai.raw.ic0.app), which is hosted entirely on the IC by the way.
 
 ## Quickest of quick starts
 

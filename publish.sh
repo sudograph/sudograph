@@ -110,4 +110,10 @@ echo -e "crate: sudograph, publish"
 cargo publish --dry-run
 cargo publish
 
-echo -e "All packages and crates have been published to version $VERSION"
+echo -e "canister: The Sudograph Book"
+
+npm run book-build
+cd sudograph-book
+dfx deploy --network ic
+
+echo -e "All packages, crates, and canisters have been published to version $VERSION"

@@ -1,151 +1,96 @@
-# Quick Start
+## Quick start
 
-## Install Sudograph
+### Prerequisites
 
-Navigate to the root directory of your project in your terminal and run the following command:
+You should have the following installed on your system:
 
-```bash
-cargo install sudograph
-```
+* Node.js
+* npm
+* Rust
+* wasm32-unknown-unknown Rust compilation target
+* dfx 0.7.0
 
-## Create your GraphQL schema
+If you already have the above installed, you can skip to [Sudograph generate](#sudograph-generate).
 
-Create a file called `schema.graphql` in the root directory of your project. For example, it might look like the following:
-
-```graphql
-type User {
-    id: String!
-    blog_posts: [BlogPost!]!
-    username: String!
-}
-
-type BlogPost {
-    id: String!
-    author: User!
-    body: String!
-    created_at: Date!
-    live: Boolean!
-    title: String!
-}
-```
-
-Your schema should define all of the types of your application, including the relationships between them. You can think of each GraphQL type as an object, document, or table.
-
-## Generate
-
-Run the following command in your terminal:
+Run the following commands to install Node.js and npm. [nvm](https://github.com/nvm-sh/nvm) is highly recommended and its use is shown below:
 
 ```bash
-cargo sudograph generate
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+
+# restart your terminal
+
+nvm install 14
 ```
 
-You should now have a new directory called `sudograph_generated` in the root directory of your project. It will contain a much more capable schema file called `schema-generated.graphql`. For example, given the simple schema we defined above, the following will be generated:
+Run the following command to install Rust and the wasm32-unknown-unknown target:
 
-```graphql
-type Query {
-    readUser(input: ReadUserInput)
-    readBlogPost(input: ReadBlogPostInput)
-}
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-type Mutation {
-    createUser(input: CreateUserInput, inputs: [CreateUserInput!])
-    createBlogPost(input: CreateBlogPostInput, inputs: [CreateBlogPostInput!])
-    updateUser(input: UpdateUserInput, inputs: [UpdateUserInput!])
-    updateBlogPost(input: UpdateBlogPostInput, inputs: [UpdateBlogPostInput!])
-    deleteUser(input: DeleteUserInput, inputs: [DeleteUserInput!])
-    deleteBlogPost(input: DeleteBlogPostInput, inputs: [DeleteBlogPostInput!])
-}
-
-type User {
-    id: String!
-    blog_posts: [BlogPost!]!
-    username: String!
-}
-
-type BlogPost {
-    id: String!
-    author: User!
-    body: String!
-    created_at: DateTime!
-    live: Boolean!
-    title: String!
-}
-
-input ReadUserInput {
-    id: ReadStringInput
-    blog_posts: ReadBlogPostInput # TODO perhaps an annotation here will help us distinguish the type of result, singular or multiple
-    username: ReadStringInput
-}
-
-input ReadBlogPostInput {
-    id: ReadStringInput
-    author: ReadUserInput
-    body: ReadStringInput
-    created_at: ReadDateTimeInput
-    live: ReadBooleanInput
-    title: ReadStringInput
-}
-
-input ReadStringInput {
-    eq: String
-    gt: String
-    gte: String
-    lt: String
-    lte: String
-    contains: String
-}
-
-input ReadDateInput {
-    eq: String
-    gt: String
-    gte: String
-    lt: String
-    lte: String
-}
-
-input ReadBooleanInput {
-    eq: String
-}
-
-input CreateUserInput {
-
-}
-
-input CreateBlogPostInput {
-
-}
-
-input UpdateUserInput {
-
-}
-
-input UpdateBlogPostInput {
-
-}
-
-input DeleteUserInput {
-
-}
-
-input DeleteBlogPostInput {
-
-}
+rustup target add wasm32-unknown-unknown
 ```
 
-In addition to the generated schema file, there is a directory called `canister`. This has all of the code necessary to be deployed to the IC. You will need to update your `dfx.json` file to include this new canister, or you can simply run `dfx deploy` from the canister directory.
+Run the following command to install dfx 0.7.0:
 
-It is very likely that you'll need to customize this canister, so you may wish to move it into a directory with your other canisters.
-
-You'll need to update the argument being passed to the `sudograph_generate` procedural macro. Make sure the argument is the correct path to your `schema.graphql` file.
-
-In addition to a much more capable schema than the simple one we've created, Sudograph will generate resolvers that read and write data using `Sudodb`.
-
-Here's what the generate resolvers for the above would look like:
-
-```rust
-// TODO put in some Rust code here
+```bash
+# Sudograph has been tested against version 0.7.0, so it is safest to install that specific version for now
+DFX_VERSION=0.7.0 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
 ```
 
-## TODO
+### Sudograph generate
 
-Actually, perhaps I should actually update their dfx.json file? I can read it in, find out where they're storing their canisters, and just write a new cansiter there. This might be tricky and dangerous, so perhaps that should come later?
+Start by making a new directory for your project. You then simply run the sudograph generate command:
+
+```bash
+mkdir my-new-project
+
+cd my-new-project
+
+npx sudograph
+```
+
+### Local deployment
+
+Start up an IC replica and deploy:
+
+```bash
+# Open a terminal and run the following command to start a local IC replica
+dfx start
+
+# Alternatively to the above command, you can run the replica in the background
+dfx start --background
+
+# If you are running the replica in the background, you can run this command within the same terminal as the dfx start --background command
+# If you are not running the replica in the background, then open another terminal and run this command from the root directory of your project
+dfx deploy
+```
+
+Make sure to run `dfx deploy` for your first deploy. For quicker deployments after the first, you can run `dfx deploy graphql` if you've only changed your schema or the Rust code within the graphql canister. `dfx deploy graphql` will only deploy the graphql canister, which contains the generated database.
+
+#### playground canister
+
+Start executing GraphQL queries and mutations against your database by going to the following URL in a Chromium browser: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000).
+
+#### frontend canister
+
+View a simple frontend application that communicates with the graphql canister by going to the following URL in a Chromium browser: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000).
+
+#### graphql canister
+
+You can execute queries against the graphql canister from the command line if you wish:
+
+```bash
+# send a query to the graphql canister
+dfx canister call graphql graphql_query '("query { readUser(input: {}) { id } }", "{}")'
+
+# send a mutation to the graphql canister
+dfx canister call graphql graphql_mutation '("mutation { createUser(input: { username: \"lastmjs\" }) { id } }", "{}")'
+```
+
+### Production deployment
+
+Before deploying to production you should understand that Sudograph is alpha/beta software. There are missing features and potential bugs. There is also no way to easily migrate data (if you change your schema, you'll need to delete your state and start over). But if you must deploy to production, here is the command:
+
+```bash
+dfx deploy --network ic
+```
