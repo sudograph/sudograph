@@ -44,3 +44,15 @@ type BlogPost {
 #     title: String!
 #     updated_at: Date!
 # }
+
+# TODO it would be nice to allow the following
+type Person {
+    id: ID!
+    firstName: String!
+    lastName: String!
+    father: Person @relation(name: "Person:father and Person:children")
+    mother: Person @relation(name: "Person:mother and Person:children")
+    children: [Person!]!
+        @relation(name: "Person:father and Person:children")
+        @relation(name: "Person:mother and Person:children")
+}
