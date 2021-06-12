@@ -312,18 +312,242 @@ type BlogPost {
 <p>You now have everything you need to deploy a simple <code>graphql canister</code>. Boot up a node with <code>dfx start</code> and then deploy with <code>dfx deploy</code>. It's important to note that Sudograph currently only works within a single canister. You can deploy as many Sudograph canisters as you'd like, with as many schemas as you'd like, but the generated querying and mutations will only know about data that has been created within the same canister. Querying between canisters would require you to write your own custom code. Sudograph will hopefully address scaling in the future so that you only ever have to deal with thinking about one schema per application.</p>
 <h1 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h1>
 <h1 id="schema"><a class="header" href="#schema">Schema</a></h1>
+<p>The schema is where you define all of the data types of your application, including relations between types. It is also where you will eventually define many other settings, possibly including authentication, authorization, subnet, and Sudograph-specific settings.</p>
+<p>An example schema might look like this:</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    username: String!
+    blogPosts: [BlogPost!]! @relation(name: &quot;User:blogPosts and BlogPost:author&quot;)
+}
+
+type BlogPost {
+    id: ID!
+    publishedAt: Date
+    title: String!
+    author: User! @relation(name: &quot;User:blogPosts and BlogPost:author&quot;)
+}
+</code></pre>
+<p>We have told Sudograph that we have two object types, <code>User</code> and <code>BlogPost</code>. We've described the fields of each type, using some included scalar types such as <code>ID</code>, <code>Date</code>, and <code>String</code>. We have also described one relation between our two types, a one-to-many relationship from <code>User</code> to <code>BlogPost</code> on the fields <code>User:blogPosts</code> and <code>BlogPost:author</code>.</p>
+<p>The schema is an incredibly powerful yet simple tool for defining the complex data types of your application. Get to know the possibilities of your schema:</p>
+<ul>
+<li><a href="./schema-scalars.html">Scalars</a></li>
+<li><a href="./schema-objects.html">Objects</a></li>
+<li><a href="./schema-relations.html">Relations</a></li>
+<li><a href="./schema-custom-scalars.html">Custom scalars</a></li>
+<li><a href="./schema-custom-resolvers.html">Custom resolvers</a></li>
+<li><a href="./schema-sudograph-settings.html">Sudograph settings</a></li>
+</ul>
 <h1 id="scalars"><a class="header" href="#scalars">Scalars</a></h1>
+<p>Scalar types are not divisible, they have no fields of their own. The scalar types automatically available to you in a Sudograph schema are:</p>
+<ul>
+<li><a href="schema-scalars.html#boolean">Boolean</a></li>
+<li><a href="schema-scalars.html#date">Date</a></li>
+<li><a href="schema-scalars.html#float">Float</a></li>
+<li><a href="schema-scalars.html#id">ID</a></li>
+<li><a href="schema-scalars.html#int">Int</a></li>
+<li><a href="schema-scalars.html#string">String</a></li>
+</ul>
+<h2 id="boolean"><a class="header" href="#boolean">Boolean</a></h2>
+<p>A <code>Boolean</code> value maps to a Rust <code>bool</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    verified: Boolean!
+}
+</code></pre>
+<h2 id="date"><a class="header" href="#date">Date</a></h2>
+<p>A <code>Date</code> value maps to a Rust <code>String</code> for storage and a <a href="https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html">chrono::DateTime</a> for filtering.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    dateOfBirth: Date!
+}
+</code></pre>
+<h2 id="float"><a class="header" href="#float">Float</a></h2>
+<p>A <code>Float</code> value maps to a Rust <code>f32</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    height: Float!
+}
+</code></pre>
+<h2 id="id"><a class="header" href="#id">ID</a></h2>
+<p>An <code>ID</code> value maps to a Rust <code>String</code>. All Sudograph object types must have a field called <code>id</code> of type <code>ID</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+}
+</code></pre>
+<h2 id="int"><a class="header" href="#int">Int</a></h2>
+<p>An <code>Int</code> value maps to a Rust <code>i32</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    age: Int!
+}
+</code></pre>
+<h2 id="string"><a class="header" href="#string">String</a></h2>
+<p>A <code>String</code> value maps to a Rust <code>String</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    username: String!
+}
+</code></pre>
 <h1 id="objects"><a class="header" href="#objects">Objects</a></h1>
+<p>Object types have fields that may be other object types or scalar types. Object types allow you to define the truly custom data types and relations that make up your application.</p>
+<p>You could model a user with blog posts like so:</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    username: String!
+    blogPosts: [BlogPost!]! @relation(name: &quot;User:blogPosts and BlogPost:author&quot;)
+}
+
+type BlogPost {
+    id: ID!
+    publishedAt: Date
+    title: String!
+    author: User! @relation(name: &quot;User:blogPosts and BlogPost:author&quot;)
+}
+</code></pre>
+<p>You could model a family tree like so:</p>
+<pre><code class="language-graphql">type Person {
+    id: ID!
+    firstName: String!
+    lastName: String!
+    father: Person @relation(name: &quot;Person:father and Person:children&quot;)
+    mother: Person @relation(name: &quot;Person:mother and Person:children&quot;)
+    children: [Person!]!
+        @relation(name: &quot;Person:father and Person:children&quot;)
+        @relation(name: &quot;Person:mother and Person:children&quot;)
+}
+</code></pre>
+<p>TODO the example above will not work yet</p>
+<p>TODO the self-referencing has some issues and multiple @relation directives per field is not yet supported</p>
+<p>You could model Ethereum block data like so:</p>
+<pre><code class="language-graphql">type Block {
+    id: ID!
+    number: Int!
+    hash: String!
+    parent: Block
+    transactionsRoot: String!
+    transactionCount: Int!
+    stateRoot: String!
+    gasLimit: String!
+    gasUsed: String!
+    timestamp: Date!
+    transactions: [Transaction!]! @relation(name: &quot;Block:transactions and Transaction:block&quot;)
+}
+
+type Transaction {
+    id: ID!
+    hash: String!
+    index: Int!
+    from: String!
+    to: String!
+    value: String!
+    gasPrice: String!
+    gas: String!
+    inputData: String!
+    block: Block! @relation(name: &quot;Block:transactions and Transaction:block&quot;)
+    gasUsed: String!
+}
+</code></pre>
 <h1 id="relations"><a class="header" href="#relations">Relations</a></h1>
+<p>Relations allow you to describe the relationships between object types and their fields. Sudograph has a variety of relation capabilities:</p>
+<h2 id="one-to-one-relations"><a class="header" href="#one-to-one-relations">One-to-one relations</a></h2>
+<p>One-to-one relations allow you to connect one object with another object.</p>
+<h3 id="one-sided"><a class="header" href="#one-sided">One-sided</a></h3>
+<p>If you only care about retrieving relation information from one side of the relation, you don't need a <code>@relation</code> directive:</p>
+<pre><code class="language-graphql">type Foot {
+    id: ID!
+    shoe: Shoe
+}
+
+type Shoe {
+    id: ID!
+}
+</code></pre>
+<p>In the above example, you will be able to select the shoe of a foot, like so:</p>
+<pre><code class="language-graphql">query {
+    readFoot(input: {
+        id: {
+            eq: &quot;1&quot;
+        }
+    }) {
+        id
+        shoe {
+            id
+        }
+    }
+}
+</code></pre>
+<p>You will not be able to select the foot of a shoe.</p>
+<h3 id="two-sided"><a class="header" href="#two-sided">Two-sided</a></h3>
+<p>If you care about retrieving relation information from both sides of the relation, add a <code>@relation</code> directive. The name argument of the <code>@relation</code> directive can be arbitrary, but it must be the same on both sides of the relation.</p>
+<pre><code class="language-graphql">type Foot {
+    id: ID!
+    shoe: Shoe @relation(name: &quot;Foot:shoe and Shoe:foot&quot;)
+}
+
+type Shoe {
+    id: ID!
+    foot: Foot @relation(name: &quot;Foot:shoe and Shoe:foot&quot;)
+}
+</code></pre>
+<h2 id="one-to-many-relations"><a class="header" href="#one-to-many-relations">One-to-many relations</a></h2>
+<p>One-to-many relations allow you to connect one object with many other objects.</p>
+<h3 id="one-sided-1"><a class="header" href="#one-sided-1">One-sided</a></h3>
+<p>If you only care about retrieving relation information from one side of the relation, you don't need a <code>@relation</code> directive:</p>
+<pre><code class="language-graphql">type Monkey {
+    id: ID!
+    name: String!
+    bananas: [Banana!]!
+}
+
+type Banana {
+    id: ID!
+    color: String!
+    size: Int!
+}
+</code></pre>
+<p>In the above example, you will be able to select the bananas of a monkey, like so:</p>
+<pre><code class="language-graphql">query {
+    readMonkey(input: {
+        id: {
+            eq: &quot;1&quot;
+        }
+    }) {
+        id
+        name
+        bananas {
+            id
+            color
+            size
+        }
+    }
+}
+</code></pre>
+<p>You will not be able to select the monkey of a banana.</p>
+<h3 id="two-sided-1"><a class="header" href="#two-sided-1">Two-sided</a></h3>
+<p>If you care about retrieving relation information from both sides of the relation, add a <code>@relation</code> directive. The name argument of the <code>@relation</code> directive can be arbitrary, but it must be the same on both sides of the relation.</p>
+<pre><code class="language-graphql">type Monkey {
+    id: ID!
+    name: String!
+    bananas: [Banana!]! @relation(name: &quot;Monkey:bananas and Banana:monkey&quot;)
+}
+
+type Banana {
+    id: ID!
+    color: String!
+    size: Int!
+    monkey: Monkey @relation(name: &quot;Monkey:bananas and Banana:monkey&quot;)
+}
+</code></pre>
+<h2 id="many-to-many-relations"><a class="header" href="#many-to-many-relations">Many-to-many relations</a></h2>
 <h1 id="custom-scalars"><a class="header" href="#custom-scalars">Custom scalars</a></h1>
 <p>Custom scalars (scalars that you define) are not yet supported. You'll have to work with the included scalars:</p>
 <ul>
-<li>Boolean</li>
-<li>Float</li>
-<li>ID</li>
-<li>Int</li>
-<li>Date</li>
-<li>String</li>
+<li><a href="./schema-scalars.html#boolean">Boolean</a></li>
+<li><a href="./schema-scalars.html#date">Date</a></li>
+<li><a href="./schema-scalars.html#float">Float</a></li>
+<li><a href="./schema-scalars.html#id">ID</a></li>
+<li><a href="./schema-scalars.html#int">Int</a></li>
+<li><a href="./schema-scalars.html#string">String</a></li>
 </ul>
 <h1 id="custom-resolvers"><a class="header" href="#custom-resolvers">Custom resolvers</a></h1>
 <p>Custom resolvers where the resolver function is defined within the same Rust canister as the <code>graphql_database</code> macro are possible now, but not well-documented.  See the <a href="https://github.com/sudograph/sudograph/tree/main/examples/intermediate">intermediate example</a> for a very rough overview of how to achieve this.</p>
@@ -340,6 +564,8 @@ type Mutation {
 </code></pre>
 <p>Defining the above <code>Query</code> and <code>Mutation</code> object types in your schema would generate two custom resolver functions in the Rust canister where the <code>graphql_database</code> macro is used. These resolver functions would perform cross-canister calls to a canister with the id defined in the <code>@canister</code> directive. You would then need to define <code>myCustomQueryResolver</code> with the appropriate parameters and return type in the <code>renrk-eyaaa-aaaaa-aaada-cai</code> canister, and <code>myCustomMutationResolver</code> with the appropriate parameters and return type in the <code>rdmx6-jaaaa-aaaaa-aaadq-cai</code> canister.</p>
 <p>But remember that custom resolvers defined in remote canisters is currently not possible.</p>
+<p>TODO make it clear that you can hook up custom resolvers from Rust manually, but fully generating the resolvers without the need for Rust will come later.</p>
+<p>TODO let's get a Motoko example up and running!!!! I think people would love that</p>
 <h1 id="sudograph-settings"><a class="header" href="#sudograph-settings">Sudograph settings</a></h1>
 <p>There will be many settings that Sudograph will allow the developer to customize. Currently however, none of these settings are possible to change. But here is how it might eventually look to change settings:</p>
 <pre><code class="language-graphql">type SudographSettings {
@@ -477,6 +703,8 @@ No transactions</li>
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="src/graphql-theme.js"></script>
         
 
         

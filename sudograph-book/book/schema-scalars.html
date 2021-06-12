@@ -164,6 +164,56 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="scalars"><a class="header" href="#scalars">Scalars</a></h1>
+<p>Scalar types are not divisible, they have no fields of their own. The scalar types automatically available to you in a Sudograph schema are:</p>
+<ul>
+<li><a href="#boolean">Boolean</a></li>
+<li><a href="#date">Date</a></li>
+<li><a href="#float">Float</a></li>
+<li><a href="#id">ID</a></li>
+<li><a href="#int">Int</a></li>
+<li><a href="#string">String</a></li>
+</ul>
+<h2 id="boolean"><a class="header" href="#boolean">Boolean</a></h2>
+<p>A <code>Boolean</code> value maps to a Rust <code>bool</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    verified: Boolean!
+}
+</code></pre>
+<h2 id="date"><a class="header" href="#date">Date</a></h2>
+<p>A <code>Date</code> value maps to a Rust <code>String</code> for storage and a <a href="https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html">chrono::DateTime</a> for filtering.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    dateOfBirth: Date!
+}
+</code></pre>
+<h2 id="float"><a class="header" href="#float">Float</a></h2>
+<p>A <code>Float</code> value maps to a Rust <code>f32</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    height: Float!
+}
+</code></pre>
+<h2 id="id"><a class="header" href="#id">ID</a></h2>
+<p>An <code>ID</code> value maps to a Rust <code>String</code>. All Sudograph object types must have a field called <code>id</code> of type <code>ID</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+}
+</code></pre>
+<h2 id="int"><a class="header" href="#int">Int</a></h2>
+<p>An <code>Int</code> value maps to a Rust <code>i32</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    age: Int!
+}
+</code></pre>
+<h2 id="string"><a class="header" href="#string">String</a></h2>
+<p>A <code>String</code> value maps to a Rust <code>String</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    username: String!
+}
+</code></pre>
 
                     </main>
 
@@ -227,6 +277,8 @@
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="src/graphql-theme.js"></script>
         
 
         

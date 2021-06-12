@@ -19,3 +19,7 @@ type Mutation {
 Defining the above `Query` and `Mutation` object types in your schema would generate two custom resolver functions in the Rust canister where the `graphql_database` macro is used. These resolver functions would perform cross-canister calls to a canister with the id defined in the `@canister` directive. You would then need to define `myCustomQueryResolver` with the appropriate parameters and return type in the `renrk-eyaaa-aaaaa-aaada-cai` canister, and `myCustomMutationResolver` with the appropriate parameters and return type in the `rdmx6-jaaaa-aaaaa-aaadq-cai` canister.
 
 But remember that custom resolvers defined in remote canisters is currently not possible.
+
+TODO make it clear that you can hook up custom resolvers from Rust manually, but fully generating the resolvers without the need for Rust will come later.
+
+TODO let's get a Motoko example up and running!!!! I think people would love that
