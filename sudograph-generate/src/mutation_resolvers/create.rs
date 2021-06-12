@@ -56,6 +56,8 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                         return Ok(deserialized_strings);
                     },
                     Err(error) => {
+                        // TODO I think we might need to panic here to ensure state changes are always undone
+                        // TODO to make sure that we have transactions within update calls
                         return Err(sudograph::async_graphql::Error::from(error));
                     }
                 };
