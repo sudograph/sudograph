@@ -54,6 +54,13 @@ fi
 
 cd ..
 
+echo -e "canister: The Sudograph Book"
+
+npm run book-build
+cd sudograph-book
+dfx deploy --network ic
+cd ..
+
 echo -e "crate: sudodb, prepare"
 
 cd sudodb
@@ -109,11 +116,5 @@ echo -e "crate: sudograph, publish"
 
 cargo publish --dry-run
 cargo publish
-
-echo -e "canister: The Sudograph Book"
-
-npm run book-build
-cd sudograph-book
-dfx deploy --network ic
 
 echo -e "All packages, crates, and canisters have been published to version $VERSION"

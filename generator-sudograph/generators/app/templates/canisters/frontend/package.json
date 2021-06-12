@@ -5,7 +5,7 @@
   "dependencies": {
     "lit-html": "1.4.1",
     "reduxular": "0.0.6",
-    "sudograph": "0.2.0-beta.26"
+    "sudograph": "0.2.0-beta.27"
   },
   "devDependencies": {
     "snowpack": "3.5.1"
