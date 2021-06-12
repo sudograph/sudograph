@@ -1,0 +1,8 @@
+{
+    "canisters": {
+        "book": {
+            "type": "assets",
+            "source": ["book"]
+        }
+    }
+}

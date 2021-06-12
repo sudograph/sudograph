@@ -9,8 +9,8 @@
             "source": ["canisters/playground/build"]
         },
         "graphql": {
-            "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
             "type": "custom",
+            "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
             "candid": "canisters/graphql/src/graphql.did",
             "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
         }

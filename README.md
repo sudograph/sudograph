@@ -1,232 +1,171 @@
-ANNOUNCEMENT: v0.2.0 is imminent, and it will have greatly improved documentation. If you want to get started before then, please see examples/basic or DM me on Twitter or Telegram @lastmjs
-
 # Sudograph
 
-Sudograph is a [GraphQL](https://graphql.org/) database for the [Internet Computer](https://dfinity.org/).
+Sudograph is a [GraphQL](https://graphql.org/) database for the [Internet Computer](https://dfinity.org/) (IC).
 
-It greatly simplifies [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) development by providing GraphQL queries and mutations derived directly from your [GraphQL schema](https://graphql.org/learn/schema/). All you have to do is define your schema using the [GraphQL SDL](https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl).
+Its goal is to become the simplest way to develop applications for the IC. Developers start by defining a [GraphQL schema](https://graphql.org/learn/schema/) using the [GraphQL SDL](https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl). Once the schema is defined, it can be included within a canister and deployed to the IC. An entire relational database is generated from the schema, with GraphQL queries and mutations enabling a variety of [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations, including advanced querying over relational data.
 
-For example, if you created the following schema:
+## Documentation
 
-```graphql
-# As an example, you might define the following types in a file called schema.graphql
-type BlogPost {
-    id: String!
-    body: String!
-    created_at: Date!
-    live: Boolean!
-    num_words: Int!
-    published_at: Date
-    title: String!
-    updated_at: Date!
-}
+For full documentation, see [The Sudograph Book](https://i67uk-hiaaa-aaaae-qaaka-cai.raw.ic0.app), which is hosted entirely on the IC by the way.
+
+## Quickest of quick starts
+
+If you've already got Node.js, npm, Rust, the wasm32-unknown-unknown Rust compilation target, and dfx 0.7.0 installed then just run the following commands:
+
+```bash
+mkdir my-new-project
+cd my-new-project
+npx sudograph
+dfx start --background
+dfx deploy
 ```
 
-Then Sudograph would create the following queries and mutations for you:
+Once deployed, you can visit the following canisters from a Chromium browser:
+* playground: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000)
+* frontend: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000)
 
-```graphql
-type Query {
-  readBlogPost(input: ReadBlogPostInput!): [BlogPost!]!
-}
+If the above did not work, try the full installation steps below.
 
-type Mutation {
-  createBlogPost(input: CreateBlogPostInput!): [BlogPost!]!
-  updateBlogPost(input: UpdateBlogPostInput!): [BlogPost!]!
-  deleteBlogPost(input: DeleteBlogPostInput!): [BlogPost!]!
-  initBlogPost: Boolean!
-}
+## Quick start
+
+### Prerequisites
+
+You should have the following installed on your system:
+
+* Node.js
+* npm
+* Rust
+* wasm32-unknown-unknown Rust compilation target
+* dfx 0.7.0
+
+If you already have the above installed, you can skip to [Sudograph generate](#sudograph-generate).
+
+Run the following commands to install Node.js and npm. [nvm](https://github.com/nvm-sh/nvm) is highly recommended and its use is shown below:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+
+# restart your terminal
+
+nvm install 14
 ```
 
-There's a lot more being generated for you to get the above to work, but you're seeing the most important parts (the queries and mutations themselves).
+Run the following command to install Rust and the wasm32-unknown-unknown target:
 
-With the generated queries/mutations above, you could start writing code like this in any of your clients:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-```graphql
-query {
-    readBlogPost(input: {
-        live: {
-            eq: true
-        }
-    }) {
-        id
-        body
-        created_at
-        live
-        num_words
-        published_at
-        title
-        updated_at
-    }
-}
+rustup target add wasm32-unknown-unknown
 ```
 
-The query above will return all blog posts that are "live" (have been published).
+Run the following command to install dfx 0.7.0:
 
-Creating a blog post would look something like this:
-
-```graphql
-mutation {
-    createBlogPost(input: {
-        id: "0"
-        body: "This is my blog post!"
-        created_at: "2021-03-21T05:34:31.127Z"
-        live: false
-        num_words: 5
-        published_at: null
-        title: "My Blog Post"
-        updated_at: "2021-03-21T05:34:31.127Z"
-    }) {
-        id
-    }
-}
+```bash
+# Sudograph has been tested against version 0.7.0, so it is safest to install that specific version for now
+DFX_VERSION=0.7.0 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
 ```
 
-## Quick Start
+### Sudograph generate
 
-Sudograph is a Rust crate, and thus (for now) you must create a Rust IC canister to use it. You should generally follow the official DFINITY guidance for the [Rust CDK](https://sdk.dfinity.org/docs/rust-guide/rust-intro.html).
+Start by making a new directory for your project. You then simply run the sudograph generate command:
 
-If you ever want to see a concrete example of how to implement Sudograph, simply take a look at the examples directory.
+```bash
+mkdir my-new-project
 
-Let's imagine you've created a Rust canister called `graphql` in a directory called `graphql`. In the `graphql` directory you should have a `Cargo.toml` file. You'll need to add Sudograph as a dependency. For example:
+cd my-new-project
 
-```toml
-[package]
-name = "graphql"
-version = "0.0.0"
-authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
-edition = "2018"
-
-[lib]
-path = "src/graphql.rs"
-crate-type = ["cdylib"]
-
-[dependencies]
-sudograph = "0.1.0"
+npx sudograph
 ```
 
-Next let's define our schema. In the `graphql/src` directory, let's add a file called `schema.graphql`:
+### Local deployment
 
-```graphql
-# graphql/src/schema.graphql
-type BlogPost {
-    id: String!
-    body: String!
-    created_at: Date!
-    live: Boolean!
-    num_words: Int!
-    published_at: Date
-    title: String!
-    updated_at: Date!
-}
+Start up an IC replica and deploy:
+
+```bash
+# Open a terminal and run the following command to start a local IC replica
+dfx start
+
+# Alternatively to the above command, you can run the replica in the background
+dfx start --background
+
+# If you are running the replica in the background, you can run this command within the same terminal as the dfx start --background command
+# If you are not running the replica in the background, then open another terminal and run this command from the root directory of your project
+dfx deploy
 ```
 
-Your canister should be implemented as a Rust library crate, in this case the source code for our canister is found in `graphql/src/graphql.rs`. You only need to add two lines of code to this file to bootstrap your GraphQL database:
+Make sure to run `dfx deploy` for your first deploy. For quicker deployments after the first, you can run `dfx deploy graphql` if you've only changed your schema or the Rust code within the graphql canister. `dfx deploy graphql` will only deploy the graphql canister, which contains the generated database.
 
-```rust
-// graphql/src/graphql.rs
-use sudograph::graphql_database;
+#### playground canister
 
-graphql_database!("canisters/graphql/src/schema.graphql");
+Start executing GraphQL queries and mutations against your database by going to the following URL in a Chromium browser: [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000).
+
+#### frontend canister
+
+View a simple frontend application that communicates with the graphql canister by going to the following URL in a Chromium browser: [http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000](http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000).
+
+#### graphql canister
+
+You can execute queries against the graphql canister from the command line if you wish:
+
+```bash
+# send a query to the graphql canister
+dfx canister call graphql graphql_query '("query { readUser(input: {}) { id } }", "{}")'
+
+# send a mutation to the graphql canister
+dfx canister call graphql graphql_mutation '("mutation { createUser(input: { username: \"lastmjs\" }) { id } }", "{}")'
 ```
 
-You will also need to add a [Candid](https://sdk.dfinity.org/docs/candid-guide/candid-intro.html) file to `graphql/src`. Let's call it `graphql.did`:
+### Production deployment
 
-```
-# graphql/src/graphql.did
-service : {
-    "graphql_query": (text) -> (text) query;
-    "graphql_mutation": (text) -> (text);
-}
+Before deploying to production you should understand that Sudograph is alpha/beta software. There are missing features and potential bugs. There is also no way to easily migrate data (if you change your schema, you'll need to delete your state and start over). But if you must deploy to production, here is the command:
+
+```bash
+dfx deploy --network ic
 ```
 
-Sudograph will automatically create two methods on your canister, the first is called `graphql_query`, which is a query method (will return quickly). The second is called `graphql_mutation`, which is an update method (will return more slowly). You should send all queries to `graphql_query` and all mutations to `graphql_mutation`. If you want the highest security guarantees, you can send all queries to `graphql_mutation`, they will simply take a few seconds to return.
+## Major limitations
 
-If you have setup your `dfx.json` correctly, then you should be able to deploy your Sudograph canister. Open up a terminal in the root directory of your IC project and start up an IC replica with `dfx start`. Open another terminal, and from the same directory run `dfx deploy`.
+- [ ] No paging or ordering of records
+- [ ] No custom scalars, only Int, Float, String, ID, Boolean, and Date are available
+- [ ] Filtering is limited to the top level selection set
+- [ ] Limited to a single canister ~4GB of storage
+- [ ] Very inneficient querying, be careful once you get into the 100,000s or 1,000,000s of records
+- [ ] No automatic migrations, once you deploy the schema is final unless you implement your own migrations
+- [ ] No authorization at the schema level, deal with it through your own custom authorization at the canister function level
+- [ ] No automated tests
+- [ ] No subscriptions
 
-You should now have a GraphQL database running inside of your `graphql` canister.
+## Concrete roadmap
 
-# Playground
+The following are very likely to be implemented by Sudograph in the short to medium term future:
 
-It's simple to spin up a GraphQL playground in another canister...but this isn't documented yet. Check out the examples for more information.
+- [ ] Paging and ordering of records
+- [ ] Custom scalars
+- [ ] Filtering, paging, and ordering at every selection set level
+- [ ] Robust automated tests
+- [ ] Efficient querying i.e. indexes
+- [ ] Automatic migrations
+- [ ] Schema authorization directives e.g. something like `@auth(role: OWNER)` for individual fields 
 
-# Custom Queries and Mutations
+## Tentative roadmap
 
-More information to come...this is possible, just not documented yet. Actually, check out the intermediate example in the mean time.
+The following may or may not be implemented by Sudograph, but they seem like good ideas:
 
-# Current Limitations
-
-- [ ] No relations
-- [ ] No client-side variables (you must interpolate variables yourself client-side)
-- [ ] Scaling is limited to a single canister
-- [ ] Simple/inefficient filtering algorithm (simple linear searches)
-- [ ] No built-in authorization (authorization will have to be handled with custom canister methods that then create Sudograph GraphQL queries)
-
-# Possibly Outdated Information
-
-Sudograph is a GraphQL generator for the Internet Computer. It is similar to projects like [Prisma](https://www.prisma.io/), [Graphback](https://graphback.dev/), and [Hasura](https://hasura.io/), though it is designed to run on and thus inherit the capabilities of the [Internet Computer](https://dfinity.org/).
-
-Sudograph aims to greatly simplify the hardest part of GraphQL development, which is the actual implementation of the resolvers. From a types-only GraphQL schema written in the GraphQL SDL, Sudograph will generate a far more capable CRUD schema along with the implementation of its resolvers.
-
-Basically, a GraphQL schema goes in and a generated CRUD backend comes out. This will create a highly declarative developer experience, and will free you as a developer to think more in terms of the shapes of the data of the systems you create, and to pass the implementation of the more capable schema and resolvers on to the generator.
-
-As Sudograph will inherit the capabilities of the Internet Computer, its aim is to become the simplest, most flexible, secure, and scalable way to use GraphQL. It also aims to be the best way to build CRUD apps on the Internet Computer.
-
-These are lofty goals, and there is a long road ahead.
-
-## Roadmap
-
-This roadmap should give you an idea of what Sudograph is currently capable of, and where it is headed. Keep in mind that the roadmap is a rough sketch and subject to change.
-
-### Database
-
-The Internet Computer does not have an efficient and scalable relational data store yet. A prerequisite to this project's success may be to create one of these data stores.
-
-- [ ] Single canister scaling
-  - [ ] Efficient field-level search
-  - [ ] Relational joins
-- [ ] Multiple canister scaling
-  - [ ] Efficient field-level search
-  - [ ] Relational joins
-
-### Query
-
-Arbitrary-depth joins in selection sets, all basic relation types including one-to-one, one-to-many, many-to-one, and many-to-many.
-
-- [ ] get (retrieve single record by id)
-- [ ] find (retrieve multiple records by filter with paging and ordering)
-  - [ ] top level filtering as described in Selection Sets
-  - [ ] top level paging as described in Selection Sets
-
-### Mutation
-
-Single level of scalar inputs per entity and connecting or disconnecting relations by id only, arbitrary-depth joins in selection sets, same selection set capabilities as queries.
-
-- [ ] create
-- [ ] update
-- [ ] delete
-
-### Selection Sets
-
-- [ ] filtering
-  - [ ] applied at arbitrary depths in selection sets on relations
-  - [ ] scalar values and relation ids only
-  - [ ] no cross-relational filters
-  - [ ] basic operations: eq, gt, lt, contains, startsWith, etc
-- [ ] paging
-  - [ ] applied at arbitrary depths in selection sets on relations
-  - [ ] limit and offset
-- [ ] order by
-  - [ ] applied at arbitrary depths in selection sets on relations
-  - [ ] field name and order direction
-
-### Possible Future Capabilities
-
+- [ ] Unbounded scaling through a multi-canister architecture
+- [ ] upsert
 - [ ] create, update, delete many
 - [ ] create, update, delete, update/upsert within mutation inputs
-- [ ] cross-relational filters
 - [ ] order by multiple fields
 - [ ] Statistics within relation results (for example total counts, averages, sums, etc)
-- [ ] migrations
 - [ ] subscriptions
-- [ ] transactions
 - [ ] unique constraints and capabilities
+
+## Inspiration
+
+Sudograph was inspired by many previous projects:
+
+* [Prisma](https://www.prisma.io/)
+* [Graphback](https://graphback.dev/)
+* [Hasura](https://hasura.io/)
+* [PostGraphile](https://www.graphile.org/postgraphile/)
+* [SQL Builder](https://github.com/jillsoffice/graphql-sql-builder)
