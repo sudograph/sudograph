@@ -165,7 +165,7 @@
                     <main>
                         <h1 id="custom-resolvers"><a class="header" href="#custom-resolvers">Custom resolvers</a></h1>
 <p>Custom resolvers where the resolver function is defined within the same Rust canister as the <code>graphql_database</code> macro are possible now, but not well-documented.  See the <a href="https://github.com/sudograph/sudograph/tree/main/examples/intermediate">intermediate example</a> for a very rough overview of how to achieve this.</p>
-<p>Custom resolvers where the resolver function is defined in a separate canister (be it written in Rust, Motoko, AssemblyScript, or any other language) are not yet supported. But, the plan is for those types of custom resolvers to be defined like so:</p>
+<p>Custom resolvers where the resolver function is defined in a separate canister (be it written in Rust, Motoko, AssemblyScript, or any other language) are also supported. For now you will need to write a custom resolver in Rust that does a cross-canister call to the resolver in the separate canister. This is not well-documented but is possible. In the future, the plan is for those types of custom resolvers to be defined only in the schema so that no Rust code is required. It will look like this:</p>
 <pre><code class="language-graphql"># schema.graphql
 
 type Query {
@@ -177,9 +177,6 @@ type Mutation {
 }
 </code></pre>
 <p>Defining the above <code>Query</code> and <code>Mutation</code> object types in your schema would generate two custom resolver functions in the Rust canister where the <code>graphql_database</code> macro is used. These resolver functions would perform cross-canister calls to a canister with the id defined in the <code>@canister</code> directive. You would then need to define <code>myCustomQueryResolver</code> with the appropriate parameters and return type in the <code>renrk-eyaaa-aaaaa-aaada-cai</code> canister, and <code>myCustomMutationResolver</code> with the appropriate parameters and return type in the <code>rdmx6-jaaaa-aaaaa-aaadq-cai</code> canister.</p>
-<p>But remember that custom resolvers defined in remote canisters is currently not possible.</p>
-<p>TODO make it clear that you can hook up custom resolvers from Rust manually, but fully generating the resolvers without the need for Rust will come later.</p>
-<p>TODO let's get a Motoko example up and running!!!! I think people would love that</p>
 
                     </main>
 

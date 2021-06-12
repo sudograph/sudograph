@@ -206,7 +206,7 @@ type Shoe {
 }
 </code></pre>
 <h2 id="one-to-many-relations"><a class="header" href="#one-to-many-relations">One-to-many relations</a></h2>
-<p>One-to-many relations allow you to connect one object with many other objects.</p>
+<p>One-to-many relations allow you to connect one object with multiple other objects.</p>
 <h3 id="one-sided-1"><a class="header" href="#one-sided-1">One-sided</a></h3>
 <p>If you only care about retrieving relation information from one side of the relation, you don't need a <code>@relation</code> directive:</p>
 <pre><code class="language-graphql">type Monkey {
@@ -255,6 +255,18 @@ type Banana {
 }
 </code></pre>
 <h2 id="many-to-many-relations"><a class="header" href="#many-to-many-relations">Many-to-many relations</a></h2>
+<p>Many-to-many relations allow you to connect multiple objects with multiple other objects. Many-to-many relations must have a <code>@relation</code> directive. The name argument of the <code>@relation</code> directive can be arbitrary, but it must be the same on both sides of the relation.</p>
+<pre><code class="language-graphql">type Author {
+    id: ID!
+    documents: [Document!]! @relation(name: &quot;Author:documents and Document:authors&quot;)
+}
+
+type Document {
+    id: ID!
+    text: String!
+    authors: [Author!]! @relation(name: &quot;Author:documents and Document:authors&quot;)
+}
+</code></pre>
 
                     </main>
 

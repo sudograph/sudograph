@@ -58,7 +58,7 @@ type Shoe {
 
 ## One-to-many relations
 
-One-to-many relations allow you to connect one object with many other objects.
+One-to-many relations allow you to connect one object with multiple other objects.
 
 ### One-sided
 
@@ -120,3 +120,18 @@ type Banana {
 ```
 
 ## Many-to-many relations
+
+Many-to-many relations allow you to connect multiple objects with multiple other objects. Many-to-many relations must have a `@relation` directive. The name argument of the `@relation` directive can be arbitrary, but it must be the same on both sides of the relation.
+
+```graphql
+type Author {
+    id: ID!
+    documents: [Document!]! @relation(name: "Author:documents and Document:authors")
+}
+
+type Document {
+    id: ID!
+    text: String!
+    authors: [Author!]! @relation(name: "Author:documents and Document:authors")
+}
+```

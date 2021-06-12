@@ -311,6 +311,7 @@ type BlogPost {
 </code></pre>
 <p>You now have everything you need to deploy a simple <code>graphql canister</code>. Boot up a node with <code>dfx start</code> and then deploy with <code>dfx deploy</code>. It's important to note that Sudograph currently only works within a single canister. You can deploy as many Sudograph canisters as you'd like, with as many schemas as you'd like, but the generated querying and mutations will only know about data that has been created within the same canister. Querying between canisters would require you to write your own custom code. Sudograph will hopefully address scaling in the future so that you only ever have to deal with thinking about one schema per application.</p>
 <h1 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h1>
+<p>This is not yet well-documented. You can look at the examples to see how to use it in a JavaScript frontend. <code>npm install sudograph</code> and go from there.</p>
 <h1 id="schema"><a class="header" href="#schema">Schema</a></h1>
 <p>The schema is where you define all of the data types of your application, including relations between types. It is also where you will eventually define many other settings, possibly including authentication, authorization, subnet, and Sudograph-specific settings.</p>
 <p>An example schema might look like this:</p>
@@ -490,7 +491,7 @@ type Shoe {
 }
 </code></pre>
 <h2 id="one-to-many-relations"><a class="header" href="#one-to-many-relations">One-to-many relations</a></h2>
-<p>One-to-many relations allow you to connect one object with many other objects.</p>
+<p>One-to-many relations allow you to connect one object with multiple other objects.</p>
 <h3 id="one-sided-1"><a class="header" href="#one-sided-1">One-sided</a></h3>
 <p>If you only care about retrieving relation information from one side of the relation, you don't need a <code>@relation</code> directive:</p>
 <pre><code class="language-graphql">type Monkey {
@@ -539,6 +540,18 @@ type Banana {
 }
 </code></pre>
 <h2 id="many-to-many-relations"><a class="header" href="#many-to-many-relations">Many-to-many relations</a></h2>
+<p>Many-to-many relations allow you to connect multiple objects with multiple other objects. Many-to-many relations must have a <code>@relation</code> directive. The name argument of the <code>@relation</code> directive can be arbitrary, but it must be the same on both sides of the relation.</p>
+<pre><code class="language-graphql">type Author {
+    id: ID!
+    documents: [Document!]! @relation(name: &quot;Author:documents and Document:authors&quot;)
+}
+
+type Document {
+    id: ID!
+    text: String!
+    authors: [Author!]! @relation(name: &quot;Author:documents and Document:authors&quot;)
+}
+</code></pre>
 <h1 id="custom-scalars"><a class="header" href="#custom-scalars">Custom scalars</a></h1>
 <p>Custom scalars (scalars that you define) are not yet supported. You'll have to work with the included scalars:</p>
 <ul>
@@ -551,7 +564,7 @@ type Banana {
 </ul>
 <h1 id="custom-resolvers"><a class="header" href="#custom-resolvers">Custom resolvers</a></h1>
 <p>Custom resolvers where the resolver function is defined within the same Rust canister as the <code>graphql_database</code> macro are possible now, but not well-documented.  See the <a href="https://github.com/sudograph/sudograph/tree/main/examples/intermediate">intermediate example</a> for a very rough overview of how to achieve this.</p>
-<p>Custom resolvers where the resolver function is defined in a separate canister (be it written in Rust, Motoko, AssemblyScript, or any other language) are not yet supported. But, the plan is for those types of custom resolvers to be defined like so:</p>
+<p>Custom resolvers where the resolver function is defined in a separate canister (be it written in Rust, Motoko, AssemblyScript, or any other language) are also supported. For now you will need to write a custom resolver in Rust that does a cross-canister call to the resolver in the separate canister. This is not well-documented but is possible. In the future, the plan is for those types of custom resolvers to be defined only in the schema so that no Rust code is required. It will look like this:</p>
 <pre><code class="language-graphql"># schema.graphql
 
 type Query {
@@ -563,9 +576,6 @@ type Mutation {
 }
 </code></pre>
 <p>Defining the above <code>Query</code> and <code>Mutation</code> object types in your schema would generate two custom resolver functions in the Rust canister where the <code>graphql_database</code> macro is used. These resolver functions would perform cross-canister calls to a canister with the id defined in the <code>@canister</code> directive. You would then need to define <code>myCustomQueryResolver</code> with the appropriate parameters and return type in the <code>renrk-eyaaa-aaaaa-aaada-cai</code> canister, and <code>myCustomMutationResolver</code> with the appropriate parameters and return type in the <code>rdmx6-jaaaa-aaaaa-aaadq-cai</code> canister.</p>
-<p>But remember that custom resolvers defined in remote canisters is currently not possible.</p>
-<p>TODO make it clear that you can hook up custom resolvers from Rust manually, but fully generating the resolvers without the need for Rust will come later.</p>
-<p>TODO let's get a Motoko example up and running!!!! I think people would love that</p>
 <h1 id="sudograph-settings"><a class="header" href="#sudograph-settings">Sudograph settings</a></h1>
 <p>There will be many settings that Sudograph will allow the developer to customize. Currently however, none of these settings are possible to change. But here is how it might eventually look to change settings:</p>
 <pre><code class="language-graphql">type SudographSettings {
@@ -576,17 +586,30 @@ type Mutation {
 }
 </code></pre>
 <h1 id="generated-schema"><a class="header" href="#generated-schema">Generated Schema</a></h1>
+<p>Sudograph takes your <a href="./schema.html">schema</a> and generates a much more powerful schema.</p>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="query"><a class="header" href="#query">Query</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="read"><a class="header" href="#read">read</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="mutation"><a class="header" href="#mutation">Mutation</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="create"><a class="header" href="#create">create</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="update"><a class="header" href="#update">update</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="delete"><a class="header" href="#delete">delete</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="subscription"><a class="header" href="#subscription">Subscription</a></h1>
+<p>This is not yet implemented</p>
 <h1 id="filtering"><a class="header" href="#filtering">Filtering</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="paging"><a class="header" href="#paging">Paging</a></h1>
+<p>Not yet implemented</p>
 <h1 id="ordering"><a class="header" href="#ordering">Ordering</a></h1>
+<p>Not yet implemented</p>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
+<p>This section is not yet well-documented, but assuming you've generated an example project with <code>npx sudograph</code> and deployed your canisters, then navigate to the playground at <a href="http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000">http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000</a> in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.</p>
 <h1 id="migrations"><a class="header" href="#migrations">Migrations</a></h1>
 <p>Automated migrations are not currently supported. If you wish to update a Sudograph canister that has already been deployed, you will lose all of your saved data unless you implement your own migrations.</p>
 <p>You can implement your own migrations by implementing and exporting <code>pre_upgrade</code> and <code>post_upgrade</code> canister functions. You can save your state to stable memory in the <code>pre_upgrade</code> function, and restore that state in the <code>post_upgrade</code> function. See <a href="https://sdk.dfinity.org/docs/developers-guide/working-with-canisters.html">here</a> and <a href="https://github.com/dfinity/cdk-rs/blob/main/examples/asset_storage/src/asset_storage_rs/lib.rs">here</a> for more information.</p>
@@ -624,7 +647,9 @@ type Mutation {
 <p>Even if you batch many mutations into one update call, if any of your mutations are custom and call into other canisters, the atomic guarantees are gone. This will be more difficult for Sudograph to implement because the Internet Computer does not provide atomicity when doing multi-canister updates.</p>
 <p>If you need transactions across multiple canisters, you will need to write custom code that undoes state changes across all canisters in a chain of mutations.</p>
 <h1 id="vision"><a class="header" href="#vision">Vision</a></h1>
+<p>Not yet well-documented, sheesh!</p>
 <h1 id="motivation"><a class="header" href="#motivation">Motivation</a></h1>
+<p>Not yet well-documented, sheesh!</p>
 <h1 id="limitations"><a class="header" href="#limitations">Limitations</a></h1>
 <ul>
 <li><input disabled="" type="checkbox"/>
