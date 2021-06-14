@@ -31,6 +31,7 @@ pub fn read(
     object_type_name: &str,
     inputs: &Vec<ReadInput>, // TODO I am starting to like the name search instead of ReadInput...maybe ReadSearchInput
     limit_option: Option<u32>,
+    offset_option: Option<u32>,
     selection_set: &SelectionSet
 ) -> Result<Vec<JSONString>, Box<dyn Error>> {
     let object_type = get_object_type(
@@ -43,7 +44,8 @@ pub fn read(
         &object_type.field_values_store,
         &object_type.field_types_store,
         &inputs,
-        limit_option
+        limit_option,
+        offset_option
     )?;
 
     let field_value_store_strings = field_value_stores.iter().map(|field_value_store| {
@@ -62,12 +64,23 @@ fn find_field_value_stores_for_inputs(
     field_values_store: &FieldValuesStore,
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>,
-    limit_option: Option<u32>
+    limit_option: Option<u32>,
+    offset_option: Option<u32>
 ) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
     // TODO I believe the result in the fold here needs to be mutable for efficiency...not sure, but perhaps
     // TODO this is a simple linear search, and thus I believe in the worst case we have O(n) performance
     // TODO I believe this is where the indexing will need to be implemented
+    // TODO this values iterator will still go through all of the keys no matter what
+    // TODO what we really want to do is only grab a subset of the keys if possible
+    // TODO we will need to first order the keys, then apply the offset, then apply the limit
+    // TODO right now it is inneficient, but fine for early prototyping
     let field_value_stores = field_values_store.values().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
+
+        if let Some(offset) = offset_option {
+            if (index as u32) < offset {
+                return Ok(result);
+            }
+        }
 
         if let Some(limit) = limit_option {
             // TODO is this conversion okay?
