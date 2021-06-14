@@ -54,6 +54,12 @@ fi
 
 cd ..
 
+echo -e "example: basic"
+
+cd examples/basic/canisters/graphql
+sed -E -i "s/(^sudograph = \")(.*)(\")/\1$VERSION\3/" Cargo.toml
+cd ../../../..
+
 echo -e "canister: The Sudograph Book"
 
 npm run book-build
