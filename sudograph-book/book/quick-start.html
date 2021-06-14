@@ -218,7 +218,7 @@ dfx deploy
 <h4 id="graphql-canister"><a class="header" href="#graphql-canister">graphql canister</a></h4>
 <p>You can execute queries against the graphql canister from the command line if you wish:</p>
 <pre><code class="language-bash"># send a query to the graphql canister
-dfx canister call graphql graphql_query '(&quot;query { readUser(input: {}) { id } }&quot;, &quot;{}&quot;)'
+dfx canister call graphql graphql_query '(&quot;query { readUser { id } }&quot;, &quot;{}&quot;)'
 
 # send a mutation to the graphql canister
 dfx canister call graphql graphql_mutation '(&quot;mutation { createUser(input: { username: \&quot;lastmjs\&quot; }) { id } }&quot;, &quot;{}&quot;)'
