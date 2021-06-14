@@ -150,6 +150,16 @@ pub struct FieldTypeInput {
     pub field_type: FieldType
 }
 
+pub struct OrderInput {
+    pub field_name: FieldName,
+    pub order_direction: OrderDirection
+}
+
+pub enum OrderDirection {
+    ASC,
+    DESC
+}
+
 // TODO make sure we are doing our error handling in the best way possible
 #[derive(Debug)]
 pub struct SudodbError {
@@ -672,6 +682,27 @@ pub fn get_field_value(
                     field_name = field_name,
                     id = id,
                     object_type_name = object_type_name
+                )
+            }));
+        }
+    };
+}
+
+pub fn get_field_value_from_field_value_store(
+    field_value_store: &FieldValueStore,
+    field_name: &FieldName
+) -> Result<FieldValue, Box<dyn Error>> {
+    let field_value_option = field_value_store.get(field_name);
+
+    match field_value_option {
+        Some(field_value) => {
+            return Ok(field_value.clone());
+        },
+        None => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "field value for field name {field_name} not found in field value store",
+                    field_name = field_name
                 )
             }));
         }

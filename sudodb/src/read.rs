@@ -4,6 +4,7 @@ use chrono::prelude::{
 };
 use crate::{
     convert_field_value_store_to_json_string,
+    FieldName,
     FieldType,
     FieldTypeRelationInfo,
     FieldTypesStore,
@@ -13,10 +14,13 @@ use crate::{
     FieldValueScalar,
     FieldValueStore,
     FieldValuesStore,
+    get_field_value_from_field_value_store,
     get_field_value_store,
     get_object_type,
     JSONString,
     ObjectTypeStore,
+    OrderDirection,
+    OrderInput,
     ReadInput,
     ReadInputOperation,
     SelectionSet,
@@ -32,6 +36,7 @@ pub fn read(
     inputs: &Vec<ReadInput>, // TODO I am starting to like the name search instead of ReadInput...maybe ReadSearchInput
     limit_option: Option<u32>,
     offset_option: Option<u32>,
+    order_inputs: &Vec<OrderInput>,
     selection_set: &SelectionSet
 ) -> Result<Vec<JSONString>, Box<dyn Error>> {
     let object_type = get_object_type(
@@ -45,7 +50,8 @@ pub fn read(
         &object_type.field_types_store,
         &inputs,
         limit_option,
-        offset_option
+        offset_option,
+        order_inputs
     )?;
 
     let field_value_store_strings = field_value_stores.iter().map(|field_value_store| {
@@ -65,8 +71,20 @@ fn find_field_value_stores_for_inputs(
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>,
     limit_option: Option<u32>,
-    offset_option: Option<u32>
+    offset_option: Option<u32>,
+    order_inputs: &Vec<OrderInput>
 ) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
+    if order_inputs.len() > 1 {
+        return Err(Box::new(SudodbError {
+            message: format!("Ordering by multiple fields is not currently supported")
+        }));
+    }
+
+    let ordered_field_value_stores = order_field_value_stores(
+        field_values_store,
+        order_inputs
+    );
+
     // TODO I believe the result in the fold here needs to be mutable for efficiency...not sure, but perhaps
     // TODO this is a simple linear search, and thus I believe in the worst case we have O(n) performance
     // TODO I believe this is where the indexing will need to be implemented
@@ -74,7 +92,56 @@ fn find_field_value_stores_for_inputs(
     // TODO what we really want to do is only grab a subset of the keys if possible
     // TODO we will need to first order the keys, then apply the offset, then apply the limit
     // TODO right now it is inneficient, but fine for early prototyping
-    let field_value_stores = field_values_store.values().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
+
+    let matching_field_value_stores = search_field_value_stores(
+        object_type_store,
+        &ordered_field_value_stores,
+        field_types_store,
+        inputs,
+        limit_option,
+        offset_option
+    )?;
+
+    return Ok(matching_field_value_stores);
+}
+
+fn order_field_value_stores(
+    field_values_store: &FieldValuesStore,
+    order_inputs: &Vec<OrderInput>
+) -> Vec<FieldValueStore> {
+    // TODO massive source of inneficiency
+    let mut field_value_stores: Vec<FieldValueStore> = field_values_store.values().cloned().collect();
+
+    if order_inputs.len() > 0 {
+        let order_input = &order_inputs[0];
+
+        // TODO it would be really nice to somehow return a result from this sort_by...but I am not sure how
+        // TODO so the best thing to do would probably be to move this to a separate function that returns a reference to the sorted vector
+        // TODO I will panic for now just to make it easier
+        field_value_stores.sort_by(|a, b| {
+            let field_comparison = compare_fields(
+                &order_input.field_name,
+                &order_input.order_direction,
+                a,
+                b
+            ).unwrap();
+
+            return field_comparison;
+        });
+    }
+
+    return field_value_stores;
+}
+
+fn search_field_value_stores(
+    object_type_store: &ObjectTypeStore,
+    field_value_stores: &Vec<FieldValueStore>,
+    field_types_store: &FieldTypesStore,
+    inputs: &Vec<ReadInput>,
+    limit_option: Option<u32>,
+    offset_option: Option<u32>
+) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
+    let matching_field_value_stores = field_value_stores.into_iter().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
 
         if let Some(offset) = offset_option {
             if (index as u32) < offset {
@@ -104,7 +171,132 @@ fn find_field_value_stores_for_inputs(
         return Ok(result);
     });
 
-    return field_value_stores;
+    return matching_field_value_stores;
+}
+
+// TODO we do not allow ordering by relations...not sure we should ever? But maybe
+fn compare_fields(
+    field_name: &FieldName,
+    order_direction: &OrderDirection,
+    field_value_store_a: &FieldValueStore,
+    field_value_store_b: &FieldValueStore
+) -> Result<std::cmp::Ordering, Box<dyn Error>> {
+    let field_value_a = get_field_value_from_field_value_store(
+        field_value_store_a,
+        field_name
+    )?;
+
+    let field_value_b = get_field_value_from_field_value_store(
+        field_value_store_b,
+        field_name
+    )?;
+
+    let field_value_scalar_option_a = get_field_value_scalar_option(&field_value_a)?;
+    let field_value_scalar_option_b = get_field_value_scalar_option(&field_value_b)?;
+
+    match (field_value_scalar_option_a, field_value_scalar_option_b) {
+        (Some(field_value_scalar_a), Some(field_value_scalar_b)) => {
+            match field_value_scalar_a {
+                FieldValueScalar::Boolean(_) => {
+                    return Ok(std::cmp::Ordering::Equal);
+                },
+                FieldValueScalar::Date(field_value_scalar_date_a) => {
+                    let field_value_scalar_date_b = get_field_value_scalar_date(field_value_scalar_b)?;
+
+                    let field_value_scalar_date_a_parsed = field_value_scalar_date_a.parse::<DateTime<Utc>>()?;
+                    let field_value_scalar_date_b_parsed = field_value_scalar_date_b.parse::<DateTime<Utc>>()?;
+
+                    if field_value_scalar_date_a_parsed > field_value_scalar_date_b_parsed {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+                        };
+                    }
+
+                    if field_value_scalar_date_a_parsed < field_value_scalar_date_b_parsed {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+                        };
+                    }
+
+                    return Ok(std::cmp::Ordering::Equal);
+                },
+                FieldValueScalar::Float(field_value_scalar_float_a) => {
+                    let field_value_scalar_float_b = get_field_value_scalar_float(field_value_scalar_b)?;
+
+                    if field_value_scalar_float_a > &field_value_scalar_float_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+                        };
+                    }
+
+                    if field_value_scalar_float_a < &field_value_scalar_float_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+                        };
+                    }
+
+                    return Ok(std::cmp::Ordering::Equal);
+                },
+                FieldValueScalar::Int(field_value_scalar_int_a) => {
+                    let field_value_scalar_int_b = get_field_value_scalar_int(field_value_scalar_b)?;
+
+                    if field_value_scalar_int_a > &field_value_scalar_int_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+                        };
+                    }
+
+                    if field_value_scalar_int_a < &field_value_scalar_int_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+                        };
+                    }
+
+                    return Ok(std::cmp::Ordering::Equal);
+                },
+                FieldValueScalar::String(field_value_scalar_string_a) => {
+                    let field_value_scalar_string_b = get_field_value_scalar_string(field_value_scalar_b)?;
+
+                    if field_value_scalar_string_a > &field_value_scalar_string_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+                        };
+                    }
+
+                    if field_value_scalar_string_a < &field_value_scalar_string_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+                        };
+                    }
+
+                    return Ok(std::cmp::Ordering::Equal);
+                }
+            };
+        },
+        (Some(_), None) => {
+            return match order_direction {
+                OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+            };
+        },
+        (None, Some(_)) => {
+            return match order_direction {
+                OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+            };
+        },
+        (None, None) => {
+            return Ok(std::cmp::Ordering::Equal);
+        }
+    };
 }
 
 fn field_value_store_matches_inputs(
