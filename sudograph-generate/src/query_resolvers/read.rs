@@ -28,14 +28,16 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
             async fn #read_function_name(
                 &self,
                 context: &sudograph::async_graphql::Context<'_>,
-                input: #read_input_type
+                input: Option<#read_input_type>
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
+
+                let read_inputs = if let Some(input_value) = input { input_value.get_read_inputs(String::from("")) } else { vec![] }; // TODO it is weird to pass in the empty string
 
                 let read_result = read(
                     object_store,
                     #object_type_name,
-                    &input.get_read_inputs(String::from("")), // TODO it is weird to pass in the empty string
+                    &read_inputs,
                     &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
