@@ -19,6 +19,7 @@ mod structs {
     pub mod read_int_input;
     pub mod read_string_input;
     pub mod read_relation_input;
+    pub mod order_input;
     pub mod update_input;
     pub mod delete_input;
     pub mod upsert_input;
@@ -62,6 +63,7 @@ use structs::read_id_input::get_read_id_input_rust_struct;
 use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
 use structs::read_relation_input::get_read_relation_input_rust_struct;
+use structs::order_input::generate_order_input_rust_structs;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
 use structs::upsert_input::generate_upsert_input_rust_structs;
@@ -120,6 +122,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
     let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
 
+    let generated_order_input_structs = generate_order_input_rust_structs(
+        &graphql_ast,
+        &object_types
+    );
+
     let generated_update_input_structs = generate_update_input_rust_structs(
         &graphql_ast,
         &object_types
@@ -172,7 +179,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             EmptySubscription,
             scalar,
             Variables,
-            Request
+            Request,
+            Enum
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -192,7 +200,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             ReadInputType,
             ReadInputOperation,
             FieldTypeRelationInfo,
-            SelectionSet
+            SelectionSet,
+            OrderInput
         };
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
@@ -279,6 +288,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             connect: ID
         }
 
+        #[derive(Enum, Copy, Clone, Eq, PartialEq)]
+        enum OrderDirection {
+            ASC,
+            DESC
+        }
+
         #read_boolean_input_rust_struct
         #read_date_input_rust_struct
         #read_float_input_rust_struct
@@ -290,6 +305,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
         #(#generated_read_input_structs)*
+        #(#generated_order_input_structs)*
         #(#generated_update_input_structs)*
         #(#generated_delete_input_structs)*
         // #(#generated_upsert_input_structs)*
@@ -399,19 +415,27 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         #[update]
         async fn graphql_mutation(mutation_string: String, variables_json_string: String) -> String {
-            // TODO I think this cross-canister call is making the mutations take forever
-            // TODO once the async types are fixed in ic_cdk, update and we should be able to move the randomness into the
-            // TODO create resolver itself, so only it will need to do this call and take forever to do so
-            let call_result: Result<(Vec<u8>,), _> = ic_cdk::api::call::call(ic_cdk::export::Principal::management_canister(), "raw_rand", ()).await;
+            let rand_store = storage::get_mut::<RandStore>();
 
-            if let Ok(result) = call_result {
-                let rand_store = storage::get_mut::<RandStore>();
+            let rng_option = rand_store.get("RNG");
 
-                let randomness = result.0;
-
-                let mut rng: StdRng = SeedableRng::from_seed(randomness_vector_to_array(randomness));
-
-                rand_store.insert(String::from("RNG"), rng);
+            if rng_option.is_none() {
+                // TODO it seems it would be best to just do this once in the init function, but there is an error: https://forum.dfinity.org/t/cant-do-cross-canister-call-in-init-function/5187
+                // TODO I think this cross-canister call is making the mutations take forever
+                // TODO once the async types are fixed in ic_cdk, update and we should be able to move the randomness into the
+                // TODO create resolver itself, so only it will need to do this call and take forever to do so
+                // TODO and we should be able to get it to be only the first create
+                let call_result: Result<(Vec<u8>,), _> = ic_cdk::api::call::call(ic_cdk::export::Principal::management_canister(), "raw_rand", ()).await;
+    
+                if let Ok(result) = call_result {
+                    let rand_store = storage::get_mut::<RandStore>();
+    
+                    let randomness = result.0;
+    
+                    let mut rng: StdRng = SeedableRng::from_seed(randomness_vector_to_array(randomness));
+    
+                    rand_store.insert(String::from("RNG"), rng);
+                }
             }
 
             // TODO figure out how to create global variable to store the schema in
@@ -689,4 +713,38 @@ fn get_object_type_from_field<'a>(
     return object_types.into_iter().find(|object_type| {
         return object_type.name == object_type_name;
     }).clone();
+}
+
+fn get_scalar_fields<'a>(
+    graphql_ast: &Document<String>,
+    object_type: &ObjectType<'a, String>
+) -> Vec<Field<'a, String>> {
+    return object_type.fields.iter().cloned().filter(|field| {            
+        return 
+            is_graphql_type_a_relation_many(
+                graphql_ast,
+                &field.field_type
+            ) == false &&
+            is_graphql_type_a_relation_one(
+                graphql_ast,
+                &field.field_type
+            ) == false;
+    }).collect();
+}
+
+fn get_relation_fields<'a>(
+    graphql_ast: &Document<String>,
+    object_type: &ObjectType<'a, String>
+) -> Vec<Field<'a, String>> {
+    return object_type.fields.iter().cloned().filter(|field| {            
+        return 
+            is_graphql_type_a_relation_many(
+                graphql_ast,
+                &field.field_type
+            ) == true ||
+            is_graphql_type_a_relation_one(
+                graphql_ast,
+                &field.field_type
+            ) == true;
+    }).collect();
 }
