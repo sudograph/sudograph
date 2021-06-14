@@ -111,7 +111,7 @@ You can execute queries against the graphql canister from the command line if yo
 
 ```bash
 # send a query to the graphql canister
-dfx canister call graphql graphql_query '("query { readUser(input: {}) { id } }", "{}")'
+dfx canister call graphql graphql_query '("query { readUser { id } }", "{}")'
 
 # send a mutation to the graphql canister
 dfx canister call graphql graphql_mutation '("mutation { createUser(input: { username: \"lastmjs\" }) { id } }", "{}")'

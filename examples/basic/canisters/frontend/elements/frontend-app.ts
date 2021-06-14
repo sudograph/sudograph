@@ -213,7 +213,7 @@ window.customElements.define('frontend-app', FrontendApp);
 async function fetchUsers(): Promise<ReadonlyArray<User>> {
     const result = await query(gql`
         query {
-            readUser(input: {}) {
+            readUser {
                 id
                 username
                 blogPosts {

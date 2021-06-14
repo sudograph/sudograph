@@ -25,9 +25,9 @@ In the above example, you will be able to select the shoe of a foot, like so:
 
 ```graphql
 query {
-    readFoot(input: {
+    readFoot(search: {
         id: {
-            eq: "1"
+            eq: "7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y"
         }
     }) {
         id
@@ -82,9 +82,9 @@ In the above example, you will be able to select the bananas of a monkey, like s
 
 ```graphql
 query {
-    readMonkey(input: {
+    readMonkey(search: {
         id: {
-            eq: "1"
+            eq: "7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y"
         }
     }) {
         id
