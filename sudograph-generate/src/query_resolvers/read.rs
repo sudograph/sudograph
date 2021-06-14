@@ -29,7 +29,8 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 &self,
                 context: &sudograph::async_graphql::Context<'_>,
                 search: Option<#read_input_type>,
-                limit: Option<u32> // TODO is u32 best? It has to be positive
+                limit: Option<u32>, // TODO is u32 best? It has to be positive
+                offset: Option<u32> // TODO is u32 best? It has to be positive
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let object_store = storage::get_mut::<ObjectTypeStore>();
 
@@ -40,6 +41,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                     #object_type_name,
                     &read_inputs,
                     limit,
+                    offset,
                     &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
                 );
 
