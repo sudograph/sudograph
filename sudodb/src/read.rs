@@ -29,7 +29,8 @@ const ERROR_PREFIX: &str = "sudodb::read";
 pub fn read(
     object_type_store: &ObjectTypeStore,
     object_type_name: &str,
-    inputs: &Vec<ReadInput>,
+    inputs: &Vec<ReadInput>, // TODO I am starting to like the name search instead of ReadInput...maybe ReadSearchInput
+    limit_option: Option<u32>,
     selection_set: &SelectionSet
 ) -> Result<Vec<JSONString>, Box<dyn Error>> {
     let object_type = get_object_type(
@@ -41,7 +42,8 @@ pub fn read(
         object_type_store,
         &object_type.field_values_store,
         &object_type.field_types_store,
-        &inputs
+        &inputs,
+        limit_option
     )?;
 
     let field_value_store_strings = field_value_stores.iter().map(|field_value_store| {
@@ -59,12 +61,21 @@ fn find_field_value_stores_for_inputs(
     object_type_store: &ObjectTypeStore,
     field_values_store: &FieldValuesStore,
     field_types_store: &FieldTypesStore,
-    inputs: &Vec<ReadInput>
+    inputs: &Vec<ReadInput>,
+    limit_option: Option<u32>
 ) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
     // TODO I believe the result in the fold here needs to be mutable for efficiency...not sure, but perhaps
     // TODO this is a simple linear search, and thus I believe in the worst case we have O(n) performance
     // TODO I believe this is where the indexing will need to be implemented
-    let field_value_stores = field_values_store.values().try_fold(vec![], |mut result, field_value_store| {
+    let field_value_stores = field_values_store.values().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
+
+        if let Some(limit) = limit_option {
+            // TODO is this conversion okay?
+            if index as u32 >= limit {
+                return Ok(result);
+            }
+        }
+
         let inputs_match: bool = field_value_store_matches_inputs(
             object_type_store,
             field_value_store,
