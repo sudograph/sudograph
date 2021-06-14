@@ -1,6 +1,6 @@
 {
   "name": "sudograph",
-  "version": "0.2.2-beta.0",
+  "version": "0.2.2-beta.1",
   "bin": "bin.js",
   "main": "build/sudograph.js",
   "module": "build/sudograph.js",
@@ -13,7 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@dfinity/agent": "0.8.9",
-    "generator-sudograph": "0.2.2-beta.0",
+    "generator-sudograph": "0.2.2-beta.1",
     "graphiql-sudograph": "1.4.1",
     "graphql": "15.5.0",
     "react": "17.0.2",

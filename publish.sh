@@ -57,7 +57,9 @@ cd ..
 echo -e "example: basic"
 
 cd examples/basic/canisters/graphql
-sed -E -i "s/(^sudograph = \")(.*)(\")/\1$VERSION\3/" Cargo.toml
+sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
+cd ../frontend
+sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
 cd ../../../..
 
 echo -e "canister: The Sudograph Book"

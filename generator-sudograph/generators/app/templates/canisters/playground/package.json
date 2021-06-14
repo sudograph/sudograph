@@ -6,6 +6,6 @@
     "snowpack": "3.4.0"
   },
   "dependencies": {
-    "sudograph": "0.2.2-beta.0"
+    "sudograph": "0.2.2-beta.1"
   }
 }
