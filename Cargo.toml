@@ -1,6 +1,6 @@
 [package]
 name = "sudograph"
-version = "0.2.2-beta.1"
+version = "0.2.2"
 authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -10,8 +10,8 @@ description = "GraphQL database for the Internet Computer"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sudodb = { version = "0.2.2-beta.1", path = "./sudodb" }
-sudograph-generate = { version = "0.2.2-beta.1", path = "./sudograph-generate" }
+sudodb = { version = "0.2.2", path = "./sudodb" }
+sudograph-generate = { version = "0.2.2", path = "./sudograph-generate" }
 async-graphql = "2.5.9"
 getrandom = { version = "0.2.2", features = ["custom"] }
 serde_json = "1.0.64"

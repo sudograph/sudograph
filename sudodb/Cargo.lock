@@ -761,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "sudodb"
-version = "0.2.2-beta.1"
+version = "0.2.2"
 dependencies = [
  "base32",
  "chrono",
