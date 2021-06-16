@@ -53,7 +53,7 @@ use graphql_parser::schema::{
     Document,
     Field
 };
-use structs::object_type::generate_object_type_rust_structs;
+use structs::object_type::generate_object_type_structs;
 use structs::create_input::generate_create_input_rust_structs;
 use structs::read_input::generate_read_input_rust_structs;
 use structs::read_boolean_input::get_read_boolean_input_rust_struct;
@@ -99,7 +99,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         &graphql_ast
     );
 
-    let generated_object_type_structs = generate_object_type_rust_structs(
+    let generated_object_type_structs = generate_object_type_structs(
         &graphql_ast,
         &object_types
     );
@@ -201,6 +201,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             ReadInputOperation,
             FieldTypeRelationInfo,
             SelectionSet,
+            SelectionSetInfo,
             OrderInput
         };
         use sudograph::serde_json::from_str;
@@ -398,11 +399,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                 EmptySubscription
             );
 
+            // TODO sudosettings should turn these on and off
             // TODO it would be nice to print these out prettily
             // TODO also, it would be nice to turn off these kinds of logs
             // TODO I am thinking about having directives on the type Query set global things
-            ic_cdk::println!("query_string: {:?}", query_string);
-            ic_cdk::println!("variables_json_string: {:?}", variables_json_string);
+            // ic_cdk::println!("query_string: {:?}", query_string);
+            // ic_cdk::println!("variables_json_string: {:?}", variables_json_string);
 
             let request = Request::new(query_string).variables(Variables::from_json(sudograph::serde_json::from_str(&variables_json_string).expect("This should work")));
 
@@ -520,11 +522,171 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                     selection_field,
                     SelectionSet(None)
                 );
+
+                ic_cdk::println!("limit: {:?}", get_limit_option_from_selection_field(selection_field));
+                ic_cdk::println!("offset: {:?}", get_offset_option_from_selection_field(selection_field));
+                ic_cdk::println!("order_inputs: {:?}", get_order_inputs_from_selection_field(selection_field));
+
+                let child_selection_set_info = SelectionSetInfo {
+                    selection_set: child_selection_set,
+                    search_inputs: get_search_inputs_from_selection_field(selection_field),
+                    limit_option: get_limit_option_from_selection_field(selection_field),
+                    offset_option: get_offset_option_from_selection_field(selection_field),
+                    order_inputs: get_order_inputs_from_selection_field(selection_field)
+                };
             
-                hash_map.insert(String::from(selection_field.name()), child_selection_set);
+                hash_map.insert(String::from(selection_field.name()), child_selection_set_info);
             }
 
             return SelectionSet(Some(hash_map));
+        }
+
+        fn get_search_inputs_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Vec<ReadInput> {
+            // TODO we just need to fill this out
+            // TODO we need to do a bit of recursion to get this thing going
+            return vec![];
+        }
+
+        fn get_limit_option_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Option<u32> {
+            match selection_field.arguments() {
+                Ok(arguments) => {
+                    let limit_argument_option = arguments.iter().find(|argument| {
+                        return argument.0.as_str() == "limit";
+                    });
+
+                    match limit_argument_option {
+                        Some(limit_argument) => {
+                            match &limit_argument.1 {
+                                sudograph::async_graphql::Value::Number(number) => {
+                                    match number.as_u64() {
+                                        Some(number_u64) => {
+                                            return Some(number_u64 as u32);
+                                        },
+                                        None => {
+                                            return None;
+                                        }
+                                    };
+                                },
+                                _ => {
+                                    return None; // TODO we should probably return an error here
+                                }
+                            };
+                        },
+                        None => {
+                            return None;
+                        }
+                    };
+                },
+                _ => {
+                    // TODO should we panic or something here?
+                    // TODO we should probably return the result up the chain
+                    return None;
+                }
+            };
+        }
+
+        fn get_offset_option_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Option<u32> {
+            match selection_field.arguments() {
+                Ok(arguments) => {
+                    let limit_argument_option = arguments.iter().find(|argument| {
+                        return argument.0.as_str() == "offset";
+                    });
+
+                    match limit_argument_option {
+                        Some(limit_argument) => {
+                            match &limit_argument.1 {
+                                sudograph::async_graphql::Value::Number(number) => {
+                                    match number.as_u64() {
+                                        Some(number_u64) => {
+                                            return Some(number_u64 as u32);
+                                        },
+                                        None => {
+                                            return None;
+                                        }
+                                    };
+                                },
+                                _ => {
+                                    return None; // TODO we should probably return an error here
+                                }
+                            };
+                        },
+                        None => {
+                            return None;
+                        }
+                    };
+                },
+                _ => {
+                    // TODO should we panic or something here?
+                    // TODO we should probably return the result up the chain
+                    return None;
+                }
+            };
+        }
+
+        fn get_order_inputs_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Vec<sudograph::sudodb::OrderInput> {
+            match selection_field.arguments() {
+                Ok(arguments) => {
+                    let order_argument_option = arguments.iter().find(|argument| {
+                        return argument.0.as_str() == "order";
+                    });
+
+                    match order_argument_option {
+                        Some(order_argument) => {
+                            match &order_argument.1 {
+                                sudograph::async_graphql::Value::Object(object) => {
+                                    return object.keys().map(|key| {
+                                        let value = object.get(key).unwrap(); // TODO be better
+
+                                        return sudograph::sudodb::OrderInput {
+                                            field_name: String::from(key.as_str()),
+                                            order_direction: match value {
+                                                sudograph::async_graphql::Value::Enum(name) => {
+                                                    if name.as_str() == "ASC" {
+                                                        sudograph::sudodb::OrderDirection::ASC
+                                                    }
+                                                    // TODO to be really sure we should have an explicit branch for "DESC"
+                                                    else {
+                                                        sudograph::sudodb::OrderDirection::DESC
+                                                    }
+                                                },
+                                                _ => panic!("bad")
+                                            }
+                                        };
+                                    }).collect();
+                                },
+                                _ => {
+                                    return vec![]; // TODO we should probably return an error here
+                                }
+                            };
+                        },
+                        None => {
+                            return vec![];
+                        }
+                    };
+                },
+                _ => {
+                    // TODO we might want to return the err result up here
+                    return vec![];
+                }
+            };
+        }
+
+        fn get_field_arguments(
+            context: &sudograph::async_graphql::Context<'_>,
+            field_name: &str
+        ) -> sudograph::async_graphql::ServerResult<Vec<(sudograph::async_graphql::Name, sudograph::async_graphql::Value)>> {
+            let selection_field_option = context.field().selection_set().find(|selection_field| {
+                return selection_field.name() == field_name;
+            });
+
+            match selection_field_option {
+                Some(selection_field) => {
+                    return selection_field.arguments();
+                },
+                None => {
+                    return Ok(vec![]);
+                }
+            };
         }
     };
 
@@ -554,6 +716,21 @@ fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
             return true;
         }
     };
+}
+
+fn is_field_a_relation(
+    graphql_ast: &Document<String>,
+    field: &Field<String>
+) -> bool {
+    return
+        is_graphql_type_a_relation_many(
+            graphql_ast,
+            &field.field_type
+        ) == true ||
+        is_graphql_type_a_relation_one(
+            graphql_ast,
+            &field.field_type
+        ) == true;
 }
 
 fn is_graphql_type_a_relation_many(

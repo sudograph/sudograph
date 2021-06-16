@@ -21,12 +21,14 @@ use crate::{
     ObjectTypeStore,
     OrderDirection,
     OrderInput,
+    PrimaryKey,
     ReadInput,
     ReadInputOperation,
     SelectionSet,
     SudodbError
 };
 use std::error::Error;
+use std::collections::btree_map::Values;
 
 const ERROR_PREFIX: &str = "sudodb::read";
 
@@ -44,9 +46,9 @@ pub fn read(
         String::from(object_type_name)
     )?;
 
-    let field_value_stores = find_field_value_stores_for_inputs(
+    let matching_field_value_stores = find_field_value_stores_for_inputs(
         object_type_store,
-        &object_type.field_values_store,
+        &mut object_type.field_values_store.values(),
         &object_type.field_types_store,
         &inputs,
         limit_option,
@@ -54,7 +56,7 @@ pub fn read(
         order_inputs
     )?;
 
-    let field_value_store_strings = field_value_stores.iter().map(|field_value_store| {
+    let matching_field_value_store_strings = matching_field_value_stores.iter().map(|field_value_store| {
         return convert_field_value_store_to_json_string(
             object_type_store,
             field_value_store,
@@ -62,12 +64,15 @@ pub fn read(
         );
     }).collect();
 
-    return Ok(field_value_store_strings);
+    return Ok(matching_field_value_store_strings);
 }
 
-fn find_field_value_stores_for_inputs(
+// TODO repurpose this function so that it can be used by the top level read and by the convert selection to json
+// TODO where the relation many will need to call this function and pass in the inputs, limit, offset, and order stuff
+pub fn find_field_value_stores_for_inputs(
     object_type_store: &ObjectTypeStore,
-    field_values_store: &FieldValuesStore,
+    // field_values_store_iterator: Values<PrimaryKey, FieldValueStore>,
+    field_values_store_iterator: &mut Iterator<Item = &FieldValueStore>,
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>,
     limit_option: Option<u32>,
@@ -81,7 +86,7 @@ fn find_field_value_stores_for_inputs(
     }
 
     let ordered_field_value_stores = order_field_value_stores(
-        field_values_store,
+        field_values_store_iterator,
         order_inputs
     );
 
@@ -106,11 +111,11 @@ fn find_field_value_stores_for_inputs(
 }
 
 fn order_field_value_stores(
-    field_values_store: &FieldValuesStore,
+    field_values_store_iterator: &mut Iterator<Item = &FieldValueStore>,
     order_inputs: &Vec<OrderInput>
 ) -> Vec<FieldValueStore> {
     // TODO massive source of inneficiency
-    let mut field_value_stores: Vec<FieldValueStore> = field_values_store.values().cloned().collect();
+    let mut field_value_stores: Vec<FieldValueStore> = field_values_store_iterator.cloned().collect();
 
     if order_inputs.len() > 0 {
         let order_input = &order_inputs[0];
@@ -299,6 +304,8 @@ fn compare_fields(
     };
 }
 
+// TODO we need the limit, offset, and ordering to work for relations as well
+// TODO get it to work with the recursion
 fn field_value_store_matches_inputs(
     object_type_store: &ObjectTypeStore,
     field_value_store: &FieldValueStore,
