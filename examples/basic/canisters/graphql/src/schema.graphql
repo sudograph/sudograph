@@ -1,8 +1,8 @@
-type SudographSettings {
-    exportGeneratedQueryFunction: true
-    exportGeneratedMutationFunction: true
-    # TODO should we allow renaming the functions?
-}
+# type SudographSettings {
+#     exportGeneratedQueryFunction: true
+#     exportGeneratedMutationFunction: true
+#     # TODO should we allow renaming the functions?
+# }
 
 type User {
     id: ID!
