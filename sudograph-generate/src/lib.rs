@@ -86,7 +86,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     // TODO const temp: &str = include_str!(#schema_absolute_file_path_string); below is related to this as well
     // TODO whenever the schema file changes, include_str! somehow makes it so that the create will recompile, which is what we want!
     // TODO it would be nice if there were a simpler or more standard way to accomplish this
-    let cwd = std::env::current_dir().unwrap();
+    let cwd = std::env::current_dir().expect("graphql_database::cwd");
     let schema_absolute_file_path = cwd.join(&schema_file_path_string_value);
     let schema_absolute_file_path_string_option = schema_absolute_file_path.to_str();
     let schema_absolute_file_path_string = schema_absolute_file_path_string_option.unwrap();
@@ -506,6 +506,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         }
 
         fn convert_selection_field_to_selection_set(
+            object_type_name: &str,
             selection_field: sudograph::async_graphql::context::SelectionField<'_>,
             selection_set: SelectionSet
         ) -> SelectionSet {
@@ -515,21 +516,35 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                 return selection_set;
             }
 
+            // TODO we should probably also put this at the top level of the resolvers so that we do not parse it so many times
+            // TODO But I need to figure out how to get the schema_file_contents down to the resolvers
+            // TODO best way might be to use context data from the top level functions
+            let graphql_ast = sudograph::graphql_parser::schema::parse_schema::<String>(#schema_file_contents).unwrap();
+
             let mut hash_map = HashMap::new();
 
             for selection_field in selection_fields {
+                // TODO this is not exactly the object type name in all cases, but if the field is a scalar
+                // TODO I am thinking it should not matter
+                let child_type_name = get_type_name_for_object_type_name_and_field_name(
+                    &graphql_ast,
+                    object_type_name,
+                    selection_field.name()
+                );
+
                 let child_selection_set = convert_selection_field_to_selection_set(
+                    &child_type_name,
                     selection_field,
                     SelectionSet(None)
                 );
 
-                ic_cdk::println!("limit: {:?}", get_limit_option_from_selection_field(selection_field));
-                ic_cdk::println!("offset: {:?}", get_offset_option_from_selection_field(selection_field));
-                ic_cdk::println!("order_inputs: {:?}", get_order_inputs_from_selection_field(selection_field));
-
                 let child_selection_set_info = SelectionSetInfo {
                     selection_set: child_selection_set,
-                    search_inputs: get_search_inputs_from_selection_field(selection_field),
+                    search_inputs: get_search_inputs_from_selection_field(
+                        &graphql_ast,
+                        object_type_name,
+                        selection_field
+                    ),
                     limit_option: get_limit_option_from_selection_field(selection_field),
                     offset_option: get_offset_option_from_selection_field(selection_field),
                     order_inputs: get_order_inputs_from_selection_field(selection_field)
@@ -541,10 +556,307 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             return SelectionSet(Some(hash_map));
         }
 
-        fn get_search_inputs_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Vec<ReadInput> {
-            // TODO we just need to fill this out
-            // TODO we need to do a bit of recursion to get this thing going
-            return vec![];
+        fn get_search_inputs_from_selection_field(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            object_type_name: &str,
+            selection_field: sudograph::async_graphql::context::SelectionField<'_>
+        ) -> Vec<ReadInput> {            
+            match selection_field.arguments() {
+                Ok(arguments) => {
+                    let search_argument_option = arguments.iter().find(|argument| {
+                        return argument.0.as_str() == "search";
+                    });
+
+                    match search_argument_option {
+                        Some(search_argument) => {
+                            let relation_object_type_name = get_type_name_for_object_type_name_and_field_name(
+                                graphql_ast,
+                                object_type_name,
+                                selection_field.name()
+                            );
+
+                            return get_search_inputs_from_value(
+                                graphql_ast,
+                                &relation_object_type_name,
+                                &search_argument.1
+                            );
+                        },
+                        None => {
+                            return vec![];
+                        }
+                    };
+                },
+                _ => {
+                    // TODO we might want to return the err result up here
+                    return vec![];
+                }
+            };
+        }
+
+        // TODO not sure if this should be from an object value in particular or just a value
+        fn get_search_inputs_from_value(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            object_type_name: &str,
+            value: &sudograph::async_graphql::Value
+        ) -> Vec<ReadInput> {
+            match value {
+                sudograph::async_graphql::Value::Object(object) => {
+                    let search_inputs = object.keys().fold(vec![], |result, object_key| {
+
+                        let object_value = object.get(object_key).expect("get_search_inputs_from_value::object_value");
+
+                        if object_key == "and" {
+                            return result.into_iter().chain(vec![ReadInput {
+                                input_type: ReadInputType::Scalar,
+                                input_operation: ReadInputOperation::Equals,
+                                field_name: String::from("and"),
+                                field_value: FieldValue::Scalar(None),
+                                relation_object_type_name: String::from(""),
+                                relation_read_inputs: vec![],
+                                and: match object_value {
+                                    sudograph::async_graphql::Value::List(list) => list.iter().flat_map(|value| { get_search_inputs_from_value(
+                                        graphql_ast,
+                                        object_type_name,
+                                        value
+                                    ) }).collect(),
+                                    _ => panic!()
+                                },
+                                or: vec![]
+                            }]).collect();
+                        }
+
+                        if object_key == "or" {
+                            return result.into_iter().chain(vec![ReadInput {
+                                input_type: ReadInputType::Scalar,
+                                input_operation: ReadInputOperation::Equals,
+                                field_name: String::from("or"),
+                                field_value: FieldValue::Scalar(None),
+                                relation_object_type_name: String::from(""),
+                                relation_read_inputs: vec![],
+                                and: vec![],
+                                or: match object_value {
+                                    sudograph::async_graphql::Value::List(list) => list.iter().flat_map(|value| { get_search_inputs_from_value(
+                                        graphql_ast,
+                                        object_type_name,
+                                        value
+                                    ) }).collect(),
+                                    _ => panic!()
+                                }
+                            }]).collect();
+                        }
+
+                        let field = get_field_for_object_type_name_and_field_name(
+                            graphql_ast,
+                            object_type_name,
+                            object_key
+                        );
+
+                        if
+                            is_graphql_type_a_relation_many(
+                                graphql_ast,
+                                &field.field_type
+                            ) == true ||
+                            is_graphql_type_a_relation_one(
+                                graphql_ast,
+                                &field.field_type
+                            ) == true
+                        {
+                            let relation_object_type_name = get_field_type_name(&field);
+
+                            return result.into_iter().chain(vec![ReadInput {
+                                input_type: ReadInputType::Relation,
+                                input_operation: ReadInputOperation::Equals,
+                                field_name: object_key.to_string(),
+                                field_value: FieldValue::Scalar(None),
+                                relation_object_type_name: String::from(&relation_object_type_name),
+                                relation_read_inputs: get_search_inputs_from_value(
+                                    graphql_ast,
+                                    &relation_object_type_name,
+                                    object_value
+                                ),
+                                and: vec![],
+                                or: vec![]
+                            }]).collect();
+                        }
+                        else {
+                            match object_value {
+                                sudograph::async_graphql::Value::Object(scalar_object) => {
+                                    let scalar_search_inputs: Vec<ReadInput> = scalar_object.keys().map(|scalar_object_key| {
+                                        let scalar_object_value = scalar_object.get(scalar_object_key).unwrap();
+                                        
+                                        let input_operation = match scalar_object_key.as_str() {
+                                            "eq" => ReadInputOperation::Equals,
+                                            "gt" => ReadInputOperation::GreaterThan,
+                                            "gte" => ReadInputOperation::GreaterThanOrEqualTo,
+                                            "lt" => ReadInputOperation::LessThan,
+                                            "lte" => ReadInputOperation::LessThanOrEqualTo,
+                                            "contains" => ReadInputOperation::Contains,
+                                            _ => panic!()
+                                        };
+
+                                        let graphql_type_name = get_graphql_type_name(&field.field_type);
+
+                                        // TODO this will get more difficult once we introduce custom scalars
+                                        let field_value = match graphql_type_name.as_str() {
+                                            "Boolean" => FieldValue::Scalar(Some(FieldValueScalar::Boolean(match scalar_object_value {
+                                                sudograph::async_graphql::Value::Boolean(boolean) => boolean.clone(),
+                                                _ => panic!()
+                                            }))),
+                                            "Date" => FieldValue::Scalar(Some(FieldValueScalar::Date(match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(date_string) => date_string.to_string(),
+                                                _ => panic!()
+                                            }))),
+                                            "Float" => FieldValue::Scalar(Some(FieldValueScalar::Float(match scalar_object_value {
+                                                sudograph::async_graphql::Value::Number(number) => number.as_f64().unwrap() as f32,
+                                                _ => panic!()
+                                            }))),
+                                            "ID" => FieldValue::Scalar(Some(FieldValueScalar::String(match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(id_string) => id_string.to_string(),
+                                                _ => panic!()
+                                            }))),
+                                            "Int" => FieldValue::Scalar(Some(FieldValueScalar::Int(match scalar_object_value {
+                                                sudograph::async_graphql::Value::Number(number) => number.as_i64().unwrap() as i32,
+                                                _ => panic!()
+                                            }))),
+                                            "String" => FieldValue::Scalar(Some(FieldValueScalar::String(match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(string) => string.to_string(),
+                                                _ => panic!()
+                                            }))),
+                                            _ => panic!("this scalar is not defined")
+                                        };
+
+                                        return ReadInput {
+                                            input_type: ReadInputType::Scalar,
+                                            input_operation: input_operation,
+                                            field_name: object_key.to_string(),
+                                            field_value,
+                                            relation_object_type_name: String::from(""),
+                                            relation_read_inputs: vec![],
+                                            and: vec![],
+                                            or: vec![]
+                                        };
+                                    }).collect();
+
+                                    return result.into_iter().chain(scalar_search_inputs).collect();
+                                },
+                                _ => {
+                                    panic!();
+                                }
+                            };
+                        }
+                    });
+
+                    return search_inputs;
+                },
+                _ => {
+                    panic!(); // TODO probably return a result instead, I am getting really lazy with this
+                }
+            }
+        }
+
+        fn get_type_name_for_object_type_name_and_field_name(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            object_type_name: &str,
+            field_name: &str
+        ) -> String {
+            let object_type = get_object_type(
+                graphql_ast,
+                object_type_name
+            );
+            let field = get_field(
+                &object_type,
+                field_name
+            );
+            let field_type_name = get_field_type_name(&field);
+
+            return field_type_name;
+        }
+
+        fn get_field_for_object_type_name_and_field_name<'a>(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<'a, String>,
+            object_type_name: &str,
+            field_name: &str
+        ) -> sudograph::graphql_parser::schema::Field<'a, String> {
+            let object_type = get_object_type(
+                graphql_ast,
+                object_type_name
+            );
+            let field = get_field(
+                &object_type,
+                field_name
+            );
+
+            return field;
+        }
+
+        fn get_object_types<'a>(graphql_ast: &sudograph::graphql_parser::schema::Document<'a, String>) -> Vec<sudograph::graphql_parser::schema::ObjectType<'a, String>> {
+            let type_definitions: Vec<sudograph::graphql_parser::schema::TypeDefinition<String>> = graphql_ast.definitions.iter().filter_map(|definition| {
+                match definition {
+                    sudograph::graphql_parser::schema::Definition::TypeDefinition(type_definition) => {
+                        return Some(type_definition.clone());
+                    },
+                    _ => {
+                        return None;
+                    }
+                };
+            }).collect();
+        
+            let object_types = type_definitions.into_iter().filter_map(|type_definition| {
+                match type_definition {
+                    sudograph::graphql_parser::schema::TypeDefinition::Object(object_type) => {
+                        return Some(object_type);
+                    },
+                    _ => {
+                        return None;
+                    }
+                }
+            }).collect();
+        
+            return object_types;
+        }
+
+        fn get_object_type<'a>(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<'a, String>,
+            object_type_name: &str
+        ) -> sudograph::graphql_parser::schema::ObjectType<'a, String> {
+            let object_types = get_object_types(graphql_ast);
+            let object_type = object_types.iter().find(|object_type| {
+                return object_type.name == object_type_name;
+            }).expect("get_object_type::object_type");
+
+            return object_type.clone();
+        }
+
+        fn get_field<'a>(
+            object_type: &sudograph::graphql_parser::schema::ObjectType<'a, String>,
+            field_name: &str
+        ) -> sudograph::graphql_parser::schema::Field<'a, String> {
+            // ic_cdk::println!("object_type {:?}", object_type);
+            // ic_cdk::println!("object_type {}", field_name);
+            return object_type.fields.iter().find(|field| {
+                return field.name == field_name;
+            }).expect("get_field").clone(); // TODO instead of returning these types of clones, returning references might be better since the AST stuff is read-only
+        }
+
+        fn get_field_type_name(
+            field: &sudograph::graphql_parser::schema::Field<String>
+        ) -> String {
+            return get_graphql_type_name(&field.field_type);
+        }
+
+        // TODO this is now copied inside and outside of the quote
+        fn get_graphql_type_name(graphql_type: &sudograph::graphql_parser::schema::Type<String>) -> String {
+            match graphql_type {
+                sudograph::graphql_parser::schema::Type::NamedType(named_type) => {
+                    return String::from(named_type);
+                },
+                sudograph::graphql_parser::schema::Type::NonNullType(non_null_type) => {
+                    return get_graphql_type_name(non_null_type);
+                },
+                sudograph::graphql_parser::schema::Type::ListType(list_type) => {
+                    return get_graphql_type_name(list_type);
+                }
+            };
         }
 
         fn get_limit_option_from_selection_field(selection_field: sudograph::async_graphql::context::SelectionField<'_>) -> Option<u32> {
@@ -635,7 +947,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                             match &order_argument.1 {
                                 sudograph::async_graphql::Value::Object(object) => {
                                     return object.keys().map(|key| {
-                                        let value = object.get(key).unwrap(); // TODO be better
+                                        let value = object.get(key).expect("get_order_inputs_from_selection_field::value"); // TODO be better
 
                                         return sudograph::sudodb::OrderInput {
                                             field_name: String::from(key.as_str()),
@@ -688,11 +1000,77 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                 }
             };
         }
+
+        fn is_graphql_type_a_relation_many(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            graphql_type: &sudograph::graphql_parser::schema::Type<String>
+        ) -> bool {
+            let object_types = get_object_types(graphql_ast);
+            let graphql_type_name = get_graphql_type_name(graphql_type);
+        
+            let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+                return object_type.name == graphql_type_name;
+            });
+        
+            let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+                graphql_ast,
+                graphql_type
+            );
+        
+            return 
+                graphql_type_is_a_relation == true &&
+                graphql_type_is_a_list_type == true
+            ;
+        }
+
+        fn is_graphql_type_a_relation_one(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            graphql_type: &sudograph::graphql_parser::schema::Type<String>
+        ) -> bool {
+            let object_types = get_object_types(graphql_ast);
+            let graphql_type_name = get_graphql_type_name(graphql_type);
+        
+            let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+                return object_type.name == graphql_type_name;
+            });
+        
+            let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+                graphql_ast,
+                graphql_type
+            );
+        
+            return 
+                graphql_type_is_a_relation == true &&
+                graphql_type_is_a_list_type == false
+            ;
+        }
+
+        fn is_graphql_type_a_list_type(
+            graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
+            graphql_type: &sudograph::graphql_parser::schema::Type<String>
+        ) -> bool {
+            match graphql_type {
+                sudograph::graphql_parser::schema::Type::NamedType(_) => {
+                    return false;
+                },
+                sudograph::graphql_parser::schema::Type::NonNullType(non_null_type) => {
+                    return is_graphql_type_a_list_type(
+                        graphql_ast,
+                        non_null_type
+                    );
+                },
+                sudograph::graphql_parser::schema::Type::ListType(_) => {
+                    return true;
+                }
+            };
+        }
     };
 
     return gen.into();
 }
 
+// TODO this is now copied inside and outside of the quote
+// TODO many of the functions are copied, we need to organize this better
 fn get_graphql_type_name(graphql_type: &Type<String>) -> String {
     match graphql_type {
         Type::NamedType(named_type) => {

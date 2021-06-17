@@ -37,7 +37,11 @@ pub fn generate_update_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                     #object_type_name,
                     &input.id.as_str(), // TODO we might want to get rid of this?
                     &input.get_update_field_inputs(),
-                    &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
+                    &convert_selection_field_to_selection_set(
+                        #object_type_name,
+                        context.field(),
+                        SelectionSet(None)
+                    )
                 );
                     
                 match update_result {

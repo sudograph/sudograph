@@ -1626,6 +1626,7 @@ version = "0.3.0-beta.0"
 dependencies = [
  "async-graphql",
  "getrandom 0.2.2",
+ "graphql-parser",
  "ic-cdk",
  "ic-cdk-macros",
  "rand 0.8.3",
