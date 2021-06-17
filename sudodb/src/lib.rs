@@ -17,7 +17,10 @@ mod update;
 mod delete;
 
 pub use create::create;
-pub use read::read;
+pub use read::{
+    read,
+    find_field_value_stores_for_inputs
+};
 pub use update::update;
 pub use delete::delete;
 
@@ -117,7 +120,7 @@ pub enum ReadInputOperation {
 // TODO think if we are using the best structure below
 // TODO some of these are redundant depending on what we're doing
 // TODO should we have a ReadInputScalar and ReadInputRelation?
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReadInput {
     // TODO not sure we need input_type since FieldValue has that information inside of it
     pub input_type: ReadInputType, // TODO I think we might not need this
@@ -132,7 +135,7 @@ pub struct ReadInput {
 }
 
 // TODO we might want to get rid of this type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ReadInputType {
     Scalar,
     Relation
@@ -150,11 +153,13 @@ pub struct FieldTypeInput {
     pub field_type: FieldType
 }
 
+#[derive(Debug, Clone)]
 pub struct OrderInput {
     pub field_name: FieldName,
     pub order_direction: OrderDirection
 }
 
+#[derive(Debug, Clone)]
 pub enum OrderDirection {
     ASC,
     DESC
@@ -178,6 +183,23 @@ impl std::fmt::Display for SudodbError {
 
 pub type JSONString = String;
 
+// TODO create a selection set object
+// TODO it could be very simple, just a map with keys that are fields...map to an option, the option has another map
+
+// type SelectionSet = HashMap<FieldName, Option<SelectionSet>>;
+
+#[derive(Debug, Clone)]
+pub struct SelectionSet(pub Option<HashMap<FieldName, SelectionSetInfo>>);
+
+#[derive(Debug, Clone)]
+pub struct SelectionSetInfo {
+    pub selection_set: SelectionSet,
+    pub search_inputs: Vec<ReadInput>,
+    pub limit_option: Option<u32>,
+    pub offset_option: Option<u32>,
+    pub order_inputs: Vec<OrderInput>
+}
+
 // TODO we should do some type checking on relations
 // TODO it may be slightly difficult though, because we do not know the order the user will do relations in
 // TODO perhaps, once done inserting into the map, just loop through and check that all relations are accounted for
@@ -187,8 +209,8 @@ pub fn init_object_type(
     object_type_name: &str,
     field_type_inputs: Vec<FieldTypeInput>
 ) -> Result<(), Box<dyn Error>> {
-    ic_cdk::println!("{:?}", object_type_name);
-    ic_cdk::println!("{:?}", field_type_inputs);
+    // ic_cdk::println!("{:?}", object_type_name);
+    // ic_cdk::println!("{:?}", field_type_inputs);
 
     let mut field_types_store = BTreeMap::new();
 
@@ -210,14 +232,6 @@ pub fn init_object_type(
 
     return Ok(());
 }
-
-// TODO create a selection set object
-// TODO it could be very simple, just a map with keys that are fields...map to an option, the option has another map
-
-// type SelectionSet = HashMap<FieldName, Option<SelectionSet>>;
-
-#[derive(Debug, Clone)]
-pub struct SelectionSet(pub Option<HashMap<FieldName, SelectionSet>>);
 
 pub fn convert_field_value_store_to_json_string(
     object_type_store: &ObjectTypeStore,
@@ -249,41 +263,44 @@ pub fn convert_field_value_store_to_json_string(
                     );
                 },
                 FieldValue::RelationMany(field_value_relation_many_option) => {
-                    ic_cdk::println!("FieldValue::RelationMany");
+                    // ic_cdk::println!("FieldValue::RelationMany");
 
                     if let Some(field_value_relation_many) = field_value_relation_many_option {
-                        ic_cdk::println!("{:?}", field_value_relation_many);
+                        // ic_cdk::println!("{:?}", field_value_relation_many);
                         // TODO we simply need to go retrieve the relation and serialize it...in fact, I think we can
                         // TODO just do this recursively and call this function again, and it will automatically resolve arbitrarily nested relations
                         // let relation_field_value_store = 
                     
                         if let Some(relation_object_type) = object_type_store.get(&field_value_relation_many.relation_object_type_name) {
-                            ic_cdk::println!("{:?}", relation_object_type);
+                            // ic_cdk::println!("{:?}", relation_object_type);
                             // let relation_field_value_store = relation_object_type.field_values_store.get();
                         
                             // TODO evil mutations of course
                             let mut relation_string = String::from("[");
-                            
-                            for (index, relation_primary_key) in field_value_relation_many.relation_primary_keys.iter().enumerate() {
-                                // let relation_json_string = 
-                                // let relation_field_value_store = relation_object_type.field_values_store.get(relation_primary_key);
-                            
-                                if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(relation_primary_key) {
-                                    let relation_json_string = convert_field_value_store_to_json_string(
-                                        object_type_store,
-                                        relation_field_value_store,
-                                        value
-                                    );
 
-                                    ic_cdk::println!("relation_json_string");
-                                    ic_cdk::println!("{:?}", relation_json_string);
-    
-                                    relation_string.push_str(&relation_json_string);
-                                    relation_string.push_str(if index == field_value_relation_many.relation_primary_keys.iter().len() - 1 { "" } else { "," });
-                                }
-                                else {
-                                    return result; // TODO this should probably be an error
-                                }
+                            let mut field_values_store_iterator = field_value_relation_many.relation_primary_keys.iter().map(|relation_primary_key| {
+                                return relation_object_type.field_values_store.get(relation_primary_key).unwrap(); // TODO possibly evil unwrap
+                            });
+
+                            let matching_relation_field_value_stores = find_field_value_stores_for_inputs(
+                                object_type_store,
+                                &mut field_values_store_iterator,
+                                &relation_object_type.field_types_store,
+                                &value.search_inputs,
+                                value.limit_option,
+                                value.offset_option,
+                                &value.order_inputs
+                            ).unwrap(); // TODO evil unwrap
+
+                            for (index, matching_relation_field_value_store) in matching_relation_field_value_stores.iter().enumerate() {
+                                let relation_json_string = convert_field_value_store_to_json_string(
+                                    object_type_store,
+                                    matching_relation_field_value_store,
+                                    &value.selection_set
+                                );
+
+                                relation_string.push_str(&relation_json_string);
+                                relation_string.push_str(if index == matching_relation_field_value_stores.len() - 1 { "" } else { "," });
                             }
     
                             relation_string.push_str("]");
@@ -316,17 +333,17 @@ pub fn convert_field_value_store_to_json_string(
                         if let Some(relation_object_type) = object_type_store.get(&field_value_relation_one.relation_object_type_name) {
                             if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(&field_value_relation_one.relation_primary_key) {
                                 
-                                ic_cdk::println!("relation_field_value_store");
-                                ic_cdk::println!("{:?}", relation_field_value_store);
+                                // ic_cdk::println!("relation_field_value_store");
+                                // ic_cdk::println!("{:?}", relation_field_value_store);
                                 
                                 let relation_json_string = convert_field_value_store_to_json_string(
                                     object_type_store,
                                     relation_field_value_store,
-                                    value
+                                    &value.selection_set
                                 );
     
-                                ic_cdk::println!("relation_json_string");
-                                ic_cdk::println!("{}", relation_json_string);
+                                // ic_cdk::println!("relation_json_string");
+                                // ic_cdk::println!("{}", relation_json_string);
     
                                 // TODO we need some sort of selection setting here
                             
@@ -370,8 +387,8 @@ pub fn convert_field_value_store_to_json_string(
             inner_json = inner_json
         );
         
-        ic_cdk::println!("full_json");
-        ic_cdk::println!("{}", full_json);
+        // ic_cdk::println!("full_json");
+        // ic_cdk::println!("{}", full_json);
 
         return full_json;
     }
@@ -474,8 +491,8 @@ pub fn old_convert_field_value_store_to_json_string(
                     if let Some(relation_object_type) = object_type_store.get(&field_value_relation_one.relation_object_type_name) {
                         if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(&field_value_relation_one.relation_primary_key) {
                             
-                            ic_cdk::println!("relation_field_value_store");
-                            ic_cdk::println!("{:?}", relation_field_value_store);
+                            // ic_cdk::println!("relation_field_value_store");
+                            // ic_cdk::println!("{:?}", relation_field_value_store);
                             
                             let relation_json_string = old_convert_field_value_store_to_json_string(
                                 object_type_store,
@@ -483,8 +500,8 @@ pub fn old_convert_field_value_store_to_json_string(
                                 selection_set.clone()
                             );
 
-                            ic_cdk::println!("relation_json_string");
-                            ic_cdk::println!("{}", relation_json_string);
+                            // ic_cdk::println!("relation_json_string");
+                            // ic_cdk::println!("{}", relation_json_string);
 
                             // TODO we need some sort of selection setting here
                         
