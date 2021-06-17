@@ -310,6 +310,56 @@ type BlogPost {
 }
 </code></pre>
 <p>You now have everything you need to deploy a simple <code>graphql canister</code>. Boot up a node with <code>dfx start</code> and then deploy with <code>dfx deploy</code>. It's important to note that Sudograph currently only works within a single canister. You can deploy as many Sudograph canisters as you'd like, with as many schemas as you'd like, but the generated querying and mutations will only know about data that has been created within the same canister. Querying between canisters would require you to write your own custom code. Sudograph will hopefully address scaling in the future so that you only ever have to deal with thinking about one schema per application.</p>
+<h2 id="rust-wasm-binary-optimization"><a class="header" href="#rust-wasm-binary-optimization">Rust Wasm binary optimization</a></h2>
+<p>At some point your compiled Rust Wasm binary will grow too large and will be rejected by the canister on deploy. This could happen because the Rust source code that you've written has grown too large, or because your schema has grown too large. A large schema will lead to a large amount of generated Rust code.</p>
+<p>To temporarily overcome this issue (only so much can be done during optimization, eventually the binary will be too big and the Internet Computer will need to address that), you can optimize your Rust Wasm binary.</p>
+<h3 id="manual-optimization"><a class="header" href="#manual-optimization">Manual optimization</a></h3>
+<p>To do this manually, in the root of your directory run the following command once to install the optimizer:</p>
+<pre><code class="language-bash">cargo install ic-cdk-optimizer --root target
+</code></pre>
+<p>You should also change your <code>dfx.json</code> file from:</p>
+<pre><code class="language-json">{
+    &quot;canisters&quot;: {
+        &quot;graphql&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package graphql --release&quot;,
+            &quot;candid&quot;: &quot;canisters/graphql/src/graphql.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql.wasm&quot;
+        }
+    }
+}
+</code></pre>
+<p>to:</p>
+<pre><code class="language-json">{
+    &quot;canisters&quot;: {
+        &quot;graphql&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package graphql --release&quot;,
+            &quot;candid&quot;: &quot;canisters/graphql/src/graphql.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql-optimized.wasm&quot;
+        }
+    }
+}
+</code></pre>
+<p>The only thing that changed was the <code>wasm</code> property of the <code>graphql</code> canister object, and it changed from <code>&quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql.wasm&quot;</code> to <code>&quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql-optimized.wasm&quot;</code>.</p>
+<p>Each time you run <code>dfx deploy</code> or <code>dfx deploy graphql</code>, you will need to run the following command after:</p>
+<pre><code class="language-bash">./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/graphql.wasm -o ./target/wasm32-unknown-unknown/release/graphql-optimized.wasm
+</code></pre>
+<h3 id="automatic-optimization"><a class="header" href="#automatic-optimization">Automatic optimization</a></h3>
+<p>It can be tedious to have to run the above command manually after each <code>dfx deploy</code>. If you wish to figure out how to use <code>cargo</code> scripts of some kind you can do that. You could also use <code>make</code> or <code>bash</code> or some other build process or scripting system.</p>
+<p>Another way is to adopt npm scripts. Your <code>package.json</code> could look something like this:</p>
+<pre><code class="language-json">{
+    &quot;scripts&quot;: {
+        &quot;build&quot;: &quot;cd canisters/playground &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; cd ../frontend &amp;&amp; npm install &amp;&amp; npm run build&quot;,
+        &quot;dfx-deploy&quot;: &quot;npm run dfx-build-graphql &amp;&amp; npm run dfx-optimize-graphql &amp;&amp; dfx deploy&quot;,
+        &quot;dfx-deploy-graphql&quot;: &quot;npm run dfx-build-graphql &amp;&amp; npm run dfx-optimize-graphql &amp;&amp; dfx deploy graphql&quot;,
+        &quot;dfx-build-graphql&quot;: &quot;cargo build --target wasm32-unknown-unknown --package graphql --release&quot;,
+        &quot;dfx-optimize-graphql&quot;: &quot;./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/graphql.wasm -o ./target/wasm32-unknown-unknown/release/graphql-optimised.wasm&quot;
+    }
+}
+</code></pre>
+<p>Then instead of running <code>dfx deploy</code> or <code>dfx deploy graphql</code> you would run <code>npm run dfx-deploy</code> or <code>npm run dfx-deploy-graphql</code>.</p>
+<p>In the future it would be nice for the <code>dfx.json</code> to allow for some sort of build scripts, which would make this process less messy. There is an open forum post about this here: https://forum.dfinity.org/t/dfx-json-build-scripts/4922</p>
 <h1 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h1>
 <p>This is not yet well-documented. You can look at the examples to see how to use it in a JavaScript frontend. <code>npm install sudograph</code> and go from there.</p>
 <h1 id="schema"><a class="header" href="#schema">Schema</a></h1>
