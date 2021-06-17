@@ -34,6 +34,9 @@ mod mutation_resolvers {
     pub mod upsert;
     pub mod init;
 }
+mod settings {
+    pub mod generate_settings;
+}
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -73,6 +76,10 @@ use mutation_resolvers::update::generate_update_mutation_resolvers;
 use mutation_resolvers::delete::generate_delete_mutation_resolvers;
 use mutation_resolvers::upsert::generate_upsert_mutation_resolvers;
 use mutation_resolvers::init::generate_init_mutation_resolvers;
+use settings::generate_settings::{
+    generate_export_generated_query_function_attribute,
+    generate_export_generated_mutation_function_attribute
+};
 
 #[proc_macro]
 pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStream {
@@ -95,9 +102,20 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
 
-    let object_types = get_object_types(
+    let object_types_with_sudograph_settings = get_object_types(
         &graphql_ast
     );
+
+    let sudograph_settings_option = object_types_with_sudograph_settings.iter().find(|object_type| {
+        return object_type.name == "SudographSettings";
+    });
+
+    let export_generated_query_function_attribute = generate_export_generated_query_function_attribute(sudograph_settings_option);
+    let export_generated_mutation_function_attribute = generate_export_generated_mutation_function_attribute(sudograph_settings_option);
+
+    let object_types = object_types_with_sudograph_settings.into_iter().filter(|object_type| {
+        return object_type.name != "SudographSettings"
+    }).collect();
 
     let generated_object_type_structs = generate_object_type_structs(
         &graphql_ast,
@@ -389,7 +407,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_init_mutation_resolvers)*
         }
 
-        #[query]
+        #export_generated_query_function_attribute
         async fn graphql_query(query_string: String, variables_json_string: String) -> String {
             // TODO figure out how to create global variable to store the schema in
             // TODO we can probably just store this in a map or something with ic storage
@@ -415,7 +433,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             return json_result.expect("This should work");
         }
 
-        #[update]
+        #export_generated_mutation_function_attribute
         async fn graphql_mutation(mutation_string: String, variables_json_string: String) -> String {
             let rand_store = storage::get_mut::<RandStore>();
 

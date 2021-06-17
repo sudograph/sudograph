@@ -8,7 +8,15 @@ import {
 
 class SudoPlayground extends HTMLElement {
     get canisterId() {
-        return this.getAttribute('canisterId');
+        return this.getAttribute('canister-id');
+    }
+
+    get queryFunctionName() {
+        return this.getAttribute('query-function-name');
+    }
+
+    get mutationFunctionName() {
+        return this.getAttribute('mutation-function-name');
     }
 
     constructor() {
@@ -32,7 +40,11 @@ class SudoPlayground extends HTMLElement {
             ReactDOM.render(
                 React.createElement(
                     GraphiQL, {
-                        fetcher: graphQLFetcher(this.canisterId)
+                        fetcher: graphQLFetcher(
+                            this.canisterId,
+                            this.queryFunctionName,
+                            this.mutationFunctionName
+                        )
                     }
                 ),
                 div
@@ -43,13 +55,19 @@ class SudoPlayground extends HTMLElement {
 
 window.customElements.define('sudo-playground', SudoPlayground);
 
-function graphQLFetcher(canisterId: string) {
+function graphQLFetcher(
+    canisterId: string,
+    queryFunctionName: string,
+    mutationFunctionName: string
+) {
     return async (graphQLParams) => {
         const {
             query,
             mutation
         } = sudograph({
-            canisterId
+            canisterId,
+            queryFunctionName,
+            mutationFunctionName
         });
 
         const queryOrMutation = getQueryOrMutation(graphQLParams.query)
