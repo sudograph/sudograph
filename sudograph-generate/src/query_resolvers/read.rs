@@ -38,7 +38,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 offset: Option<u32>, // TODO is u32 best? It has to be positive
                 order: Option<#order_input_type>
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
-                let object_store = storage::get_mut::<ObjectTypeStore>();
+                let object_store = storage::get::<ObjectTypeStore>();
 
                 let read_inputs = if let Some(search_input) = search { search_input.get_read_inputs(String::from("")) } else { vec![] }; // TODO it is weird to pass in the empty string
                 let order_inputs = if let Some(order_input) = order { order_input.get_order_inputs() } else { vec![] };
@@ -50,7 +50,11 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                     limit,
                     offset,
                     &order_inputs,
-                    &convert_selection_field_to_selection_set(context.field(), SelectionSet(None))
+                    &convert_selection_field_to_selection_set(
+                        #object_type_name,
+                        context.field(),
+                        SelectionSet(None)
+                    )
                 );
 
                 // TODO make this error handling and matching better if possible

@@ -19,3 +19,4 @@ serde = "1.0.123"
 ic-cdk = { version = "0.2.1" }
 ic-cdk-macros = { version = "0.2.1" }
 rand = "0.8.3"
+graphql-parser = "0.3.0"

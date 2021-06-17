@@ -20,3 +20,4 @@ pub use ic_cdk_macros::{
     post_upgrade
 };
 pub use rand;
+pub use graphql_parser;
