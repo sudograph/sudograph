@@ -1,0 +1,27 @@
+type SudographSettings {
+    exportGeneratedQueryFunction: false
+    exportGeneratedMutationFunction: false
+    exportGeneratedInitFunction: false
+    exportGeneratedPostUpgradeFunction: false
+}
+
+type Student {
+    id: ID!
+    courses: [Course!]! @relation(name: "Student:courses and Course:students")
+    firstName: String!
+    grades: [Grade!]! @relation(name: "Student:grades and Grade:student")
+    lastName: String!
+}
+
+type Course {
+    id: ID!
+    name: String!
+    students: [Student!]! @relation(name: "Student:courses and Course:students")
+}
+
+type Grade {
+    id: ID!
+    course: Course!
+    score: Float!
+    student: Student! @relation(name: "Student:grades and Grade:student")
+}

@@ -78,7 +78,9 @@ use mutation_resolvers::upsert::generate_upsert_mutation_resolvers;
 use mutation_resolvers::init::generate_init_mutation_resolvers;
 use settings::generate_settings::{
     generate_export_generated_query_function_attribute,
-    generate_export_generated_mutation_function_attribute
+    generate_export_generated_mutation_function_attribute,
+    generate_export_generated_init_function_attribute,
+    generate_export_generated_post_upgrade_function_attribute
 };
 
 #[proc_macro]
@@ -112,6 +114,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let export_generated_query_function_attribute = generate_export_generated_query_function_attribute(sudograph_settings_option);
     let export_generated_mutation_function_attribute = generate_export_generated_mutation_function_attribute(sudograph_settings_option);
+    let export_generated_init_function_attribute = generate_export_generated_init_function_attribute(sudograph_settings_option);
+    let export_generated_post_upgrade_function_attribute = generate_export_generated_post_upgrade_function_attribute(sudograph_settings_option);
 
     let object_types = object_types_with_sudograph_settings.into_iter().filter(|object_type| {
         return object_type.name != "SudographSettings"
@@ -476,12 +480,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             return json_result.expect("This should work");
         }
 
-        #[init]
+        #export_generated_init_function_attribute
         async fn init() {
             initialize_database_entities().await;
         }
 
-        #[post_upgrade]
+        #export_generated_post_upgrade_function_attribute
         async fn post_upgrade() {
             initialize_database_entities().await;
         }

@@ -25,15 +25,53 @@ pub fn generate_export_generated_query_function_attribute(
 pub fn generate_export_generated_mutation_function_attribute(
     sudograph_settings_option: Option<&ObjectType<String>>
 ) -> TokenStream {
-    let export_generated_query_function_setting = get_setting_boolean(
+    let export_generated_mutation_function_setting = get_setting_boolean(
         sudograph_settings_option,
         "exportGeneratedMutationFunction",
         true
     );
 
-    match export_generated_query_function_setting {
+    match export_generated_mutation_function_setting {
         true => {
             return quote! { #[update] };
+        },
+        false => {
+            return quote! {};
+        }
+    };
+}
+
+pub fn generate_export_generated_init_function_attribute(
+    sudograph_settings_option: Option<&ObjectType<String>>
+) -> TokenStream {
+    let export_generated_init_function_setting = get_setting_boolean(
+        sudograph_settings_option,
+        "exportGeneratedInitFunction",
+        true
+    );
+
+    match export_generated_init_function_setting {
+        true => {
+            return quote! { #[init] };
+        },
+        false => {
+            return quote! {};
+        }
+    };
+}
+
+pub fn generate_export_generated_post_upgrade_function_attribute(
+    sudograph_settings_option: Option<&ObjectType<String>>
+) -> TokenStream {
+    let export_generated_post_upgrade_function_setting = get_setting_boolean(
+        sudograph_settings_option,
+        "exportGeneratedPostUpgradeFunction",
+        true
+    );
+
+    match export_generated_post_upgrade_function_setting {
+        true => {
+            return quote! { #[post_upgrade] };
         },
         false => {
             return quote! {};

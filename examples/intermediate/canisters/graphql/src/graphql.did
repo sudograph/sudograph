@@ -1,0 +1,4 @@
+service : {
+    "custom_graphql_query": (text, text) -> (text) query;
+    "custom_graphql_mutation": (text, text) -> (text);
+}
