@@ -38,7 +38,7 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                     object_store,
                     #object_type_name,
                     match &input.id {
-                        MaybeUndefined::Value(value) => Some(String::from(value.as_str())),
+                        MaybeUndefined::Value(value) => Some(value.to_string()),
                         _ => None
                     },
                     &input.get_create_field_inputs(),

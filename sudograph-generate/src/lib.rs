@@ -37,6 +37,11 @@ mod mutation_resolvers {
 mod settings {
     pub mod generate_settings;
 }
+mod custom_resolvers {
+    pub mod generate_custom_query_struct;
+    pub mod generate_custom_mutation_struct;
+    pub mod utilities;
+}
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -82,6 +87,16 @@ use settings::generate_settings::{
     generate_export_generated_init_function_attribute,
     generate_export_generated_post_upgrade_function_attribute
 };
+use custom_resolvers::{
+    generate_custom_query_struct::{
+        generate_merged_query_object_names,
+        generate_custom_query_struct
+    },
+    generate_custom_mutation_struct::{
+        generate_merged_mutation_object_names,
+        generate_custom_mutation_struct
+    }
+};
 
 #[proc_macro]
 pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStream {
@@ -104,11 +119,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
     let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
 
-    let object_types_with_sudograph_settings = get_object_types(
+    let all_object_types = get_object_types(
         &graphql_ast
     );
 
-    let sudograph_settings_option = object_types_with_sudograph_settings.iter().find(|object_type| {
+    let sudograph_settings_option = all_object_types.iter().find(|object_type| {
         return object_type.name == "SudographSettings";
     });
 
@@ -117,8 +132,25 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let export_generated_init_function_attribute = generate_export_generated_init_function_attribute(sudograph_settings_option);
     let export_generated_post_upgrade_function_attribute = generate_export_generated_post_upgrade_function_attribute(sudograph_settings_option);
 
-    let object_types = object_types_with_sudograph_settings.into_iter().filter(|object_type| {
-        return object_type.name != "SudographSettings"
+    let query_object_option = all_object_types.iter().find(|object_type| {
+        return object_type.name == "Query";
+    });
+
+    let mutation_object_option = all_object_types.iter().find(|object_type| {
+        return object_type.name == "Mutation";
+    });
+
+    let generated_custom_query_struct = generate_custom_query_struct(query_object_option);
+    let generated_merged_query_object_names = generate_merged_query_object_names(query_object_option);
+
+    let generated_custom_mutation_struct = generate_custom_mutation_struct(mutation_object_option);
+    let generated_merged_mutation_object_names = generate_merged_mutation_object_names(mutation_object_option);
+
+    let object_types = all_object_types.into_iter().filter(|object_type| {
+        return
+            object_type.name != "SudographSettings" &&
+            object_type.name != "Query" &&
+            object_type.name != "Mutation";
     }).collect();
 
     let generated_object_type_structs = generate_object_type_structs(
@@ -264,12 +296,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // We are creating our own custom ID scalar so that we can derive the Default trait
         // Default traits are needed so that serde has default values when the selection set
         // Does not provide all required values
-        #[derive(Serialize, Deserialize, Default)]
+        #[derive(Serialize, Deserialize, Default, Clone)]
         #[serde(crate="self::serde")]
         struct ID(String);
 
         impl ID {
-            fn as_str(&self) -> String {
+            fn to_string(&self) -> String {
                 return String::from(&self.0);
             }
         }
@@ -352,8 +384,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         impl SudoSerialize for ID {
             fn sudo_serialize(&self) -> FieldValue {
-                // TODO I do not think we actually need the as_str method anymore, ID is a tuple struct I believe
-                return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
+                // TODO I do not think we actually need the to_string method anymore, ID is a tuple struct I believe
+                return FieldValue::Scalar(Some(FieldValueScalar::String(self.to_string())));
             }
         }
 
@@ -392,18 +424,25 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // TODO why Default here is able to be used, becuase I believe it come from async-graphql
         // TODO and I am not importing it
         #[derive(Default)]
-        pub struct QueryGenerated;
+        pub struct GeneratedQuery;
 
         #[Object]
-        impl QueryGenerated {
+        impl GeneratedQuery {
             #(#generated_query_resolvers)*
         }
 
+        #generated_custom_query_struct
+
+        #[derive(MergedObject, Default)]
+        struct Query(
+            #(#generated_merged_query_object_names),*
+        );
+
         #[derive(Default)]
-        pub struct MutationGenerated;
+        pub struct GeneratedMutation;
 
         #[Object]
-        impl MutationGenerated {
+        impl GeneratedMutation {
             #(#generated_create_mutation_resolvers)*
             #(#generated_update_mutation_resolvers)*
             #(#generated_delete_mutation_resolvers)*
@@ -411,13 +450,20 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_init_mutation_resolvers)*
         }
 
+        #generated_custom_mutation_struct
+
+        #[derive(MergedObject, Default)]
+        struct Mutation(
+            #(#generated_merged_mutation_object_names),*
+        );
+
         #export_generated_query_function_attribute
         async fn graphql_query(query_string: String, variables_json_string: String) -> String {
             // TODO figure out how to create global variable to store the schema in
             // TODO we can probably just store this in a map or something with ic storage
             let schema = Schema::new(
-                QueryGenerated,
-                MutationGenerated,
+                Query::default(),
+                Mutation::default(),
                 EmptySubscription
             );
 
@@ -464,8 +510,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
             // TODO figure out how to create global variable to store the schema in
             let schema = Schema::new(
-                QueryGenerated,
-                MutationGenerated,
+                Query::default(),
+                Mutation::default(),
                 EmptySubscription
             );
 
@@ -492,8 +538,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         async fn initialize_database_entities() {
             let schema = Schema::new(
-                QueryGenerated,
-                MutationGenerated,
+                Query::default(),
+                Mutation::default(),
                 EmptySubscription
             );
 

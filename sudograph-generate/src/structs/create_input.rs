@@ -202,7 +202,7 @@ fn generate_create_field_input_pusher_for_relation_many(field: &Field<String>) -
                     field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
                         relation_object_type_name: String::from(#relation_object_type_name),
                         relation_primary_keys: value.connect.iter().map(|id| {
-                            return String::from(id.as_str());
+                            return String::from(id.to_string());
                         }).collect(),
                         relation_primary_keys_to_remove: vec![]
                     }))
@@ -236,7 +236,7 @@ fn generate_create_field_input_pusher_for_relation_one(
                         field_name: String::from(#field_name_string),
                         field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                             relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_key: value.connect.as_str()
+                            relation_primary_key: value.connect.to_string()
                         }))
                     });
                 },
@@ -255,7 +255,7 @@ fn generate_create_field_input_pusher_for_relation_one(
                 field_name: String::from(#field_name_string),
                 field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                     relation_object_type_name: String::from(#relation_object_type_name),
-                    relation_primary_key: String::from(self.#field_name_ident.connect.as_str())
+                    relation_primary_key: String::from(self.#field_name_ident.connect.to_string())
                 }))
             });
         };

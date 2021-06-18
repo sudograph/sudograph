@@ -1,0 +1,12 @@
+type Query {
+    custom_get(id: ID!): Message
+}
+
+type Mutation {
+    custom_set(id: ID!, text: String): Boolean!
+}
+
+type Message {
+    id: ID!
+    text: String!
+}
