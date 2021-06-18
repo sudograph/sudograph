@@ -1,27 +1,12 @@
-# TODO we need to walk this and create it!!!
 type Query {
-    query1: Int!
-    query2: Int
-    query3: Float!
-    query4: Float
-    query5: ID!
-    query6: [ID!]!
-    query7: [ID!]
-    query8: [ID]
-    query9: [ID]!
-    query10: Book!
-    query11: Book
-    query12: [Book!]!
-    query13: [Book]!
-    query14: [Book!]
-    query15: [Book]
-    query16(test: Int!): Int!
+    custom_get(id: ID!): Message
 }
 
-# type Mutation {
-#     customMutation: String!
-# }
+type Mutation {
+    custom_set(id: ID!, text: String): Boolean!
+}
 
-type Book {
+type Message {
     id: ID!
+    text: String!
 }

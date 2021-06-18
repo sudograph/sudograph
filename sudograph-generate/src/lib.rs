@@ -40,6 +40,7 @@ mod settings {
 mod custom_resolvers {
     pub mod generate_custom_query_struct;
     pub mod generate_custom_mutation_struct;
+    pub mod utilities;
 }
 
 use proc_macro::TokenStream;
@@ -295,12 +296,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // We are creating our own custom ID scalar so that we can derive the Default trait
         // Default traits are needed so that serde has default values when the selection set
         // Does not provide all required values
-        #[derive(Serialize, Deserialize, Default)]
+        #[derive(Serialize, Deserialize, Default, Clone)]
         #[serde(crate="self::serde")]
         struct ID(String);
 
         impl ID {
-            fn as_str(&self) -> String {
+            fn to_string(&self) -> String {
                 return String::from(&self.0);
             }
         }
@@ -383,8 +384,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         impl SudoSerialize for ID {
             fn sudo_serialize(&self) -> FieldValue {
-                // TODO I do not think we actually need the as_str method anymore, ID is a tuple struct I believe
-                return FieldValue::Scalar(Some(FieldValueScalar::String(String::from(self.as_str()))));
+                // TODO I do not think we actually need the to_string method anymore, ID is a tuple struct I believe
+                return FieldValue::Scalar(Some(FieldValueScalar::String(self.to_string())));
             }
         }
 

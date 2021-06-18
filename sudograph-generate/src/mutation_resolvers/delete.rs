@@ -35,7 +35,7 @@ pub fn generate_delete_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                 let delete_result = delete(
                     object_store,
                     #object_type_name,
-                    &input.id.as_str(),
+                    &input.id.to_string(),
                     &convert_selection_field_to_selection_set(
                         #object_type_name,
                         context.field(),

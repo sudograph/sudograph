@@ -1,3 +1,4 @@
+use crate::custom_resolvers::utilities::generate_resolver_functions;
 use graphql_parser::schema::ObjectType;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -21,16 +22,15 @@ pub fn generate_merged_mutation_object_names(mutation_object_option: Option<&Obj
 pub fn generate_custom_mutation_struct(mutation_object_option: Option<&ObjectType<String>>) -> TokenStream {
     match mutation_object_option {
         Some(mutation_object) => {
+            let generated_resolver_functions = generate_resolver_functions(mutation_object);
+
             return quote! {
                 #[derive(Default)]
                 struct CustomMutation;
 
                 #[Object]
                 impl CustomMutation {
-                    // TODO fill this in
-                    // async fn add_mutation(&self) -> Result<i32, sudograph::async_graphql::Error> {
-                    //     return Ok(10);
-                    // }
+                    #(#generated_resolver_functions)*
                 }
             };
         },
