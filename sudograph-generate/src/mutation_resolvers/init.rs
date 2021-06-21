@@ -1,6 +1,7 @@
 use crate::{
     get_graphql_type_name,
-    get_opposing_relation_field
+    get_opposing_relation_field,
+    is_graphql_type_an_enum
 };
 use graphql_parser::schema::{
     Document,
@@ -164,6 +165,10 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
             return quote! { FieldType::String };
         },
         _ => {
+            if is_graphql_type_an_enum(graphql_ast, graphql_type) == true {
+                return quote! { FieldType::String };
+            }
+
             let opposing_relation_field_option = get_opposing_relation_field(
                 graphql_ast,
                 field

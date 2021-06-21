@@ -18,7 +18,8 @@ use graphql_parser::schema::{
 use crate::{
     get_object_type_from_field,
     is_graphql_type_a_relation_many,
-    is_graphql_type_a_relation_one
+    is_graphql_type_a_relation_one,
+    is_graphql_type_an_enum
 };
 
 pub fn generate_object_type_structs(
@@ -261,6 +262,14 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
                 );
                 
                 return quote! { Box<#relation_name> };
+            }
+            else if is_graphql_type_an_enum(graphql_ast, graphql_type) == true {
+                let enum_name = format_ident!(
+                    "{}",
+                    named_type
+                );
+                
+                return quote! { #enum_name };
             }
             else {
                 panic!();

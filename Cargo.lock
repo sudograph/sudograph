@@ -380,7 +380,7 @@ dependencies = [
 [[package]]
 name = "candid"
 version = "0.6.21"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#c8ce1c212af2b651b7f9506f61fab50e54c20cda"
+source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#68c26c61f702a59e3415a5d59d4ed523f7bfd722"
 dependencies = [
  "byteorder",
  "candid_derive 0.4.4 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
@@ -416,7 +416,7 @@ dependencies = [
 [[package]]
 name = "candid_derive"
 version = "0.4.4"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#c8ce1c212af2b651b7f9506f61fab50e54c20cda"
+source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#68c26c61f702a59e3415a5d59d4ed523f7bfd722"
 dependencies = [
  "lazy_static",
  "proc-macro2",

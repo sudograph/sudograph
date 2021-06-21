@@ -1,11 +1,9 @@
-// TODO once clean, make the create_input.rs file look and work the same
-// TODO we should only pass inputs into sudodb if they are there
-// TODO I believe that in the create_input.rs file we will need to start using MaybeUndefined
-
 use crate::{
+    get_enum_type_from_field,
     get_graphql_type_name,
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one,
+    is_graphql_type_an_enum,
     is_graphql_type_nullable,
     structs::object_type::get_rust_type_for_object_type_named_type
 };
@@ -180,6 +178,13 @@ fn generate_update_field_input_pushers(
                 return Some(generate_update_field_input_pusher_for_relation_one(field));
             }
 
+            if is_graphql_type_an_enum(graphql_ast, &field.field_type) == true {
+                return Some(generate_update_field_input_pusher_for_enum(
+                    graphql_ast,
+                    field
+                ));
+            }
+
             return Some(generate_update_field_input_pusher_for_scalar(field));
         }
     }).collect();
@@ -287,6 +292,62 @@ fn generate_update_field_input_pusher_for_relation_one(
             };
         };
     }
+}
+
+fn generate_update_field_input_pusher_for_enum(
+    graphql_ast: &Document<String>,
+    field: &Field<String>
+) -> TokenStream {
+    let field_name_string = &field.name;         
+    let field_name_ident = format_ident!(
+        "{}",
+        field.name
+    );
+
+    let enum_name_string = get_graphql_type_name(&field.field_type);
+    let enum_name_ident = format_ident!(
+        "{}",
+        enum_name_string
+    );
+
+    let enum_type = get_enum_type_from_field(
+        graphql_ast,
+        field
+    ).unwrap(); // TODO figure out how to handle this better
+
+    let variant_pushers = enum_type.values.iter().map(|value| {
+        let value_name_string = &value.name;
+        let value_name_ident = format_ident!(
+            "{}",
+            value.name
+        );
+
+        return quote! {
+            #enum_name_ident::#value_name_ident => {
+                update_field_inputs.push(FieldInput {
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::Scalar(Some(FieldValueScalar::String(String::from(#value_name_string))))
+                });
+            }
+        };
+    });
+
+    return quote! {
+        match &self.#field_name_ident {
+            MaybeUndefined::Value(value) => {
+                match value {
+                    #(#variant_pushers),*
+                };
+            },
+            MaybeUndefined::Null => {
+                update_field_inputs.push(FieldInput {
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::Scalar(None)
+                });
+            },
+            MaybeUndefined::Undefined => ()
+        };
+    };
 }
 
 fn generate_update_field_input_pusher_for_scalar(field: &Field<String>) -> TokenStream {
