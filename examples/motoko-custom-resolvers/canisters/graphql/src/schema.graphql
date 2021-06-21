@@ -1,0 +1,12 @@
+type Query {
+    customGet(id: ID!): Message @canister(id: "ryjl3-tyaaa-aaaaa-aaaba-cai")
+}
+
+type Mutation {
+    customSet(id: ID!, text: String): Boolean! @canister(id: "ryjl3-tyaaa-aaaaa-aaaba-cai")
+}
+
+type Message {
+    id: ID!
+    text: String!
+}

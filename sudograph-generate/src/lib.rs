@@ -234,7 +234,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             scalar,
             Variables,
             Request,
-            Enum
+            Enum,
+            MergedObject
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -267,7 +268,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             query,
             update,
             init,
-            post_upgrade
+            post_upgrade,
+            import
         };
         use std::error::Error;
         use std::collections::{
@@ -279,6 +281,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             SeedableRng,
             rngs::StdRng
         };
+        use sudograph::ic_cdk::export::candid::CandidType;
 
         // TODO this is just to test out storing a source of randomness per update call
         // TODO the best way I believe would to somehow
@@ -296,7 +299,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // We are creating our own custom ID scalar so that we can derive the Default trait
         // Default traits are needed so that serde has default values when the selection set
         // Does not provide all required values
-        #[derive(Serialize, Deserialize, Default, Clone)]
+        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[candid_path("::sudograph::ic_cdk::export::candid")]
         #[serde(crate="self::serde")]
         struct ID(String);
 
@@ -308,7 +312,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(ID);
 
-        #[derive(Serialize, Deserialize, Default)]
+        #[derive(Serialize, Deserialize, Default, Debug, CandidType)]
+        #[candid_path("::sudograph::ic_cdk::export::candid")]
         #[serde(crate="self::serde")]
         struct Date(String);
 
@@ -1277,8 +1282,8 @@ fn get_opposing_relation_field<'a>(
 ) -> Option<Field<'a, String>> {
     let relation_name = get_directive_argument_value_from_field(
         relation_field,
-        String::from("relation"),
-        String::from("name")
+        "relation",
+        "name"
     )?;
 
     let opposing_object_type_name = get_graphql_type_name(&relation_field.field_type);
@@ -1295,8 +1300,8 @@ fn get_opposing_relation_field<'a>(
 
             let opposing_relation_name = get_directive_argument_value_from_field(
                 field,
-                String::from("relation"),
-                String::from("name")
+                "relation",
+                "name"
             )?;
 
             if opposing_relation_name == relation_name {
@@ -1311,8 +1316,8 @@ fn get_opposing_relation_field<'a>(
 
 fn get_directive_argument_value_from_field(
     field: &Field<String>,
-    directive_name: String,
-    argument_name: String
+    directive_name: &str,
+    argument_name: &str
 ) -> Option<String> {
     let directive = field.directives.iter().find(|directive| {
         return directive.name == directive_name;

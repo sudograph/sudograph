@@ -1,3 +1,4 @@
+use crate::get_directive_argument_value_from_field;
 use graphql_parser::schema::{
     InputValue,
     ObjectType,
@@ -11,6 +12,7 @@ use quote::{
 
 pub fn generate_resolver_functions(object_type: &ObjectType<String>) -> Vec<TokenStream> {
     return object_type.fields.iter().map(|field| {
+        let field_name_string = &field.name;
         let field_name_ident = format_ident!(
             "{}",
             &field.name
@@ -24,13 +26,40 @@ pub fn generate_resolver_functions(object_type: &ObjectType<String>) -> Vec<Toke
         let resolver_parameters = generate_resolver_parameters(&field.arguments);
         let resolver_arguments = generate_resolver_arguments(&field.arguments);
 
-        return quote! {
-            async fn #field_name_ident(
-                #(#resolver_parameters),*
-            ) -> std::result::Result<#resolver_return_type, sudograph::async_graphql::Error> {
-                return #field_name_ident(
-                    #(#resolver_arguments),*
-                ).await;
+        let canister_id_option = get_directive_argument_value_from_field(
+            &field,
+            "canister",
+            "id"
+        );
+
+        match canister_id_option {
+            Some(canister_id) => {
+                let comma_ident = if resolver_arguments.len() == 0 { quote! {} } else { quote! { , } };
+
+                return quote! {
+                    async fn #field_name_ident(
+                        #(#resolver_parameters),*
+                    ) -> std::result::Result<#resolver_return_type, sudograph::async_graphql::Error> {
+                        let call_result: Result<(#resolver_return_type,), _> = ic_cdk::api::call::call(
+                            ic_cdk::export::Principal::from_text(#canister_id.replace("\"", "")).unwrap(), // TODO why does the canister_id have extra quotes around it?
+                            #field_name_string,
+                            (#(#resolver_arguments),*#comma_ident)
+                        ).await;
+
+                        return Ok(call_result.unwrap().0);
+                    }
+                };
+            },
+            None => {
+                return quote! {
+                    async fn #field_name_ident(
+                        #(#resolver_parameters),*
+                    ) -> std::result::Result<#resolver_return_type, sudograph::async_graphql::Error> {
+                        return #field_name_ident(
+                            #(#resolver_arguments),*
+                        ).await;
+                    }
+                };
             }
         };
     }).collect();
