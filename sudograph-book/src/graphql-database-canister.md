@@ -32,7 +32,7 @@ path = "src/graphql.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-sudograph = 0.2.0
+sudograph = "0.2.0"
 ```
 
 Within the `canisters/graphql` directory, now create a `src` directory. The `canisters/graphql/src` directory will contain the entrypoint to your `graphql` canister, `graphql.rs`, along with your `schema.graphql` file and your `graphql.did` file.
