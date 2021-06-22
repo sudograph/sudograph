@@ -20,6 +20,7 @@ mod structs {
     pub mod read_string_input;
     pub mod read_enum_input;
     pub mod read_relation_input;
+    pub mod read_json_input;
     pub mod order_input;
     pub mod update_input;
     pub mod delete_input;
@@ -77,6 +78,7 @@ use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
 use structs::read_enum_input::get_read_enum_input_rust_struct;
 use structs::read_relation_input::get_read_relation_input_rust_struct;
+use structs::read_json_input::get_read_json_input_rust_struct;
 use structs::order_input::generate_order_input_rust_structs;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
@@ -183,6 +185,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
     let read_enum_input_rust_struct = get_read_enum_input_rust_struct();
     let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
+    let read_json_input_rust_struct = get_read_json_input_rust_struct();
 
     let generated_order_input_structs = generate_order_input_rust_structs(
         &graphql_ast,
@@ -324,7 +327,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(ID);
 
-        #[derive(Serialize, Deserialize, Default, Debug, CandidType)]
+        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
         #[candid_path("::sudograph::ic_cdk::export::candid")]
         #[serde(crate="self::serde")]
         struct Date(String);
@@ -374,6 +377,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #read_string_input_rust_struct
         #read_enum_input_rust_struct
         #read_relation_input_rust_struct
+        #read_json_input_rust_struct
 
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
@@ -424,6 +428,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         impl SudoSerialize for String {
             fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::String(self.clone())));
+            }
+        }
+
+        impl SudoSerialize for sudograph::serde_json::Value {
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::JSON(self.to_string())));
             }
         }
 
@@ -806,6 +816,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                                 sudograph::async_graphql::Value::Number(number) => number.as_i64().unwrap() as i32,
                                                 _ => panic!()
                                             }))),
+                                            "JSON" => FieldValue::Scalar(Some(FieldValueScalar::JSON(scalar_object_value.to_string()))),
                                             "String" => FieldValue::Scalar(Some(FieldValueScalar::String(match scalar_object_value {
                                                 sudograph::async_graphql::Value::String(string) => string.to_string(),
                                                 _ => panic!()

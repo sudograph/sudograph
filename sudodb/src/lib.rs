@@ -51,6 +51,7 @@ pub enum FieldType {
     Date,
     Float, // TODO do we need to split this into sizes? What should the default be?
     Int, // TODO do we need to split this into sizes? What should the default be?
+    JSON,
     RelationMany(FieldTypeRelationInfo),
     RelationOne(FieldTypeRelationInfo),
     String
@@ -85,6 +86,7 @@ pub enum FieldValueScalar {
     Date(String),
     Float(f32),
     Int(i32),
+    JSON(String),
     String(String)
 }
 
@@ -255,6 +257,7 @@ pub fn convert_field_value_store_to_json_string(
                                 FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
                                 FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
                                 FieldValueScalar::Int(field_value_scalar_int) => format!("{}", field_value_scalar_int),
+                                FieldValueScalar::JSON(field_value_scalar_json) => format!("{}", field_value_scalar_json),
                                 FieldValueScalar::String(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string)
                             },
                             None => String::from("null")
@@ -423,6 +426,7 @@ pub fn old_convert_field_value_store_to_json_string(
                             FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
                             FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
                             FieldValueScalar::Int(field_value_scalar_int) => format!("{}", field_value_scalar_int),
+                            FieldValueScalar::JSON(field_value_scalar_json) => format!("{}", field_value_scalar_json),
                             FieldValueScalar::String(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string)
                         },
                         None => String::from("null")

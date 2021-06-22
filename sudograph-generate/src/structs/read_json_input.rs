@@ -1,18 +1,19 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-pub fn get_read_date_input_rust_struct() -> TokenStream {
+pub fn get_read_json_input_rust_struct() -> TokenStream {
     return quote! {
         #[derive(InputObject)]
-        struct ReadDateInput {
-            eq: MaybeUndefined<String>, // TODO we want to get this to be the Date or DateTime type in GraphQL
+        struct ReadJSONInput {
+            eq: MaybeUndefined<String>,
             gt: MaybeUndefined<String>,
             gte: MaybeUndefined<String>,
             lt: MaybeUndefined<String>,
-            lte: MaybeUndefined<String>
+            lte: MaybeUndefined<String>,
+            contains: MaybeUndefined<String>
         }
 
-        impl ReadDateInput {
+        impl ReadJSONInput {
             fn get_read_inputs(
                 &self,
                 field_name: String
@@ -37,6 +38,10 @@ pub fn get_read_date_input_rust_struct() -> TokenStream {
                     (
                         &self.lte,
                         ReadInputOperation::LessThanOrEqualTo
+                    ),
+                    (
+                        &self.contains,
+                        ReadInputOperation::Contains
                     )
                 ];
 
@@ -47,7 +52,7 @@ pub fn get_read_date_input_rust_struct() -> TokenStream {
                                 input_type: ReadInputType::Scalar,
                                 input_operation: read_input_operation.clone(),
                                 field_name: String::from(&field_name),
-                                field_value: FieldValue::Scalar(Some(FieldValueScalar::Date(String::from(field_value)))),
+                                field_value: FieldValue::Scalar(Some(FieldValueScalar::JSON(String::from(field_value)))),
                                 relation_object_type_name: String::from(""),
                                 relation_read_inputs: vec![],
                                 and: vec![],

@@ -13,7 +13,6 @@ use crate::{
     FieldValueRelationOne,
     FieldValueScalar,
     FieldValueStore,
-    FieldValuesStore,
     get_field_value_from_field_value_store,
     get_field_value_store,
     get_object_type,
@@ -21,14 +20,12 @@ use crate::{
     ObjectTypeStore,
     OrderDirection,
     OrderInput,
-    PrimaryKey,
     ReadInput,
     ReadInputOperation,
     SelectionSet,
     SudodbError
 };
 use std::error::Error;
-use std::collections::btree_map::Values;
 
 const ERROR_PREFIX: &str = "sudodb::read";
 
@@ -265,6 +262,25 @@ fn compare_fields(
 
                     return Ok(std::cmp::Ordering::Equal);
                 },
+                FieldValueScalar::JSON(field_value_scalar_json_a) => {
+                    let field_value_scalar_json_b = get_field_value_scalar_json(field_value_scalar_b)?;
+
+                    if field_value_scalar_json_a > &field_value_scalar_json_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Greater),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Less)
+                        };
+                    }
+
+                    if field_value_scalar_json_a < &field_value_scalar_json_b {
+                        return match order_direction {
+                            OrderDirection::ASC => Ok(std::cmp::Ordering::Less),
+                            OrderDirection::DESC => Ok(std::cmp::Ordering::Greater)
+                        };
+                    }
+
+                    return Ok(std::cmp::Ordering::Equal);
+                }
                 FieldValueScalar::String(field_value_scalar_string_a) => {
                     let field_value_scalar_string_b = get_field_value_scalar_string(field_value_scalar_b)?;
 
@@ -373,6 +389,12 @@ fn field_value_store_matches_inputs(
                 },
                 FieldType::Int => {
                     return field_value_scalar_int_matches_input(
+                        field_value,
+                        input
+                    );
+                },
+                FieldType::JSON => {
+                    return field_value_scalar_json_matches_input(
                         field_value,
                         input
                     );
@@ -648,6 +670,33 @@ fn field_value_scalar_int_matches_input_field_value_scalar_int(
     };
 }
 
+fn field_value_scalar_json_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_json = get_field_value_scalar_json(field_value_scalar)?;
+            let input_field_value_scalar_json = get_field_value_scalar_json(input_field_value_scalar)?;
+
+            return field_value_scalar_json_matches_input_field_value_scalar_json(
+                &field_value_scalar_json,
+                &input_field_value_scalar_json,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
 fn field_value_scalar_string_matches_input(
     field_value: &FieldValue,
     input: &ReadInput
@@ -671,6 +720,49 @@ fn field_value_scalar_string_matches_input(
         },
         _ => {
             return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_json_matches_input_field_value_scalar_json(
+    field_value_scalar_json: &str,
+    input_field_value_scalar_json: &str,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Contains => {
+            return Ok(field_value_scalar_json.contains(input_field_value_scalar_json));
+        },
+        ReadInputOperation::EndsWith => {
+            return Ok(field_value_scalar_json.ends_with(input_field_value_scalar_json));
+        },
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_json == input_field_value_scalar_json);
+        },
+        ReadInputOperation::GreaterThan => {
+            return Ok(field_value_scalar_json > input_field_value_scalar_json);
+        },
+        ReadInputOperation::GreaterThanOrEqualTo => {
+            return Ok(field_value_scalar_json >= input_field_value_scalar_json);
+        },
+        ReadInputOperation::LessThan => {
+            return Ok(field_value_scalar_json < input_field_value_scalar_json);
+        },
+        ReadInputOperation::LessThanOrEqualTo => {
+            return Ok(field_value_scalar_json <= input_field_value_scalar_json);
+        },
+        ReadInputOperation::StartsWith => {
+            return Ok(field_value_scalar_json.starts_with(input_field_value_scalar_json));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_json_matches_input_field_value_scalar_json",
+                    input_operation = input_operation
+                )
+            }));
         }
     };
 }
@@ -884,6 +976,23 @@ fn get_field_value_scalar_int(field_value_scalar: &FieldValueScalar) -> Result<i
                     "{error_prefix}::{function_name} must return i32",
                     error_prefix = ERROR_PREFIX,
                     function_name = "get_field_value_scalar_int"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_json(field_value_scalar: &FieldValueScalar) -> Result<String, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::JSON(field_value_scalar_json) => {
+            return Ok(String::from(field_value_scalar_json));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return JSON",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_json"
                 )
             }));
         }
