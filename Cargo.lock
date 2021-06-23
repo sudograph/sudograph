@@ -1673,7 +1673,7 @@ checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
 name = "sudodb"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "base32",
  "chrono",
@@ -1684,7 +1684,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "async-graphql",
  "getrandom 0.2.2",
@@ -1700,7 +1700,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "graphql-parser",
  "proc-macro2",
