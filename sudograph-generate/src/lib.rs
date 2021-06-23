@@ -18,6 +18,7 @@ mod structs {
     pub mod read_id_input;
     pub mod read_int_input;
     pub mod read_string_input;
+    pub mod read_enum_input;
     pub mod read_relation_input;
     pub mod order_input;
     pub mod update_input;
@@ -42,6 +43,9 @@ mod custom_resolvers {
     pub mod generate_custom_mutation_struct;
     pub mod utilities;
 }
+mod enums {
+    pub mod enum_type;
+}
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -59,7 +63,8 @@ use graphql_parser::schema::{
     ObjectType,
     Type,
     Document,
-    Field
+    Field,
+    EnumType
 };
 use structs::object_type::generate_object_type_structs;
 use structs::create_input::generate_create_input_rust_structs;
@@ -70,11 +75,13 @@ use structs::read_float_input::get_read_float_input_rust_struct;
 use structs::read_id_input::get_read_id_input_rust_struct;
 use structs::read_int_input::get_read_int_input_rust_struct;
 use structs::read_string_input::get_read_string_input_rust_struct;
+use structs::read_enum_input::get_read_enum_input_rust_struct;
 use structs::read_relation_input::get_read_relation_input_rust_struct;
 use structs::order_input::generate_order_input_rust_structs;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
 use structs::upsert_input::generate_upsert_input_rust_structs;
+use enums::enum_type::generate_enums;
 use query_resolvers::read::generate_read_query_resolvers;
 use mutation_resolvers::create::generate_create_mutation_resolvers;
 use mutation_resolvers::update::generate_update_mutation_resolvers;
@@ -174,6 +181,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_id_input_rust_struct = get_read_id_input_rust_struct();
     let read_int_input_rust_struct = get_read_int_input_rust_struct();
     let read_string_input_rust_struct = get_read_string_input_rust_struct();
+    let read_enum_input_rust_struct = get_read_enum_input_rust_struct();
     let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
 
     let generated_order_input_structs = generate_order_input_rust_structs(
@@ -192,6 +200,10 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         &graphql_ast,
         &object_types
     );
+
+    let enum_types = get_enum_types(&graphql_ast);
+
+    let generated_enums = generate_enums(&enum_types);
 
     let generated_query_resolvers = generate_read_query_resolvers(&object_types);
 
@@ -360,6 +372,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #read_id_input_rust_struct
         #read_int_input_rust_struct
         #read_string_input_rust_struct
+        #read_enum_input_rust_struct
         #read_relation_input_rust_struct
 
         #(#generated_object_type_structs)*
@@ -369,6 +382,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #(#generated_update_input_structs)*
         #(#generated_delete_input_structs)*
         // #(#generated_upsert_input_structs)*
+
+        #(#generated_enums)*
 
         // TODO consider renaming this to something besides serialize
         trait SudoSerialize {
@@ -1228,6 +1243,20 @@ fn is_graphql_type_a_relation_one(
     ;
 }
 
+fn is_graphql_type_an_enum(
+    graphql_ast: &Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    let enum_types = get_enum_types(graphql_ast);
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+
+    let graphql_type_is_an_enum = enum_types.iter().any(|enum_type| {
+        return enum_type.name == graphql_type_name;
+    });
+
+    return graphql_type_is_an_enum;
+}
+
 fn is_graphql_type_a_list_type(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>
@@ -1272,6 +1301,32 @@ fn get_object_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<ObjectType<'a
     }).collect();
 
     return object_types;
+}
+
+fn get_enum_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<EnumType<'a, String>> {
+    let type_definitions: Vec<TypeDefinition<String>> = graphql_ast.definitions.iter().filter_map(|definition| {
+        match definition {
+            Definition::TypeDefinition(type_definition) => {
+                return Some(type_definition.clone());
+            },
+            _ => {
+                return None;
+            }
+        };
+    }).collect();
+
+    let enum_types: Vec<EnumType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
+        match type_definition {
+            TypeDefinition::Enum(enum_type) => {
+                return Some(enum_type);
+            },
+            _ => {
+                return None;
+            }
+        }
+    }).collect();
+
+    return enum_types;
 }
 
 // TODO this search needs to exclude the relation's own entity field...
@@ -1340,6 +1395,19 @@ fn get_object_type_from_field<'a>(
 
     return object_types.into_iter().find(|object_type| {
         return object_type.name == object_type_name;
+    }).clone();
+}
+
+fn get_enum_type_from_field<'a>(
+    graphql_ast: &Document<'a, String>,
+    field: &Field<String>
+) -> Option<EnumType<'a, String>> {
+    let enum_type_name = get_graphql_type_name(&field.field_type);
+
+    let enum_types = get_enum_types(graphql_ast);
+
+    return enum_types.into_iter().find(|enum_type| {
+        return enum_type.name == enum_type_name;
     }).clone();
 }
 

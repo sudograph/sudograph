@@ -1,7 +1,8 @@
 use crate::{
     get_graphql_type_name,
     is_graphql_type_a_relation_many,
-    is_graphql_type_a_relation_one
+    is_graphql_type_a_relation_one,
+    is_graphql_type_an_enum
 };
 use graphql_parser::schema::{
     Document,
@@ -179,6 +180,9 @@ fn get_read_input_rust_struct_field_rust_type_for_named_type(
                 is_graphql_type_a_relation_one(graphql_ast, graphql_type) == true
             {
                 return quote! { Box<#relation_read_input_type_name_ident> };
+            }
+            else if is_graphql_type_an_enum(graphql_ast, graphql_type) == true {
+                return quote! { ReadEnumInput };
             }
             else {
                 panic!();

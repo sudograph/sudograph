@@ -1,5 +1,4 @@
 use sudograph::graphql_database;
-use sudograph::async_graphql::MergedObject;
 
 graphql_database!("canisters/graphql/src/schema.graphql");
 

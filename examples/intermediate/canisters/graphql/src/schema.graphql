@@ -16,6 +16,7 @@ type Student {
 type Course {
     id: ID!
     name: String!
+    subject: Subject!
     students: [Student!]! @relation(name: "Student:courses and Course:students")
 }
 
@@ -24,4 +25,11 @@ type Grade {
     course: Course!
     score: Float!
     student: Student! @relation(name: "Student:grades and Grade:student")
+}
+
+enum Subject {
+    ART
+    HISTORY
+    MATH
+    SCIENCE
 }
