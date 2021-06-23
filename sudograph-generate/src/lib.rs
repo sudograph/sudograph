@@ -21,6 +21,7 @@ mod structs {
     pub mod read_enum_input;
     pub mod read_relation_input;
     pub mod read_json_input;
+    pub mod read_blob_input;
     pub mod order_input;
     pub mod update_input;
     pub mod delete_input;
@@ -79,6 +80,7 @@ use structs::read_string_input::get_read_string_input_rust_struct;
 use structs::read_enum_input::get_read_enum_input_rust_struct;
 use structs::read_relation_input::get_read_relation_input_rust_struct;
 use structs::read_json_input::get_read_json_input_rust_struct;
+use structs::read_blob_input::get_read_blob_input_rust_struct;
 use structs::order_input::generate_order_input_rust_structs;
 use structs::update_input::generate_update_input_rust_structs;
 use structs::delete_input::generate_delete_input_rust_structs;
@@ -186,6 +188,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let read_enum_input_rust_struct = get_read_enum_input_rust_struct();
     let read_relation_input_rust_struct = get_read_relation_input_rust_struct();
     let read_json_input_rust_struct = get_read_json_input_rust_struct();
+    let read_blob_input_rust_struct = get_read_blob_input_rust_struct();
 
     let generated_order_input_structs = generate_order_input_rust_structs(
         &graphql_ast,
@@ -250,7 +253,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             Variables,
             Request,
             Enum,
-            MergedObject
+            MergedObject,
+            Scalar
         };
         use sudograph::sudodb::{
             ObjectTypeStore,
@@ -334,6 +338,42 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(Date);
 
+        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[candid_path("::sudograph::ic_cdk::export::candid")]
+        #[serde(crate="self::serde")]
+        struct Blob(Vec<u8>);
+
+        #[Scalar]
+        impl sudograph::async_graphql::ScalarType for Blob {
+            fn parse(value: sudograph::async_graphql::Value) -> sudograph::async_graphql::InputValueResult<Self> {
+                match value {
+                    sudograph::async_graphql::Value::String(value_string) => {
+                        return Ok(Blob(value_string.into_bytes()));
+                    },
+                    sudograph::async_graphql::Value::List(value_list) => {
+                        return Ok(Blob(value_list.iter().map(|item| {
+                            match item {
+                                // sudograph::async_graphql::Value::String(item_string) => {
+                                    // TODO should we implement this too?
+                                // },
+                                sudograph::async_graphql::Value::Number(item_number) => {
+                                    return item_number.as_u64().expect("should be a u64") as u8; // TODO potentially unsafe conversion here
+                                },
+                                _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
+                            };
+                        }).collect()));
+                    },
+                    _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
+                };
+            }
+
+            fn to_value(&self) -> sudograph::async_graphql::Value {
+                return sudograph::async_graphql::Value::List((&self.0).iter().map(|item_u8| {
+                    return sudograph::async_graphql::Value::Number(sudograph::async_graphql::Number::from_f64(*item_u8 as f64).expect("should be able to convert to f64"));
+                }).collect());
+            }
+        }
+
         // TODO each object type and each field will probably need their own relation inputs
         // TODO the relation inputs are going to have connect, disconnect, create, update, delete, etc
         #[derive(InputObject)]
@@ -378,6 +418,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         #read_enum_input_rust_struct
         #read_relation_input_rust_struct
         #read_json_input_rust_struct
+        #read_blob_input_rust_struct
 
         #(#generated_object_type_structs)*
         #(#generated_create_input_structs)*
@@ -434,6 +475,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         impl SudoSerialize for sudograph::serde_json::Value {
             fn sudo_serialize(&self) -> FieldValue {
                 return FieldValue::Scalar(Some(FieldValueScalar::JSON(self.to_string())));
+            }
+        }
+
+        impl SudoSerialize for Blob {
+            fn sudo_serialize(&self) -> FieldValue {
+                return FieldValue::Scalar(Some(FieldValueScalar::Blob((&self.0).to_vec())));
             }
         }
 
@@ -796,6 +843,21 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
                                         // TODO this will get more difficult once we introduce custom scalars
                                         let field_value = match graphql_type_name.as_str() {
+                                            "Blob" => FieldValue::Scalar(Some(FieldValueScalar::Blob(match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(value_string) => value_string.clone().into_bytes(),
+                                                sudograph::async_graphql::Value::List(value_list) => value_list.iter().map(|item| {
+                                                    match item {
+                                                        // sudograph::async_graphql::Value::String(item_string) => {
+                                                            // TODO should we implement this too?
+                                                        // },
+                                                        sudograph::async_graphql::Value::Number(item_number) => {
+                                                            return item_number.as_u64().expect("should be a u64") as u8; // TODO potentially unsafe conversion here
+                                                        },
+                                                        _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
+                                                    };
+                                                }).collect(),
+                                                _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
+                                            }))),
                                             "Boolean" => FieldValue::Scalar(Some(FieldValueScalar::Boolean(match scalar_object_value {
                                                 sudograph::async_graphql::Value::Boolean(boolean) => boolean.clone(),
                                                 _ => panic!()

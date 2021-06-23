@@ -149,6 +149,9 @@ fn get_read_input_rust_struct_field_rust_type_for_named_type(
     named_type: &str
 ) -> TokenStream {
     match named_type {
+        "Blob" => {
+            return quote! { ReadBlobInput };
+        },
         "Boolean" => {
             return quote! { ReadBooleanInput };
         },

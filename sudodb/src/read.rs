@@ -23,6 +23,7 @@ use crate::{
     ReadInput,
     ReadInputOperation,
     SelectionSet,
+    slice2_is_subset_of_slice1,
     SudodbError
 };
 use std::error::Error;
@@ -199,6 +200,10 @@ fn compare_fields(
     match (field_value_scalar_option_a, field_value_scalar_option_b) {
         (Some(field_value_scalar_a), Some(field_value_scalar_b)) => {
             match field_value_scalar_a {
+                FieldValueScalar::Blob(_) => {
+                    // TODO There is no ordering for blobs currently, just like for booleans (though I do not expect booleans to ever have an ordering, maybe true if first and false is last)
+                    return Ok(std::cmp::Ordering::Equal);
+                },
                 FieldValueScalar::Boolean(_) => {
                     return Ok(std::cmp::Ordering::Equal);
                 },
@@ -369,6 +374,12 @@ fn field_value_store_matches_inputs(
 
         if let (Some(field_type), Some(field_value)) = (field_type_option, field_value_option) {
             match field_type {
+                FieldType::Blob => {
+                    return field_value_scalar_blob_matches_input(
+                        field_value,
+                        input
+                    );
+                },
                 FieldType::Boolean => {
                     return field_value_scalar_boolean_matches_input(
                         field_value,
@@ -433,6 +444,67 @@ fn field_value_store_matches_inputs(
             }));
         }
     });
+}
+
+fn field_value_scalar_blob_matches_input(
+    field_value: &FieldValue,
+    input: &ReadInput
+) -> Result<bool, Box<dyn Error>> {
+    let field_value_scalar_option = get_field_value_scalar_option(field_value)?;
+    let input_field_value_scalar_option = get_field_value_scalar_option(&input.field_value)?;
+
+    match (field_value_scalar_option, input_field_value_scalar_option) {
+        (Some(field_value_scalar), Some(input_field_value_scalar)) => {
+            let field_value_scalar_blob = get_field_value_scalar_blob(field_value_scalar)?;
+            let input_field_value_scalar_blob = get_field_value_scalar_blob(input_field_value_scalar)?;
+
+            return field_value_scalar_blob_matches_input_field_value_scalar_blob(
+                field_value_scalar_blob,
+                input_field_value_scalar_blob,
+                &input.input_operation
+            );
+        },
+        (None, None) => {
+            return Ok(true);
+        },
+        _ => {
+            return Ok(false);
+        }
+    };
+}
+
+fn field_value_scalar_blob_matches_input_field_value_scalar_blob(
+    field_value_scalar_blob: Vec<u8>,
+    input_field_value_scalar_blob: Vec<u8>,
+    input_operation: &ReadInputOperation
+) -> Result<bool, Box<dyn Error>> {
+    match input_operation {
+        ReadInputOperation::Equals => {
+            return Ok(field_value_scalar_blob == input_field_value_scalar_blob);
+        },
+        ReadInputOperation::Contains => {
+            return Ok(slice2_is_subset_of_slice1(
+                &field_value_scalar_blob,
+                &input_field_value_scalar_blob
+            ));
+        },
+        ReadInputOperation::StartsWith => {
+            return Ok(field_value_scalar_blob.starts_with(&input_field_value_scalar_blob));
+        },
+        ReadInputOperation::EndsWith => {
+            return Ok(field_value_scalar_blob.ends_with(&input_field_value_scalar_blob));
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} ReadInputOperation {input_operation:?} is not implemented",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "field_value_scalar_blob_matches_input_field_value_scalar_blob",
+                    input_operation = input_operation
+                )
+            }));
+        }
+    };
 }
 
 fn field_value_scalar_boolean_matches_input(
@@ -908,6 +980,23 @@ fn get_field_value_scalar_option(field_value: &FieldValue) -> Result<&Option<Fie
                     "{error_prefix}::{function_name} must return &Option<FieldValueScalar>",
                     error_prefix = ERROR_PREFIX,
                     function_name = "get_field_value_scalar_option"
+                )
+            }));
+        }
+    };
+}
+
+fn get_field_value_scalar_blob(field_value_scalar: &FieldValueScalar) -> Result<Vec<u8>, Box<dyn Error>> {
+    match field_value_scalar {
+        FieldValueScalar::Blob(field_value_scalar_blob) => {
+            return Ok(field_value_scalar_blob.to_vec());
+        },
+        _ => {
+            return Err(Box::new(SudodbError {
+                message: format!(
+                    "{error_prefix}::{function_name} must return bool",
+                    error_prefix = ERROR_PREFIX,
+                    function_name = "get_field_value_scalar_boolean"
                 )
             }));
         }
