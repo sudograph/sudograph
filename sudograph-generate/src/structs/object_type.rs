@@ -233,6 +233,9 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
     named_type: &str
 ) -> TokenStream {
     match named_type {
+        "Blob" => {
+            return quote! { Blob };
+        },
         "Boolean" => {
             return quote! { bool };
         },

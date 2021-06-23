@@ -145,6 +145,9 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
     named_type: &str
 ) -> TokenStream {
     match named_type {
+        "Blob" => {
+            return quote! { FieldType::Blob };
+        },
         "Boolean" => {
             return quote! { FieldType::Boolean };
         },

@@ -47,6 +47,7 @@ pub type FieldName = String;
 // TODO it might be nice to have a FieldType Scalar that is itself an enum of the scalar types, or something
 #[derive(Debug, Clone)]
 pub enum FieldType {
+    Blob,
     Boolean,
     Date,
     Float, // TODO do we need to split this into sizes? What should the default be?
@@ -82,6 +83,7 @@ pub enum FieldValue {
 // TODO do we want ID to be a scalar type as well?
 #[derive(Clone, Debug)]
 pub enum FieldValueScalar {
+    Blob(Vec<u8>),
     Boolean(bool),
     Date(String),
     Float(f32),
@@ -253,6 +255,9 @@ pub fn convert_field_value_store_to_json_string(
                         key = key,
                         value = match field_value_scalar_option {
                             Some(field_value_scalar) => match field_value_scalar {
+                                FieldValueScalar::Blob(field_value_scalar_blob) => format!("[{}]", field_value_scalar_blob.iter().map(|chunk| {
+                                    return chunk.to_string();
+                                }).collect::<Vec<String>>().join(",")),
                                 FieldValueScalar::Boolean(field_value_scalar_boolean) => format!("{}", field_value_scalar_boolean),
                                 FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
                                 FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
@@ -398,158 +403,6 @@ pub fn convert_field_value_store_to_json_string(
     else {
         return String::from("");
     }
-}
-
-// TODO actually, we absolutely need some sort of selection set mechanism here, otherwise we will grab all relations
-// TODO and there could be 100s or 1000s or millions
-// TODO figure out how to print this better maybe...
-// TODO for now I am just going to serialize all fields of all records...there is not concept of a selection or selection set
-// TODO I believe most of the inneficiency will just be in the serialization to the string, and not in the fetching itself
-// TODO this is really where the retrieval is done
-// TODO this only works for string values right now, and only scalar values as well
-// TODO We will need to add support for numbers, null, undefined, and relations
-pub fn old_convert_field_value_store_to_json_string(
-    object_type_store: &ObjectTypeStore,
-    field_value_store: &FieldValueStore,
-    selection_set: SelectionSet
-) -> String {
-    let inner_json = field_value_store.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {
-        match value {
-            FieldValue::Scalar(field_value_scalar_option) => {
-                return format!(
-                    "{result}\"{key}\":{value}{comma}",
-                    result = result,
-                    key = key,
-                    value = match field_value_scalar_option {
-                        Some(field_value_scalar) => match field_value_scalar {
-                            FieldValueScalar::Boolean(field_value_scalar_boolean) => format!("{}", field_value_scalar_boolean),
-                            FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
-                            FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
-                            FieldValueScalar::Int(field_value_scalar_int) => format!("{}", field_value_scalar_int),
-                            FieldValueScalar::JSON(field_value_scalar_json) => format!("{}", field_value_scalar_json),
-                            FieldValueScalar::String(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string)
-                        },
-                        None => String::from("null")
-                    },
-                    comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                );
-            },
-            FieldValue::RelationMany(field_value_relation_many_option) => {
-                if let Some(field_value_relation_many) = field_value_relation_many_option {
-                    // TODO we simply need to go retrieve the relation and serialize it...in fact, I think we can
-                    // TODO just do this recursively and call this function again, and it will automatically resolve arbitrarily nested relations
-                    // let relation_field_value_store = 
-                
-                    if let Some(relation_object_type) = object_type_store.get(&field_value_relation_many.relation_object_type_name) {
-                        // let relation_field_value_store = relation_object_type.field_values_store.get();
-                    
-                        // TODO evil mutations of course
-                        let mut relation_string = String::from("[");
-                        
-                        for (index, relation_primary_key) in field_value_relation_many.relation_primary_keys.iter().enumerate() {
-                            // let relation_json_string = 
-                            // let relation_field_value_store = relation_object_type.field_values_store.get(relation_primary_key);
-                        
-                            if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(relation_primary_key) {
-                                let relation_json_string = old_convert_field_value_store_to_json_string(
-                                    object_type_store,
-                                    relation_field_value_store,
-                                    selection_set.clone()
-                                );
-
-                                relation_string.push_str(&relation_json_string);
-                                relation_string.push_str(if index == field_value_relation_many.relation_primary_keys.iter().len() - 1 { "" } else { "," });
-                            }
-                            else {
-                                return result; // TODO this should probably be an error
-                            }
-                        }
-
-                        relation_string.push_str("]");
-
-                        return format!(
-                            "{result}\"{key}\":\"{value}\"{comma}",
-                            result = result,
-                            key = key,
-                            value = relation_string,
-                            comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                        );
-                    }
-                    else {
-                        // return result; // TODO this should probably return an error
-                        panic!();
-                    }
-                }
-                else {
-                    return format!(
-                        "{result}\"{key}\":{value}{comma}",
-                        result = result,
-                        key = key,
-                        value = String::from("[]"),
-                        comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                    );
-                }
-            },
-            FieldValue::RelationOne(field_value_relation_one_option) => {
-                if let Some(field_value_relation_one) = field_value_relation_one_option {
-                    if let Some(relation_object_type) = object_type_store.get(&field_value_relation_one.relation_object_type_name) {
-                        if let Some(relation_field_value_store) = relation_object_type.field_values_store.get(&field_value_relation_one.relation_primary_key) {
-                            
-                            // ic_cdk::println!("relation_field_value_store");
-                            // ic_cdk::println!("{:?}", relation_field_value_store);
-                            
-                            let relation_json_string = old_convert_field_value_store_to_json_string(
-                                object_type_store,
-                                relation_field_value_store,
-                                selection_set.clone()
-                            );
-
-                            // ic_cdk::println!("relation_json_string");
-                            // ic_cdk::println!("{}", relation_json_string);
-
-                            // TODO we need some sort of selection setting here
-                        
-                            return format!(
-                                "{result}\"{key}\":{value}{comma}",
-                                result = result,
-                                key = key,
-                                value = relation_json_string,
-                                comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                            );
-                        }
-                        else {
-                            return format!(
-                                "{result}\"{key}\":{value}{comma}",
-                                result = result,
-                                key = key,
-                                value = String::from("null"),
-                                comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                            );
-                        }
-                    }
-                    else {
-                        panic!();
-                    }
-                }
-                else {
-                    return format!(
-                        "{result}\"{key}\":{value}{comma}",
-                        result = result,
-                        key = key,
-                        value = String::from("null"),
-                        comma = if i == field_value_store.iter().len() - 1 { "" } else { "," }
-                    );
-                }
-            }
-        };
-    });
-
-    let full_json = format!(
-        "{{{inner_json}}}",
-        inner_json = inner_json
-    );
-
-    return full_json;
 }
 
 pub fn get_mutable_object_type(
@@ -757,4 +610,22 @@ pub fn get_field_type_for_field_name(
             }));
         }
     };
+}
+
+fn slice2_is_subset_of_slice1<T: Eq>(
+    slice1: &[T],
+    slice2: &[T]
+) -> bool {
+    if slice1.starts_with(slice2) == true {
+        return true;
+    }
+
+    if slice1.len() == 0 {
+        return false;
+    }
+
+    return slice2_is_subset_of_slice1(
+        &slice1[1..],
+        slice2
+    );
 }
