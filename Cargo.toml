@@ -1,6 +1,6 @@
 [package]
 name = "sudograph"
-version = "0.3.0-beta.6"
+version = "0.3.0-beta.7"
 authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -9,16 +9,20 @@ description = "GraphQL database for the Internet Computer"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# [replace]
+# "ic-cdk:0.3.0" = { git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
+
 [dependencies]
-sudodb = { version = "0.3.0-beta.6", path = "./sudodb" }
-sudograph-generate = { version = "0.3.0-beta.6", path = "./sudograph-generate" }
+sudodb = { version = "0.3.0-beta.7", path = "./sudodb" }
+sudograph-generate = { version = "0.3.0-beta.7", path = "./sudograph-generate" }
 async-graphql = "2.5.9"
 getrandom = { version = "0.2.2", features = ["custom"] }
 serde_json = "1.0.64"
 serde = "1.0.123"
 # TODO we need this issue fixed: https://github.com/dfinity/candid/issues/248
-ic-cdk = { git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
-# ic-cdk = { version = "0.3.0" }
+# ic-cdk = { git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
+ic-cdk = { version = "0.3.0", git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
+# ic-cdk = { version = "0.3.0", git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
 # ic-cdk = { path = "../cdk-rs/src/ic-cdk" }
 ic-cdk-macros = { version = "0.3.0" }
 # TODO once this issue is fixed: https://github.com/dfinity/candid/issues/248
@@ -28,3 +32,6 @@ ic-cdk-macros = { version = "0.3.0" }
 # candid = "0.6.9"
 rand = "0.8.3"
 graphql-parser = "0.3.0"
+
+[patch.crates-io]
+ic-cdk = { git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }

@@ -265,7 +265,7 @@ dependencies = [
 [[package]]
 name = "candid"
 version = "0.6.21"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#68c26c61f702a59e3415a5d59d4ed523f7bfd722"
+source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#7e7332498449214aa4dff0cd97c056001f73e1a8"
 dependencies = [
  "byteorder",
  "candid_derive 0.4.4 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
@@ -301,7 +301,7 @@ dependencies = [
 [[package]]
 name = "candid_derive"
 version = "0.4.4"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#68c26c61f702a59e3415a5d59d4ed523f7bfd722"
+source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#7e7332498449214aa4dff0cd97c056001f73e1a8"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -1305,7 +1305,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "sudodb"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "base32",
  "chrono",
@@ -1316,7 +1316,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "async-graphql",
  "getrandom",
@@ -1332,7 +1332,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.6"
 dependencies = [
  "graphql-parser",
  "proc-macro2",

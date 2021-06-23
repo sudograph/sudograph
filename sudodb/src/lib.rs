@@ -24,7 +24,7 @@ pub use read::{
 pub use update::update;
 pub use delete::delete;
 
-use ic_cdk;
+// use ic_cdk;
 
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
