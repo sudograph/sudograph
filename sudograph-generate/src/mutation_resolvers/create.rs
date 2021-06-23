@@ -28,20 +28,23 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
             async fn #create_function_name(
                 &self,
                 context: &sudograph::async_graphql::Context<'_>,
-                input: #create_input_type
+                input: Option<#create_input_type>
             ) -> std::result::Result<Vec<#object_type_rust_type>, sudograph::async_graphql::Error> {
                 let rand_store = storage::get_mut::<RandStore>();
 
                 let object_store = storage::get_mut::<ObjectTypeStore>();
 
+                let id = if let Some(create_input) = &input { match &create_input.id {
+                    MaybeUndefined::Value(value) => Some(value.to_string()),
+                    _ => None
+                } } else { None };
+                let create_inputs = if let Some(create_input) = input { create_input.get_create_field_inputs() } else { vec![] };
+
                 let create_result = create(
                     object_store,
                     #object_type_name,
-                    match &input.id {
-                        MaybeUndefined::Value(value) => Some(value.to_string()),
-                        _ => None
-                    },
-                    &input.get_create_field_inputs(),
+                    id,
+                    &create_inputs,
                     &convert_selection_field_to_selection_set(
                         #object_type_name,
                         context.field(),
@@ -53,7 +56,6 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                 match create_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
-                            ic_cdk::println!("{}", string);
                             return from_str(string).unwrap();
                         }).collect();
 
