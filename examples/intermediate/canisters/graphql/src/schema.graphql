@@ -11,6 +11,7 @@ type Student {
     firstName: String!
     grades: [Grade!]! @relation(name: "Student:grades and Grade:student")
     lastName: String!
+    meta: JSON!
 }
 
 type Course {

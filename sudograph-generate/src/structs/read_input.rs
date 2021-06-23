@@ -167,6 +167,9 @@ fn get_read_input_rust_struct_field_rust_type_for_named_type(
         "String" => {
             return quote! { ReadStringInput };
         },
+        "JSON" => {
+            return quote! { ReadJSONInput };
+        },
         _ => {
             let graphql_type_name = get_graphql_type_name(graphql_type);
 

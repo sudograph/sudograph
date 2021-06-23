@@ -50,10 +50,10 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                         MaybeUndefined::Value(field_value) => {
                             return Some(ReadInput {
                                 input_type: ReadInputType::Scalar,
-                                input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
+                                input_operation: read_input_operation.clone(),
                                 field_name: String::from(&field_name),
-                                field_value: field_value.sudo_serialize(), // TODO relations?
-                                relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                                field_value: field_value.sudo_serialize(),
+                                relation_object_type_name: String::from(""),
                                 relation_read_inputs: vec![],
                                 and: vec![],
                                 or: vec![]
@@ -62,10 +62,10 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                         MaybeUndefined::Null => {
                             return Some(ReadInput {
                                 input_type: ReadInputType::Scalar,
-                                input_operation: read_input_operation.clone(), // TODO figure out how to not do this if possible
+                                input_operation: read_input_operation.clone(),
                                 field_name: String::from(&field_name),
-                                field_value: FieldValue::Scalar(None), // TODO relations?
-                                relation_object_type_name: String::from(""), // TODO this needs to be filled in
+                                field_value: FieldValue::Scalar(None),
+                                relation_object_type_name: String::from(""),
                                 relation_read_inputs: vec![],
                                 and: vec![],
                                 or: vec![]

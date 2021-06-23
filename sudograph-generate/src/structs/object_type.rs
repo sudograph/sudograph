@@ -251,6 +251,9 @@ pub fn get_rust_type_for_object_type_named_type<'a>(
         "String" => {
             return quote! { String };
         },
+        "JSON" => {
+            return quote! { sudograph::serde_json::Value };
+        },
         _ => {
             if
                 is_graphql_type_a_relation_many(graphql_ast, graphql_type) == true ||
