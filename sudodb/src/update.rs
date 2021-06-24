@@ -14,7 +14,8 @@ use crate::{
     get_field_type_for_field_name,
     get_field_value_store,
     get_mutable_field_value,
-    get_mutable_field_value_store
+    get_mutable_field_value_store,
+    UpdateOperation
 };
 use std::{error::Error};
 
@@ -98,7 +99,8 @@ fn insert_input_into_field_value_store(
                 object_type_name,
                 &input.field_name,
                 input_field_value_scalar_option,
-                id
+                id,
+                &input.update_operation
             )?;
         }
     };
@@ -530,12 +532,14 @@ fn insert_field_value_relation_opposing_into_field_value_store(
     return Ok(());
 }
 
+// TODO this function has become dispicable, please create utility functions to drill down through the stores
 fn insert_field_value_scalar_option_into_field_value_store(
     mutable_object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     field_name: &str,
     input_field_value_scalar_option: &Option<FieldValueScalar>,
-    id: &str
+    id: &str,
+    update_operation: &UpdateOperation
 ) -> Result<(), Box<dyn Error>> {
     // TODO it would be nice to not have to retrieve this for every input, but it is hard
     // TODO to figure out how to not have two mutable borrows from object_type_store
@@ -545,10 +549,72 @@ fn insert_field_value_scalar_option_into_field_value_store(
         String::from(id)
     )?;
 
-    mutable_field_value_store.insert(
-        String::from(field_name),
-        FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
-    );
+    match input_field_value_scalar_option {
+        Some(input_field_value_scalar) => {
+            match input_field_value_scalar.clone() {
+                FieldValueScalar::Blob(mut input_field_value_scalar_blob) => {
+                    match update_operation {
+                        UpdateOperation::Append => {
+                            let field_value_option = mutable_field_value_store.get_mut(field_name);
+
+                            match field_value_option {
+                                Some(field_value) => {
+                                    match field_value {
+                                        FieldValue::Scalar(field_value_scalar_option) => {
+                                            match field_value_scalar_option {
+                                                Some(field_value_scalar) => {
+                                                    match field_value_scalar {
+                                                        FieldValueScalar::Blob(field_value_scalar_blob) => {
+                                                            field_value_scalar_blob.append(&mut input_field_value_scalar_blob);
+                                                        },
+                                                        _ => panic!("insert_field_value_scalar_option_into_field_value_store wrong 0")
+                                                    };
+                                                },
+                                                None => {
+                                                    mutable_field_value_store.insert(
+                                                        String::from(field_name),
+                                                        FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+                                                    );
+                                                }
+                                            };
+                                        },
+                                        _ => panic!("insert_field_value_scalar_option_into_field_value_store wrong 1")
+                                    };
+                                },
+                                None => {
+                                    mutable_field_value_store.insert(
+                                        String::from(field_name),
+                                        FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+                                    );
+                                }
+                            };
+                        },
+                        UpdateOperation::Prepend => {
+                            // TODO simply not yet implemented
+                        },
+                        UpdateOperation::Replace => {
+                            mutable_field_value_store.insert(
+                                String::from(field_name),
+                                FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+                            );
+                        }
+                    };
+                },
+                _ => {
+                    mutable_field_value_store.insert(
+                        String::from(field_name),
+                        FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+                    );
+                }
+            };
+        },
+        None => {
+            mutable_field_value_store.insert(
+                String::from(field_name),
+                FieldValue::Scalar(input_field_value_scalar_option.clone()) // TODO it would be nice to not have to clone here
+            );
+        }
+    };
 
     return Ok(());
 }

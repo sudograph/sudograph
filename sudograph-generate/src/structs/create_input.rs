@@ -214,13 +214,15 @@ fn generate_create_field_input_pusher_for_relation_many(field: &Field<String>) -
                             return String::from(id.to_string());
                         }).collect(),
                         relation_primary_keys_to_remove: vec![]
-                    }))
+                    })),
+                    update_operation: UpdateOperation::Replace
                 });
             },
             _ => {
                 create_field_inputs.push(FieldInput {
                     field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationMany(None)
+                    field_value: FieldValue::RelationMany(None),
+                    update_operation: UpdateOperation::Replace
                 });
             }
         };
@@ -245,14 +247,16 @@ fn generate_create_field_input_pusher_for_relation_one(
                         field_name: String::from(#field_name_string),
                         field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                             relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_key: value.connect.to_string()
+                            relation_primary_key: value.connect.to_string(),
+                            update_operation: UpdateOperation::Replace
                         }))
                     });
                 },
                 _ => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::RelationOne(None)
+                        field_value: FieldValue::RelationOne(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 }
             };
@@ -264,7 +268,8 @@ fn generate_create_field_input_pusher_for_relation_one(
                 field_name: String::from(#field_name_string),
                 field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                     relation_object_type_name: String::from(#relation_object_type_name),
-                    relation_primary_key: String::from(self.#field_name_ident.connect.to_string())
+                    relation_primary_key: String::from(self.#field_name_ident.connect.to_string()),
+                    update_operation: UpdateOperation::Replace
                 }))
             });
         };
@@ -303,7 +308,8 @@ fn generate_create_field_input_pusher_for_enum(
             #enum_name_ident::#value_name_ident => {
                 create_field_inputs.push(FieldInput {
                     field_name: String::from(#field_name_string),
-                    field_value: FieldValue::Scalar(Some(FieldValueScalar::String(String::from(#value_name_string))))
+                    field_value: FieldValue::Scalar(Some(FieldValueScalar::String(String::from(#value_name_string)))),
+                    update_operation: UpdateOperation::Replace
                 });
             }
         };
@@ -320,13 +326,15 @@ fn generate_create_field_input_pusher_for_enum(
                 MaybeUndefined::Null => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::Scalar(None)
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 MaybeUndefined::Undefined => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::Scalar(None)
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 }
             };
@@ -354,19 +362,22 @@ fn generate_create_field_input_pusher_for_scalar(field: &Field<String>) -> Token
                 MaybeUndefined::Value(value) => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: value.sudo_serialize()
+                        field_value: value.sudo_serialize(),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 MaybeUndefined::Null => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::Scalar(None)
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 MaybeUndefined::Undefined => {
                     create_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::Scalar(None)
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 }
             };
@@ -376,7 +387,8 @@ fn generate_create_field_input_pusher_for_scalar(field: &Field<String>) -> Token
         return quote! {
             create_field_inputs.push(FieldInput {
                 field_name: String::from(#field_name_string),
-                field_value: self.#field_name_ident.sudo_serialize()
+                field_value: self.#field_name_ident.sudo_serialize(),
+                update_operation: UpdateOperation::Replace
             });
         };
     }

@@ -79,6 +79,19 @@ pub enum FieldValue {
     RelationMany(Option<FieldValueRelationMany>),
     RelationOne(Option<FieldValueRelationOne>)
 }
+// TODO create an UpdateInput
+// TODO create a CreateInput
+
+// TODO statically specifying this behavior is alright for now
+// TODO but in the future we probably want to allow arbitrary updating
+// TODO specified by the user
+#[derive(Clone, Debug)]
+pub enum UpdateOperation {
+    Append,
+    Prepend,
+    Replace
+}
+// TODO consider using a lambda/closure on the update inputs
 
 // TODO do we want ID to be a scalar type as well?
 #[derive(Clone, Debug)]
@@ -145,10 +158,18 @@ pub enum ReadInputType {
     Relation
 }
 
+// TODO we should really split this out into CreateInput and UpdateInput
 #[derive(Debug)]
 pub struct FieldInput {
     pub field_name: String,
-    pub field_value: FieldValue
+    pub field_value: FieldValue,
+    pub update_operation: UpdateOperation
+    // TODO a more elegant solution is to allow a closure to be passed in that
+    // TODO allows the user to define any kind of operation on the scalar value
+    // TODO unfortunately I am fighting the compiler on this one, and I do not have time to continue
+    // TODO to get derive(Debug) to work we would need to do something interesting with the closure
+    // pub scalar_update: Option<Box<dyn Fn(FieldValueScalar) -> FieldValueScalar>>
+    // TODO add special capability for updating blob...
 }
 
 #[derive(Debug)]
