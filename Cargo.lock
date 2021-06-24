@@ -359,31 +359,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65f05b872d010281c905c4e6ff2079c1341d1e527e05f3bfab88d49ea3269def"
 dependencies = [
  "byteorder",
- "candid_derive 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "codespan-reporting",
- "hex",
- "ic-types",
- "lalrpop",
- "lalrpop-util",
- "leb128",
- "logos",
- "num-bigint",
- "num-traits",
- "num_enum",
- "paste",
- "pretty",
- "serde",
- "serde_bytes",
- "thiserror",
-]
-
-[[package]]
-name = "candid"
-version = "0.6.21"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#943cd036553759f3deba063197973af9c86ce9ab"
-dependencies = [
- "byteorder",
- "candid_derive 0.4.4 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
+ "candid_derive",
  "codespan-reporting",
  "hex",
  "ic-types",
@@ -406,17 +382,6 @@ name = "candid_derive"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d7232a5dd836d83ae9ffd79061b42d729afab6f11bfaba7dc2a82575b686ae2"
-dependencies = [
- "lazy_static",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "candid_derive"
-version = "0.4.4"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#943cd036553759f3deba063197973af9c86ce9ab"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -896,9 +861,10 @@ checksum = "615caabe2c3160b313d52ccc905335f4ed5f10881dd63dc5699d47e90be85691"
 [[package]]
 name = "ic-cdk"
 version = "0.3.0"
-source = "git+https://github.com/lastmjs/cdk-rs?branch=sudograph#aa54598edc12acb18a65734afe4e9155e0d51dd8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f385e97263deb4469938ba1bbbb0a0259294132ca2523e20a971225571d5485"
 dependencies = [
- "candid 0.6.21 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
+ "candid",
  "cfg-if 0.1.10",
  "ic-types",
  "serde",
@@ -910,7 +876,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5233d71766be2c74f3433a51b8d4a584f8b416a87a961ce0e579110bc30aa683"
 dependencies = [
- "candid 0.6.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "candid",
  "ic-cdk",
  "proc-macro2",
  "quote",
@@ -1642,7 +1608,7 @@ checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
 name = "sudodb"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "base32",
  "chrono",
@@ -1652,7 +1618,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "async-graphql",
  "getrandom 0.2.2",
@@ -1668,7 +1634,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "graphql-parser",
  "proc-macro2",

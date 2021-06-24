@@ -6,3 +6,7 @@ members = [
 [profile.release]
 lto = true
 opt-level = 'z'
+
+# TODO this can be removed once https://github.com/dfinity/candid/issues/248 is resolved
+[patch.crates-io]
+candid = { git = "https://github.com/lastmjs/candid", branch = "candid-path-helper-attribute" }

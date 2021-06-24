@@ -69,7 +69,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "graphql-parser",
  "proc-macro2",
