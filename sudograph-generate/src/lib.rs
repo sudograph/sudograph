@@ -1330,6 +1330,12 @@ fn is_graphql_type_an_enum(
     return graphql_type_is_an_enum;
 }
 
+fn is_graphql_type_a_blob(graphql_type: &Type<String>) -> bool {
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+    
+    return graphql_type_name == "Blob";
+}
+
 fn is_graphql_type_a_list_type(
     graphql_ast: &Document<String>,
     graphql_type: &Type<String>

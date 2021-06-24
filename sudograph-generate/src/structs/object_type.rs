@@ -17,6 +17,7 @@ use graphql_parser::schema::{
 };
 use crate::{
     get_object_type_from_field,
+    is_graphql_type_a_blob,
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one,
     is_graphql_type_an_enum
@@ -107,6 +108,14 @@ fn generate_read_input_resolvers(
             false
         );
 
+        if is_graphql_type_a_blob(&field.field_type) == true {
+            return generate_read_input_blob_resolver(
+                field_name_string,
+                &field_name_ident,
+                field_type
+            );
+        }
+
         if is_graphql_type_a_relation_many(
             graphql_ast,
             &field.field_type
@@ -129,6 +138,23 @@ fn generate_read_input_resolvers(
     }).collect();
 
     return generated_read_input_resolvers;
+}
+
+fn generate_read_input_blob_resolver(
+    field_name_string: &str,
+    field_name_ident: &Ident,
+    field_type: TokenStream
+) -> TokenStream {
+    return quote! {
+        #[graphql(name = #field_name_string)]
+        async fn #field_name_ident(
+            &self,
+            limit: Option<u32>,
+            offset: Option<u32>
+        ) -> &#field_type {
+            return &self.#field_name_ident;
+        }
+    };
 }
 
 fn generate_read_input_scalar_or_relation_one_resolver(

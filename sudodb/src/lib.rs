@@ -24,7 +24,7 @@ pub use read::{
 pub use update::update;
 pub use delete::delete;
 
-// use ic_cdk;
+use ic_cdk;
 
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
@@ -255,9 +255,15 @@ pub fn convert_field_value_store_to_json_string(
                         key = key,
                         value = match field_value_scalar_option {
                             Some(field_value_scalar) => match field_value_scalar {
-                                FieldValueScalar::Blob(field_value_scalar_blob) => format!("[{}]", field_value_scalar_blob.iter().map(|chunk| {
-                                    return chunk.to_string();
-                                }).collect::<Vec<String>>().join(",")),
+                                FieldValueScalar::Blob(field_value_scalar_blob) => format!("[{}]", page_bytes(
+                                        field_value_scalar_blob,
+                                        value.limit_option,
+                                        value.offset_option
+                                    )
+                                    .iter()
+                                    .map(|chunk| chunk.to_string())
+                                    .collect::<Vec<String>>()
+                                    .join(",")),
                                 FieldValueScalar::Boolean(field_value_scalar_boolean) => format!("{}", field_value_scalar_boolean),
                                 FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
                                 FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
@@ -403,6 +409,42 @@ pub fn convert_field_value_store_to_json_string(
     else {
         return String::from("");
     }
+}
+
+fn page_bytes(
+    bytes: &[u8],
+    limit_option: Option<u32>,
+    offset_option: Option<u32>
+) -> &[u8] {
+    match (limit_option, offset_option) {
+        (Some(limit), Some(offset)) => {
+            let start_index = offset as usize;
+            let end_index = if (offset + limit) as usize > bytes.len() { bytes.len() } else { (offset + limit) as usize };
+
+            if start_index >= bytes.len() {
+                return &[];
+            }
+
+            return &bytes[start_index..end_index];
+        },
+        (Some(limit), None) => {
+            let end_index = if limit as usize > bytes.len() { bytes.len() } else { limit as usize };
+
+            return &bytes[0..end_index];
+        },
+        (None, Some(offset)) => {
+            let start_index = offset as usize;
+
+            if start_index >= bytes.len() {
+                return &[];
+            }
+
+            return &bytes[start_index..bytes.len()];
+        },
+        (None, None) => {
+            return bytes;
+        }
+    };
 }
 
 pub fn get_mutable_object_type(
