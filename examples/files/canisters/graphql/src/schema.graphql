@@ -1,17 +1,28 @@
+# type Mutation {
+#     appendFileChunk(
+#         file_id: ID!,
+#         start_byte: Int!
+#         end_byte: Int!
+#         bytes: Blob!
+#     ): Boolean!
+# }
+
 type File {
     id: ID!
     created_at: Date!
     name: String!
     file_type: FileType!
-    chunks: [FileChunk!]!
+    bytes: Blob!
+    # chunks: [FileChunk!]! @relation(name: "File:chunks and FileChunk:file")
 }
 
-type FileChunk {
-    id: ID!
-    start_byte: Int!
-    end_byte: Int!
-    bytes: Blob!
-}
+# type FileChunk {
+#     id: ID!
+#     file: File! @relation(name: "File:chunks and FileChunk:file")
+#     start_byte: Int!
+#     end_byte: Int!
+#     bytes: Blob!
+# }
 
 enum FileType {
     TXT

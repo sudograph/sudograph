@@ -276,7 +276,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             FieldTypeRelationInfo,
             SelectionSet,
             SelectionSetInfo,
-            OrderInput
+            OrderInput,
+            UpdateOperation
         };
         use sudograph::serde_json::from_str;
         use sudograph::ic_cdk;
@@ -407,6 +408,13 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         enum OrderDirection {
             ASC,
             DESC
+        }
+
+        #[derive(InputObject)]
+        struct UpdateBlobInput {
+            replace: MaybeUndefined<Blob>,
+            append: Option<Blob>
+            // prepend: Option<Blob> // TODO going to wait on implementing this for now
         }
 
         #read_boolean_input_rust_struct
@@ -1328,6 +1336,12 @@ fn is_graphql_type_an_enum(
     });
 
     return graphql_type_is_an_enum;
+}
+
+fn is_graphql_type_a_blob(graphql_type: &Type<String>) -> bool {
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+    
+    return graphql_type_name == "Blob";
 }
 
 fn is_graphql_type_a_list_type(

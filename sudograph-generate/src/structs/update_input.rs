@@ -1,6 +1,7 @@
 use crate::{
     get_enum_type_from_field,
     get_graphql_type_name,
+    is_graphql_type_a_blob,
     is_graphql_type_a_relation_many,
     is_graphql_type_a_relation_one,
     is_graphql_type_an_enum,
@@ -125,6 +126,10 @@ fn get_update_input_rust_struct_field_rust_type(
                 named_type
             );
 
+            if named_type == "Blob" {
+                return quote! { MaybeUndefined<UpdateBlobInput> };
+            }
+
             if is_graphql_type_a_relation_many(graphql_ast, update_input_rust_struct_field_type) == true {
                 return quote! { MaybeUndefined<UpdateRelationManyInput> }; // TODO I do not think this would ever happen
             }
@@ -185,6 +190,10 @@ fn generate_update_field_input_pushers(
                 ));
             }
 
+            if is_graphql_type_a_blob(&field.field_type) == true {
+                return Some(generate_update_field_input_pusher_for_blob(field));
+            }
+
             return Some(generate_update_field_input_pusher_for_scalar(field));
         }
     }).collect();
@@ -212,7 +221,8 @@ fn generate_update_field_input_pusher_for_relation_many(field: &Field<String>) -
                                 return id.to_string();
                             }).collect(),
                             relation_primary_keys_to_remove: vec![]
-                        }))
+                        })),
+                        update_operation: UpdateOperation::Replace
                     });
                 }
 
@@ -225,7 +235,8 @@ fn generate_update_field_input_pusher_for_relation_many(field: &Field<String>) -
                             relation_primary_keys_to_remove: disconnect.iter().map(|id| {
                                 return id.to_string();
                             }).collect()
-                        }))
+                        })),
+                        update_operation: UpdateOperation::Replace
                     });
                 }
             },
@@ -255,21 +266,24 @@ fn generate_update_field_input_pusher_for_relation_one(
                             field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                                 relation_object_type_name: String::from(#relation_object_type_name),
                                 relation_primary_key: connect.to_string()
-                            }))
+                            })),
+                            update_operation: UpdateOperation::Replace
                         });
                     }
     
                     if let Some(disconnect) = &value.disconnect {
                         update_field_inputs.push(FieldInput {
                             field_name: String::from(#field_name_string),
-                            field_value: FieldValue::RelationOne(None)
+                            field_value: FieldValue::RelationOne(None),
+                            update_operation: UpdateOperation::Replace
                         });
                     }
                 },
                 MaybeUndefined::Null => {
                     update_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::RelationOne(None)
+                        field_value: FieldValue::RelationOne(None),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 _ => ()
@@ -285,7 +299,8 @@ fn generate_update_field_input_pusher_for_relation_one(
                         field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                             relation_object_type_name: String::from(#relation_object_type_name),
                             relation_primary_key: value.connect.to_string()
-                        }))
+                        })),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 _ => ()
@@ -326,28 +341,148 @@ fn generate_update_field_input_pusher_for_enum(
             #enum_name_ident::#value_name_ident => {
                 update_field_inputs.push(FieldInput {
                     field_name: String::from(#field_name_string),
-                    field_value: FieldValue::Scalar(Some(FieldValueScalar::String(String::from(#value_name_string))))
+                    field_value: FieldValue::Scalar(Some(FieldValueScalar::String(String::from(#value_name_string)))),
+                    update_operation: UpdateOperation::Replace
                 });
             }
         };
     });
 
-    return quote! {
-        match &self.#field_name_ident {
-            MaybeUndefined::Value(value) => {
-                match value {
-                    #(#variant_pushers),*
-                };
-            },
-            MaybeUndefined::Null => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::Scalar(None)
-                });
-            },
-            MaybeUndefined::Undefined => ()
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    match value {
+                        #(#variant_pushers),*
+                    };
+                },
+                MaybeUndefined::Null => {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                MaybeUndefined::Undefined => ()
+            };
         };
-    };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    match value {
+                        #(#variant_pushers),*
+                    };
+                },
+                MaybeUndefined::Null => (),
+                MaybeUndefined::Undefined => ()
+            };
+        };
+    }
+}
+
+fn generate_update_field_input_pusher_for_blob(field: &Field<String>) -> TokenStream {
+    let field_name_string = &field.name;         
+    let field_name_ident = format_ident!(
+        "{}",
+        field.name
+    );
+
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(blob_value) => {
+                    match &blob_value.replace {
+                        MaybeUndefined::Value(value) => {
+                            update_field_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: value.sudo_serialize(),
+                                update_operation: UpdateOperation::Replace
+                            });
+                        },
+                        MaybeUndefined::Null => {
+                            update_field_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: FieldValue::Scalar(None),
+                                update_operation: UpdateOperation::Replace
+                            });
+                        },
+                        MaybeUndefined::Undefined => ()
+                    };
+            
+                    match &blob_value.append {
+                        Some(value) => {
+                            update_field_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: value.sudo_serialize(),
+                                update_operation: UpdateOperation::Append
+                            });
+                        },
+                        None => ()
+                    };
+    
+                    // TODO waiting on prepend for now
+                    // match &blob_value.prepend {
+                    //     Some(value) => {
+                    //         update_field_inputs.push(FieldInput {
+                    //             field_name: String::from(#field_name_string),
+                    //             field_value: value.sudo_serialize(),
+                    //             update_operation: UpdateOperation::Prepend
+                    //         });
+                    //     },
+                    //     None => ()
+                    // };
+                },
+                MaybeUndefined::Null => (),
+                MaybeUndefined::Undefined => ()
+            };
+        };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(blob_value) => {
+                    match &blob_value.replace {
+                        MaybeUndefined::Value(value) => {
+                            update_field_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: value.sudo_serialize(),
+                                update_operation: UpdateOperation::Replace
+                            });
+                        },
+                        MaybeUndefined::Null => (),
+                        MaybeUndefined::Undefined => ()
+                    };
+            
+                    match &blob_value.append {
+                        Some(value) => {
+                            update_field_inputs.push(FieldInput {
+                                field_name: String::from(#field_name_string),
+                                field_value: value.sudo_serialize(),
+                                update_operation: UpdateOperation::Append
+                            });
+                        },
+                        None => ()
+                    };
+    
+                    // TODO waiting on prepend for now
+                    // match &blob_value.prepend {
+                    //     Some(value) => {
+                    //         update_field_inputs.push(FieldInput {
+                    //             field_name: String::from(#field_name_string),
+                    //             field_value: value.sudo_serialize(),
+                    //             update_operation: UpdateOperation::Prepend
+                    //         });
+                    //     },
+                    //     None => ()
+                    // };
+                },
+                MaybeUndefined::Null => (),
+                MaybeUndefined::Undefined => ()
+            };
+        };
+    }
 }
 
 fn generate_update_field_input_pusher_for_scalar(field: &Field<String>) -> TokenStream {
@@ -357,21 +492,40 @@ fn generate_update_field_input_pusher_for_scalar(field: &Field<String>) -> Token
         field.name
     );
 
-    return quote! {
-        match &self.#field_name_ident {
-            MaybeUndefined::Value(value) => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: value.sudo_serialize()
-                });
-            },
-            MaybeUndefined::Null => {
-                update_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::Scalar(None)
-                });
-            },
-            MaybeUndefined::Undefined => ()
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: value.sudo_serialize(),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                MaybeUndefined::Null => {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                MaybeUndefined::Undefined => ()
+            };
         };
-    };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    update_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: value.sudo_serialize(),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                MaybeUndefined::Null => (),
+                MaybeUndefined::Undefined => ()
+            };
+        };
+    }
 }

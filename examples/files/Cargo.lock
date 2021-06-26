@@ -616,6 +616,18 @@ checksum = "f3a87b616e37e93c22fb19bcd386f02f3af5ea98a25670ad0fce773de23c5e68"
 
 [[package]]
 name = "ic-cdk"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae261fe701ff53bf985840749a67da01beb89c8bdb7a7d8fedbd772c72556ea8"
+dependencies = [
+ "candid",
+ "cfg-if 0.1.10",
+ "ic-types",
+ "serde",
+]
+
+[[package]]
+name = "ic-cdk"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f385e97263deb4469938ba1bbbb0a0259294132ca2523e20a971225571d5485"
@@ -633,7 +645,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5233d71766be2c74f3433a51b8d4a584f8b416a87a961ce0e579110bc30aa683"
 dependencies = [
  "candid",
- "ic-cdk",
+ "ic-cdk 0.3.0",
  "proc-macro2",
  "quote",
  "serde",
@@ -1245,22 +1257,23 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "sudodb"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "base32",
  "chrono",
+ "ic-cdk 0.2.4",
  "rand",
  "sha2",
 ]
 
 [[package]]
 name = "sudograph"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "async-graphql",
  "getrandom",
  "graphql-parser",
- "ic-cdk",
+ "ic-cdk 0.3.0",
  "ic-cdk-macros",
  "rand",
  "serde",
@@ -1271,7 +1284,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.7"
+version = "0.3.0-beta.8"
 dependencies = [
  "graphql-parser",
  "proc-macro2",

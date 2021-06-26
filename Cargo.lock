@@ -860,6 +860,18 @@ checksum = "615caabe2c3160b313d52ccc905335f4ed5f10881dd63dc5699d47e90be85691"
 
 [[package]]
 name = "ic-cdk"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae261fe701ff53bf985840749a67da01beb89c8bdb7a7d8fedbd772c72556ea8"
+dependencies = [
+ "candid",
+ "cfg-if 0.1.10",
+ "ic-types",
+ "serde",
+]
+
+[[package]]
+name = "ic-cdk"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f385e97263deb4469938ba1bbbb0a0259294132ca2523e20a971225571d5485"
@@ -877,7 +889,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5233d71766be2c74f3433a51b8d4a584f8b416a87a961ce0e579110bc30aa683"
 dependencies = [
  "candid",
- "ic-cdk",
+ "ic-cdk 0.3.0",
  "proc-macro2",
  "quote",
  "serde",
@@ -1612,6 +1624,7 @@ version = "0.3.0-beta.8"
 dependencies = [
  "base32",
  "chrono",
+ "ic-cdk 0.2.4",
  "rand 0.8.3",
  "sha2",
 ]
@@ -1623,7 +1636,7 @@ dependencies = [
  "async-graphql",
  "getrandom 0.2.2",
  "graphql-parser",
- "ic-cdk",
+ "ic-cdk 0.3.0",
  "ic-cdk-macros",
  "rand 0.8.3",
  "serde",

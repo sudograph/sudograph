@@ -24,7 +24,7 @@ pub use read::{
 pub use update::update;
 pub use delete::delete;
 
-// use ic_cdk;
+use ic_cdk;
 
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
@@ -79,6 +79,19 @@ pub enum FieldValue {
     RelationMany(Option<FieldValueRelationMany>),
     RelationOne(Option<FieldValueRelationOne>)
 }
+// TODO create an UpdateInput
+// TODO create a CreateInput
+
+// TODO statically specifying this behavior is alright for now
+// TODO but in the future we probably want to allow arbitrary updating
+// TODO specified by the user
+#[derive(Clone, Debug)]
+pub enum UpdateOperation {
+    Append,
+    Prepend,
+    Replace
+}
+// TODO consider using a lambda/closure on the update inputs
 
 // TODO do we want ID to be a scalar type as well?
 #[derive(Clone, Debug)]
@@ -145,10 +158,18 @@ pub enum ReadInputType {
     Relation
 }
 
+// TODO we should really split this out into CreateInput and UpdateInput
 #[derive(Debug)]
 pub struct FieldInput {
     pub field_name: String,
-    pub field_value: FieldValue
+    pub field_value: FieldValue,
+    pub update_operation: UpdateOperation
+    // TODO a more elegant solution is to allow a closure to be passed in that
+    // TODO allows the user to define any kind of operation on the scalar value
+    // TODO unfortunately I am fighting the compiler on this one, and I do not have time to continue
+    // TODO to get derive(Debug) to work we would need to do something interesting with the closure
+    // pub scalar_update: Option<Box<dyn Fn(FieldValueScalar) -> FieldValueScalar>>
+    // TODO add special capability for updating blob...
 }
 
 #[derive(Debug)]
@@ -255,9 +276,15 @@ pub fn convert_field_value_store_to_json_string(
                         key = key,
                         value = match field_value_scalar_option {
                             Some(field_value_scalar) => match field_value_scalar {
-                                FieldValueScalar::Blob(field_value_scalar_blob) => format!("[{}]", field_value_scalar_blob.iter().map(|chunk| {
-                                    return chunk.to_string();
-                                }).collect::<Vec<String>>().join(",")),
+                                FieldValueScalar::Blob(field_value_scalar_blob) => format!("[{}]", page_bytes(
+                                        field_value_scalar_blob,
+                                        value.limit_option,
+                                        value.offset_option
+                                    )
+                                    .iter()
+                                    .map(|chunk| chunk.to_string())
+                                    .collect::<Vec<String>>()
+                                    .join(",")),
                                 FieldValueScalar::Boolean(field_value_scalar_boolean) => format!("{}", field_value_scalar_boolean),
                                 FieldValueScalar::Date(field_value_scalar_string) => format!("\"{}\"", field_value_scalar_string),
                                 FieldValueScalar::Float(field_value_scalar_int) => format!("{}", field_value_scalar_int),
@@ -403,6 +430,42 @@ pub fn convert_field_value_store_to_json_string(
     else {
         return String::from("");
     }
+}
+
+fn page_bytes(
+    bytes: &[u8],
+    limit_option: Option<u32>,
+    offset_option: Option<u32>
+) -> &[u8] {
+    match (limit_option, offset_option) {
+        (Some(limit), Some(offset)) => {
+            let start_index = offset as usize;
+            let end_index = if (offset + limit) as usize > bytes.len() { bytes.len() } else { (offset + limit) as usize };
+
+            if start_index >= bytes.len() {
+                return &[];
+            }
+
+            return &bytes[start_index..end_index];
+        },
+        (Some(limit), None) => {
+            let end_index = if limit as usize > bytes.len() { bytes.len() } else { limit as usize };
+
+            return &bytes[0..end_index];
+        },
+        (None, Some(offset)) => {
+            let start_index = offset as usize;
+
+            if start_index >= bytes.len() {
+                return &[];
+            }
+
+            return &bytes[start_index..bytes.len()];
+        },
+        (None, None) => {
+            return bytes;
+        }
+    };
 }
 
 pub fn get_mutable_object_type(
