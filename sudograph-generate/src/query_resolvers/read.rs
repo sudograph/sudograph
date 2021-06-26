@@ -62,7 +62,7 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 match read_result {
                     Ok(strings) => {
                         let deserialized_strings: Vec<#object_type_rust_type> = strings.iter().map(|string| {
-                            ic_cdk::println!("{}", string);
+                            // ic_cdk::println!("{}", string);
                             return from_str(string).unwrap();
                         }).collect();
 

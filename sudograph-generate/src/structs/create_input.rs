@@ -247,9 +247,9 @@ fn generate_create_field_input_pusher_for_relation_one(
                         field_name: String::from(#field_name_string),
                         field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                             relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_key: value.connect.to_string(),
-                            update_operation: UpdateOperation::Replace
-                        }))
+                            relation_primary_key: value.connect.to_string()
+                        })),
+                        update_operation: UpdateOperation::Replace
                     });
                 },
                 _ => {
@@ -268,9 +268,9 @@ fn generate_create_field_input_pusher_for_relation_one(
                 field_name: String::from(#field_name_string),
                 field_value: FieldValue::RelationOne(Some(FieldValueRelationOne {
                     relation_object_type_name: String::from(#relation_object_type_name),
-                    relation_primary_key: String::from(self.#field_name_ident.connect.to_string()),
-                    update_operation: UpdateOperation::Replace
-                }))
+                    relation_primary_key: String::from(self.#field_name_ident.connect.to_string())
+                })),
+                update_operation: UpdateOperation::Replace
             });
         };
     }

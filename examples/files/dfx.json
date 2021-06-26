@@ -1,8 +1,8 @@
 {
     "canisters": {
-        "frontend": {
+        "files": {
             "type": "assets",
-            "source": ["canisters/frontend/build"]
+            "source": ["canisters/files/build"]
         },
         "playground": {
             "type": "assets",
