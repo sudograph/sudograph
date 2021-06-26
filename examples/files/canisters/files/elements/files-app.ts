@@ -14,15 +14,11 @@ import {
     DownloadState
 } from '../types/index.d';
 import { GRAPHQL_CANISTER_ID } from '../utilities/environment';
-
-const {
-    query,
-    mutation
-} = sudograph({
-    canisterId: GRAPHQL_CANISTER_ID
-});
+import { AuthClient } from '@dfinity/auth-client';
+import { Identity } from '@dfinity/agent';
 
 type State = Readonly<{
+    identity: Identity | null;
     fileMetas: ReadonlyArray<FileMeta>;
     creatingFileMeta: boolean;
     uploadStates: {
@@ -31,13 +27,16 @@ type State = Readonly<{
     downloadStates: {
         [fileId: string]: DownloadState;
     };
+    sudograph: any; // TODO get type for this, prepare for set and unset
 }>;
 
 const InitialState: State = {
+    identity: null,
     fileMetas: [],
     creatingFileMeta: false,
     uploadStates: {},
-    downloadStates: {}
+    downloadStates: {},
+    sudograph: null
 };
 
 class FilesApp extends HTMLElement {
@@ -48,10 +47,25 @@ class FilesApp extends HTMLElement {
 
     async connectedCallback() {
         await this.fetchAndSetFileMetas();
+
+        const authClient = await AuthClient.create();
+
+        this.store.identity = authClient.getIdentity();
+
+        this.createAndSetSudographClient();
+    }
+
+    createAndSetSudographClient() {
+        const sudographObject = sudograph({
+            canisterId: GRAPHQL_CANISTER_ID,
+            identity: this.store.identity
+        });
+
+        this.store.sudograph = sudographObject;
     }
     
     async fetchAndSetFileMetas() {
-        this.store.fileMetas = await fetchFileMetas();
+        this.store.fileMetas = await fetchFileMetas(this.store.sudograph);
 
         this.store.fileMetas.forEach((fileMeta) => {
             this.store.uploadStates = {
@@ -92,7 +106,10 @@ class FilesApp extends HTMLElement {
             fileId,
             bytes,
             chunkInfos
-        } = await createFileMeta(file);
+        } = await createFileMeta(
+            this.store.sudograph,
+            file
+        );
 
         this.store.creatingFileMeta = false;
 
@@ -108,6 +125,7 @@ class FilesApp extends HTMLElement {
         };
 
         await uploadFile(
+            this.store.sudograph,
             fileId,
             bytes,
             chunkInfos,
@@ -150,6 +168,7 @@ class FilesApp extends HTMLElement {
         };
 
         const allFileBytesArray = await fetchAllFileBytes(
+            this.store.sudograph,
             fileMeta,
             this.downloadFileNotifier.bind(this)
         );
@@ -195,6 +214,17 @@ class FilesApp extends HTMLElement {
         };
     }
 
+    async login() {
+        const authClient = await AuthClient.create();
+
+        await authClient.login({
+            onSuccess: () => {
+                this.store.identity = authClient.getIdentity();
+                this.createAndSetSudographClient();
+            }
+        });
+    }
+
     render(state: State) {
         return html`
             <style>
@@ -208,6 +238,8 @@ class FilesApp extends HTMLElement {
             </style>
 
             <h1>Files</h1>
+
+            <button @click=${() => this.login()}>Login</button>
 
             <div>
                 <input
@@ -263,8 +295,9 @@ class FilesApp extends HTMLElement {
 
 window.customElements.define('files-app', FilesApp);
 
-async function fetchFileMetas(): Promise<ReadonlyArray<FileMeta>> {
-    const result = await query(gql`
+// TODO add type for query
+async function fetchFileMetas(sudograph: any): Promise<ReadonlyArray<FileMeta>> {
+    const result = await sudograph.query(gql`
         query {
             readFile {
                 id
@@ -280,12 +313,13 @@ async function fetchFileMetas(): Promise<ReadonlyArray<FileMeta>> {
 }
 
 async function fetchAllFileBytes(
+    sudograph: any,
     fileMeta: FileMeta,
     notifier: (fileId: string) => void,
     limit: number = 1
 ): Promise<ReadonlyArray<number>> {
     const promises = new Array(fileMeta.numChunks).fill(0).map(async (_, index) => {   
-        const result = await query(gql`
+        const result = await sudograph.query(gql`
             query (
                 $fileId: ID!
                 $offset: Int!
@@ -327,6 +361,7 @@ async function fetchAllFileBytes(
 }
 
 async function createFileMeta(
+    sudograph: any,
     file: File,
     limit: number = 500000 // TODO make a global setting for this that the user can configure
 ): Promise<{
@@ -343,6 +378,7 @@ async function createFileMeta(
     );
 
     const fileId = await createFile(
+        sudograph,
         new Date(),
         file.name,
         chunkInfos.length
@@ -383,11 +419,12 @@ function getChunkInfos(
 }
 
 async function createFile(
+    sudograph: any,
     createdAt: Date,
     name: string,
     numChunks: number
 ): Promise<string> {
-    const createFileResult = await mutation(gql`
+    const createFileResult = await sudograph.mutation(gql`
         mutation (
             $createdAt: Date!
             $fileType: FileType!
@@ -417,6 +454,7 @@ async function createFile(
 }
 
 async function uploadFile(
+    sudograph: any,
     fileId: string,
     bytes: Uint8Array,
     chunkInfos: ReadonlyArray<ChunkInfo>,
@@ -426,6 +464,7 @@ async function uploadFile(
         const slice = Array.from(bytes.slice(chunkInfo.startByte, chunkInfo.endByte + 1));
 
         await createFileChunk(
+            sudograph,
             slice,
             chunkInfo.endByte,
             fileId,
@@ -439,12 +478,13 @@ async function uploadFile(
 }
 
 async function createFileChunk(
+    sudograph: any,
     bytes: ReadonlyArray<number>,
     endByte: number,
     fileId: string,
     startByte: number
 ): Promise<void> {
-    const createFileChunkResult = await mutation(gql`
+    const createFileChunkResult = await sudograph.mutation(gql`
         mutation (
             $bytes: Blob!
             $endByte: Int!
