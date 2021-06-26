@@ -30,7 +30,9 @@ export function sudograph(options: Options) {
             variables: Variables = {}
         ) => {
             // TODO if we can get rid of the need for the fetchRootKey call, then we can move the agent creation up into the closure
-            const agent = new HttpAgent();
+            const agent = new HttpAgent({
+                identity: options.identity
+            });
             await agent.fetchRootKey(); // TODO this should be removed in production
             const graphqlActor = Actor.createActor(idlFactory, {
                 agent,
@@ -50,7 +52,9 @@ export function sudograph(options: Options) {
             variables: Variables = {}
         ) => {
             // TODO if we can get rid of the need for the fetchRootKey call, then we can move the agent creation up into the closure
-            const agent = new HttpAgent();
+            const agent = new HttpAgent({
+                identity: options.identity
+            });
             await agent.fetchRootKey(); // TODO this should be removed in production
             const graphqlActor = Actor.createActor(idlFactory, {
                 agent,

@@ -28,6 +28,8 @@ use crate::{
 };
 use std::error::Error;
 
+use ic_cdk;
+
 const ERROR_PREFIX: &str = "sudodb::read";
 
 pub fn read(
@@ -83,8 +85,19 @@ pub fn find_field_value_stores_for_inputs(
         }));
     }
 
-    let ordered_field_value_stores = order_field_value_stores(
+    let matching_field_value_stores = search_field_value_stores(
+        object_type_store,
         field_values_store_iterator,
+        field_types_store,
+        inputs,
+        limit_option,
+        offset_option
+    )?;
+
+    // TODO it would be really nice to sort without needing a mutable reference
+    // TODO really consider the proper order of searching, ordering, limiting, and offsetting
+    let ordered_field_value_stores = order_field_value_stores(
+        &mut matching_field_value_stores.iter(),
         order_inputs
     );
 
@@ -96,16 +109,48 @@ pub fn find_field_value_stores_for_inputs(
     // TODO we will need to first order the keys, then apply the offset, then apply the limit
     // TODO right now it is inneficient, but fine for early prototyping
 
-    let matching_field_value_stores = search_field_value_stores(
-        object_type_store,
+    let offset_field_value_stores = offset_field_value_stores(
         &ordered_field_value_stores,
-        field_types_store,
-        inputs,
-        limit_option,
         offset_option
-    )?;
+    );
 
-    return Ok(matching_field_value_stores);
+    // TODO there is so much inneficiency going on here, it's crazy
+    let limited_field_value_stores = limit_field_value_stores(
+        &offset_field_value_stores,
+        limit_option
+    );
+
+    return Ok(limited_field_value_stores);
+}
+
+fn offset_field_value_stores(
+    field_value_stores: &Vec<FieldValueStore>,
+    offset_option: Option<u32>
+) -> Vec<FieldValueStore> {
+    match offset_option {
+        Some(offset) => {
+            // TODO try to have more graceful errors for if these go out of bounds
+            return field_value_stores[(offset as usize)..].to_vec();
+        },
+        None => {
+            return field_value_stores.to_vec();
+        }
+    };
+}
+
+fn limit_field_value_stores(
+    field_value_stores: &Vec<FieldValueStore>,
+    limit_option: Option<u32>
+) -> Vec<FieldValueStore> {
+    match limit_option {
+        Some(limit) => {
+            // TODO try to have more graceful errors for if these go out of bounds
+            return field_value_stores[..(limit as usize)].to_vec();
+        },
+        None => {
+            return field_value_stores.to_vec();
+        }
+    };
 }
 
 fn order_field_value_stores(
@@ -138,26 +183,19 @@ fn order_field_value_stores(
 
 fn search_field_value_stores(
     object_type_store: &ObjectTypeStore,
-    field_value_stores: &Vec<FieldValueStore>,
+    // TODO not sure if we want to work with an iterator here a vector
+    field_value_stores: &mut Iterator<Item = &FieldValueStore>, // TODO why does this have to be borrowed as mutable?
+    // field_value_stores: &Vec<FieldValueStore>,
     field_types_store: &FieldTypesStore,
     inputs: &Vec<ReadInput>,
     limit_option: Option<u32>,
     offset_option: Option<u32>
 ) -> Result<Vec<FieldValueStore>, Box<dyn Error>> {
+    // ic_cdk::println!("{:?}", limit_option);
+    // ic_cdk::println!("{:?}", offset_option);
+
     let matching_field_value_stores = field_value_stores.into_iter().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
 
-        if let Some(offset) = offset_option {
-            if (index as u32) < offset {
-                return Ok(result);
-            }
-        }
-
-        if let Some(limit) = limit_option {
-            // TODO is this conversion okay?
-            if index as u32 >= limit {
-                return Ok(result);
-            }
-        }
 
         let inputs_match: bool = field_value_store_matches_inputs(
             object_type_store,
