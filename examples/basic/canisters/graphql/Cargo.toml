@@ -8,4 +8,4 @@ path = "src/graphql.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-sudograph = { version = "0.3.0-beta.8", path = "../../../../../sudograph" }
+sudograph = { version = "0.3.0-beta.9", path = "../../../../../sudograph" }
