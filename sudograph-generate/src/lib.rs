@@ -320,7 +320,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // Default traits are needed so that serde has default values when the selection set
         // Does not provide all required values
         #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
-        #[candid_path("::sudograph::ic_cdk::export::candid")]
+        // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct ID(String);
 
@@ -333,14 +333,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         scalar!(ID);
 
         #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
-        #[candid_path("::sudograph::ic_cdk::export::candid")]
+        // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct Date(String);
 
         scalar!(Date);
 
         #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
-        #[candid_path("::sudograph::ic_cdk::export::candid")]
+        // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct Blob(Vec<u8>);
 

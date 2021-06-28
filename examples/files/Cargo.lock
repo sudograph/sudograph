@@ -240,7 +240,8 @@ checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 [[package]]
 name = "candid"
 version = "0.6.21"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#943cd036553759f3deba063197973af9c86ce9ab"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65f05b872d010281c905c4e6ff2079c1341d1e527e05f3bfab88d49ea3269def"
 dependencies = [
  "byteorder",
  "candid_derive",
@@ -264,7 +265,8 @@ dependencies = [
 [[package]]
 name = "candid_derive"
 version = "0.4.4"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#943cd036553759f3deba063197973af9c86ce9ab"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d7232a5dd836d83ae9ffd79061b42d729afab6f11bfaba7dc2a82575b686ae2"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -563,6 +565,7 @@ dependencies = [
 name = "graphql"
 version = "0.0.0"
 dependencies = [
+ "ic-cdk 0.3.0",
  "sudograph",
 ]
 
@@ -584,9 +587,9 @@ checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
@@ -655,9 +658,9 @@ dependencies = [
 
 [[package]]
 name = "ic-types"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ceb8f8b743b686f4afb383b5b66ac80a695f7e0dc4995841efe271cd668cc208"
+checksum = "94dd8ec75019bc7159efe6ca2de5392e14a8e82c02ec6dae6d1b32af5337acd1"
 dependencies = [
  "base32",
  "crc32fast",
@@ -971,9 +974,9 @@ checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc0e1f259c92177c30a4c9d177246edd0a3568b25756a977d0632cf8fa37e905"
+checksum = "8d31d11c69a6b52a174b42bdc0c30e5e11670f90788b2c471c31c1d17d449443"
 
 [[package]]
 name = "pin-utils"

@@ -44,9 +44,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "2.9.2"
+version = "2.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c1ad5d70ac93b1e60fdc67ca41e5b99e739d0333a66056ba5356e9ba5574d9"
+checksum = "0fb8eb6e6daf83bbba00d062ad416322c37861094ab155ccdf27cc70c343d4ee"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -70,9 +70,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "2.9.2"
+version = "2.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca12f51cb40f5dcd729e91a2fb47e33ba72abc18eed00f4c004e72005fa4db97"
+checksum = "e2a5fd43eb48a604f23bae02bd6dd00a73a871b80766a821aeed465f657578d5"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -86,9 +86,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "2.9.2"
+version = "2.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23be2aa22ef357403fa4e301f9d94ea82a3e7ef31f685d731b023772e1288181"
+checksum = "3241d9ebd71264f89df47fef8ac705cccd94f53fb8590949991618af43865b99"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -99,9 +99,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "2.9.2"
+version = "2.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "958f7d6fea125c8af9e41f16f7102a321998649688e6eb95e1e6376d4580ae34"
+checksum = "d7ad19d4f8fb91afc63360ce00f51f746c65347c89e0d790c48dd3a518b302d2"
 dependencies = [
  "serde",
  "serde_json",
@@ -244,31 +244,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65f05b872d010281c905c4e6ff2079c1341d1e527e05f3bfab88d49ea3269def"
 dependencies = [
  "byteorder",
- "candid_derive 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "codespan-reporting",
- "hex",
- "ic-types",
- "lalrpop",
- "lalrpop-util",
- "leb128",
- "logos",
- "num-bigint",
- "num-traits",
- "num_enum",
- "paste",
- "pretty",
- "serde",
- "serde_bytes",
- "thiserror",
-]
-
-[[package]]
-name = "candid"
-version = "0.6.21"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#c8ce1c212af2b651b7f9506f61fab50e54c20cda"
-dependencies = [
- "byteorder",
- "candid_derive 0.4.4 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
+ "candid_derive",
  "codespan-reporting",
  "hex",
  "ic-types",
@@ -291,17 +267,6 @@ name = "candid_derive"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d7232a5dd836d83ae9ffd79061b42d729afab6f11bfaba7dc2a82575b686ae2"
-dependencies = [
- "lazy_static",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "candid_derive"
-version = "0.4.4"
-source = "git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute#c8ce1c212af2b651b7f9506f61fab50e54c20cda"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -365,9 +330,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "cpufeatures"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed00c67cb5d0a7d64a44f6ad2668db7e7530311dd53ea79bcd4fb022c64911c8"
+checksum = "66c99696f6c9dd7f35d486b9d04d7e6e202aa3e8c40d553f2fdf5e7e0c6a71ef"
 dependencies = [
  "libc",
 ]
@@ -600,6 +565,7 @@ dependencies = [
 name = "graphql"
 version = "0.0.0"
 dependencies = [
+ "ic-cdk 0.3.0",
  "sudograph",
 ]
 
@@ -621,9 +587,9 @@ checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
+checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
@@ -657,7 +623,7 @@ version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae261fe701ff53bf985840749a67da01beb89c8bdb7a7d8fedbd772c72556ea8"
 dependencies = [
- "candid 0.6.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "candid",
  "cfg-if 0.1.10",
  "ic-types",
  "serde",
@@ -669,18 +635,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f385e97263deb4469938ba1bbbb0a0259294132ca2523e20a971225571d5485"
 dependencies = [
- "candid 0.6.21 (registry+https://github.com/rust-lang/crates.io-index)",
- "cfg-if 0.1.10",
- "ic-types",
- "serde",
-]
-
-[[package]]
-name = "ic-cdk"
-version = "0.3.0"
-source = "git+https://github.com/lastmjs/cdk-rs?branch=sudograph#aa54598edc12acb18a65734afe4e9155e0d51dd8"
-dependencies = [
- "candid 0.6.21 (git+https://github.com/lastmjs/candid?branch=candid-path-helper-attribute)",
+ "candid",
  "cfg-if 0.1.10",
  "ic-types",
  "serde",
@@ -692,8 +647,8 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5233d71766be2c74f3433a51b8d4a584f8b416a87a961ce0e579110bc30aa683"
 dependencies = [
- "candid 0.6.21 (registry+https://github.com/rust-lang/crates.io-index)",
- "ic-cdk 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "candid",
+ "ic-cdk 0.3.0",
  "proc-macro2",
  "quote",
  "serde",
@@ -703,9 +658,9 @@ dependencies = [
 
 [[package]]
 name = "ic-types"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ceb8f8b743b686f4afb383b5b66ac80a695f7e0dc4995841efe271cd668cc208"
+checksum = "94dd8ec75019bc7159efe6ca2de5392e14a8e82c02ec6dae6d1b32af5337acd1"
 dependencies = [
  "base32",
  "crc32fast",
@@ -793,9 +748,9 @@ checksum = "3576a87f2ba00f6f106fdfcd16db1d698d648a26ad8e0573cad8537c3c362d2a"
 
 [[package]]
 name = "libc"
-version = "0.2.96"
+version = "0.2.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5600b4e6efc5421841a2138a6b082e07fe12f9aaa12783d50e5d13325b26b4fc"
+checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
 
 [[package]]
 name = "log"
@@ -927,9 +882,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.7.2"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af8b08b04175473088b46763e51ee54da5f9a164bc162f615b91bc179dbf15a3"
+checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
 
 [[package]]
 name = "opaque-debug"
@@ -1019,9 +974,9 @@ checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc0e1f259c92177c30a4c9d177246edd0a3568b25756a977d0632cf8fa37e905"
+checksum = "8d31d11c69a6b52a174b42bdc0c30e5e11670f90788b2c471c31c1d17d449443"
 
 [[package]]
 name = "pin-utils"
@@ -1090,9 +1045,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ef9e7e66b4468674bfcb0c81af8b7fa0bb154fa9f28eb840da5c447baeb8d7e"
+checksum = "2e7573632e6454cf6b99d7aac4ccca54be06da05aca2ef7423d22d27d4d4bcd8"
 dependencies = [
  "libc",
  "rand_chacha",
@@ -1112,27 +1067,27 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34cf66eb183df1c5876e2dcf6b13d57340741e8dc255b48e40a26de954d06ae7"
+checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom",
 ]
 
 [[package]]
 name = "rand_hc"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3190ef7066a446f2e7f42e239d161e905420ccab01eb967c9eb27d21b2322a73"
+checksum = "d51e9f596de227fda2ea6c84607f5558e196eeaf43c986b724ba4fb8fdf497e7"
 dependencies = [
  "rand_core",
 ]
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "742739e41cd49414de871ea5e549afb7e2a3ac77b589bcbebe8c82fab37147fc"
+checksum = "5ab49abadf3f9e1c4bc499e8845e152ad87d2ad2d30371841171169e9d75feee"
 dependencies = [
  "bitflags",
 ]
@@ -1275,9 +1230,9 @@ checksum = "f173ac3d1a7e3b28003f40de0b5ce7fe2710f9b9dc3fc38664cebee46b3b6527"
 
 [[package]]
 name = "spin"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b87bbf98cb81332a56c1ee8929845836f85e8ddd693157c30d76660196014478"
+checksum = "f5fdd7196b4ae35a111c6dc97f9cc152ca3ea8ad744f7cb46a9f27b3ef8f2f54"
 
 [[package]]
 name = "static_assertions"
@@ -1305,7 +1260,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "sudodb"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.9"
 dependencies = [
  "base32",
  "chrono",
@@ -1316,12 +1271,12 @@ dependencies = [
 
 [[package]]
 name = "sudograph"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.9"
 dependencies = [
  "async-graphql",
  "getrandom",
  "graphql-parser",
- "ic-cdk 0.3.0 (git+https://github.com/lastmjs/cdk-rs?branch=sudograph)",
+ "ic-cdk 0.3.0",
  "ic-cdk-macros",
  "rand",
  "serde",
@@ -1332,7 +1287,7 @@ dependencies = [
 
 [[package]]
 name = "sudograph-generate"
-version = "0.3.0-beta.5"
+version = "0.3.0-beta.9"
 dependencies = [
  "graphql-parser",
  "proc-macro2",
