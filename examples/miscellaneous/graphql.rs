@@ -14,3 +14,10 @@
 
 //     ic_cdk::print(date.to_string());
 // }
+
+#[query]
+fn whoami() -> String {
+    let principal = ic_cdk::caller();
+
+    return principal.to_text();
+}

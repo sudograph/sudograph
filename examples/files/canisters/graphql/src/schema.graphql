@@ -1,3 +1,7 @@
+type SudographSettings {
+    exportGeneratedMutationFunction: false
+}
+
 type File {
     id: ID!
     chunks: [FileChunk!]! @relation(name: "File:chunks::FileChunk:file")

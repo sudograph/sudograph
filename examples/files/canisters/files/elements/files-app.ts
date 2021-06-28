@@ -18,7 +18,7 @@ import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
 
 type State = Readonly<{
-    identity: Identity | null;
+    identity: Identity | undefined;
     fileMetas: ReadonlyArray<FileMeta>;
     creatingFileMeta: boolean;
     uploadStates: {
@@ -31,7 +31,7 @@ type State = Readonly<{
 }>;
 
 const InitialState: State = {
-    identity: null,
+    identity: undefined,
     fileMetas: [],
     creatingFileMeta: false,
     uploadStates: {},
@@ -46,19 +46,22 @@ class FilesApp extends HTMLElement {
     store = createObjectStore(InitialState, (state: State) => litRender(this.render(state), this.shadow), this);
 
     async connectedCallback() {
-        await this.fetchAndSetFileMetas();
-
         const authClient = await AuthClient.create();
-
-        this.store.identity = authClient.getIdentity();
+        
+        if (await authClient.isAuthenticated()) {
+            this.store.identity = authClient.getIdentity();
+        }
 
         this.createAndSetSudographClient();
+
+        await this.fetchAndSetFileMetas();
     }
 
     createAndSetSudographClient() {
         const sudographObject = sudograph({
             canisterId: GRAPHQL_CANISTER_ID,
-            identity: this.store.identity
+            identity: this.store.identity,
+            mutationFunctionName: 'graphql_mutation_custom'
         });
 
         this.store.sudograph = sudographObject;
@@ -239,7 +242,14 @@ class FilesApp extends HTMLElement {
 
             <h1>Files</h1>
 
-            <button @click=${() => this.login()}>Login</button>
+            <br>
+
+            <button
+                ?hidden=${state.identity !== undefined}
+                @click=${() => this.login()}
+            >
+                Login
+            </button>
 
             <div>
                 <input
@@ -248,6 +258,7 @@ class FilesApp extends HTMLElement {
                     .disabled=${state.creatingFileMeta === true}
                 >
                 <span ?hidden=${state.creatingFileMeta === false}>Saving...</span>
+                <div>* only lastmjs can upload files, this is a demo. You can try but it will fail</div>
             </div>
 
             <br>
@@ -335,6 +346,7 @@ async function fetchAllFileBytes(
                     startByte: ASC
                 }) {
                     id
+                    bytes
                     startByte
                     endByte
                 }
@@ -363,7 +375,7 @@ async function fetchAllFileBytes(
 async function createFileMeta(
     sudograph: any,
     file: File,
-    limit: number = 500000 // TODO make a global setting for this that the user can configure
+    limit: number = 250000 // TODO make a global setting for this that the user can configure
 ): Promise<{
     fileId: string;
     bytes: Uint8Array,
@@ -427,7 +439,6 @@ async function createFile(
     const createFileResult = await sudograph.mutation(gql`
         mutation (
             $createdAt: Date!
-            $fileType: FileType!
             $name: String!
             $numChunks: Int!
         ) {
