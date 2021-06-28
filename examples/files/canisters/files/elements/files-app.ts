@@ -244,21 +244,22 @@ class FilesApp extends HTMLElement {
 
             <br>
 
-            <button
-                ?hidden=${state.identity !== undefined}
-                @click=${() => this.login()}
-            >
-                Login
-            </button>
+            <div ?hidden=${state.identity !== undefined}>
+                <button
+                    @click=${() => this.login()}
+                >
+                    Login
+                </button>
+                <div>* this is a demo and only lastmjs can upload files</div>
+            </div>
 
-            <div>
+            <div ?hidden=${state.identity === undefined}>
                 <input
                     type="file"
                     @change=${(e: InputEvent) => this.uploadFileHandler(e)}
                     .disabled=${state.creatingFileMeta === true}
                 >
                 <span ?hidden=${state.creatingFileMeta === false}>Saving...</span>
-                <div>* only lastmjs can upload files, this is a demo. You can try but it will fail</div>
             </div>
 
             <br>
