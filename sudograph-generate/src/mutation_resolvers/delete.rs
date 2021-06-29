@@ -35,7 +35,8 @@ pub fn generate_delete_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                 let delete_result = delete(
                     object_store,
                     #object_type_name,
-                    &input.id.to_string(),
+                    if let Some(id) = input.id { Some(id.0) } else { None },
+                    if let Some(ids) = input.ids { Some(ids.into_iter().map(|id| { id.0 }).collect()) } else { None },
                     &convert_selection_field_to_selection_set(
                         #object_type_name,
                         context.field(),

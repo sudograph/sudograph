@@ -15,7 +15,8 @@ pub fn generate_delete_input_rust_structs(object_types: &Vec<ObjectType<String>>
         return quote! {
             #[derive(InputObject)]
             struct #delete_input_name {
-                id: ID
+                id: Option<ID>,
+                ids: Option<Vec<ID>>
             }
         };
     }).collect();
