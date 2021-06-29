@@ -123,6 +123,7 @@ pub fn find_field_value_stores_for_inputs(
     return Ok(limited_field_value_stores);
 }
 
+// TODO figure out what to do when offset goes out of bounds, error or should it just return the last thing?
 fn offset_field_value_stores(
     field_value_stores: &Vec<FieldValueStore>,
     offset_option: Option<u32>
@@ -144,7 +145,10 @@ fn limit_field_value_stores(
 ) -> Vec<FieldValueStore> {
     match limit_option {
         Some(limit) => {
-            // TODO try to have more graceful errors for if these go out of bounds
+            if (limit as usize) > field_value_stores.len() {
+                return field_value_stores.to_vec();
+            }
+
             return field_value_stores[..(limit as usize)].to_vec();
         },
         None => {
