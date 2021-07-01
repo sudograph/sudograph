@@ -60,8 +60,10 @@ cd examples/basic/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../frontend
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../../../..
 
 echo -e "example: files"
@@ -70,16 +72,19 @@ cd examples/files/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../files
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../../../..
 
 echo -e "example: intermediate"
 
-cd examples/basic/canisters/graphql
+cd examples/intermediate/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../../../..
 
 echo -e "example: motoko-custom-resolvers"
@@ -88,6 +93,7 @@ cd examples/motoko-custom-resolvers/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../../../..
 
 echo -e "example: rust-custom-resolvers"
@@ -96,6 +102,7 @@ cd examples/rust-custom-resolvers/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
+npm install
 cd ../../../..
 
 echo -e "canister: The Sudograph Book"
