@@ -8,14 +8,14 @@ An example schema might look like this:
 type User {
     id: ID!
     username: String!
-    blogPosts: [BlogPost!]! @relation(name: "User:blogPosts and BlogPost:author")
+    blogPosts: [BlogPost!]! @relation(name: "User:blogPosts::BlogPost:author")
 }
 
 type BlogPost {
     id: ID!
     publishedAt: Date
     title: String!
-    author: User! @relation(name: "User:blogPosts and BlogPost:author")
+    author: User! @relation(name: "User:blogPosts::BlogPost:author")
 }
 ```
 
@@ -28,4 +28,5 @@ The schema is an incredibly powerful yet simple tool for defining the complex da
 * [Relations](./schema-relations.md)
 * [Custom scalars](./schema-custom-scalars.md)
 * [Custom resolvers](./schema-custom-resolvers.md)
+* [Custom directives](./schema-custom-directives.md)
 * [Sudograph settings](./schema-sudograph-settings.md)

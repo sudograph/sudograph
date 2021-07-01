@@ -13,3 +13,5 @@ wasm64
 multiple memories
 
 infinite virtual memory
+
+You now have everything you need to deploy a simple `graphql canister`. Boot up a node with `dfx start` and then deploy with `dfx deploy`. It's important to note that Sudograph currently only works within a single canister. You can deploy as many Sudograph canisters as you'd like, with as many schemas as you'd like, but the generated querying and mutations will only know about data that has been created within the same canister. Querying between canisters would require you to write your own custom code. Sudograph will hopefully address scaling in the future so that you only ever have to deal with thinking about one schema per application.

@@ -1,6 +1,6 @@
 # Relations
 
-Relations allow you to describe the relationships between object types and their fields. Sudograph has a variety of relation capabilities:
+Relations allow you to describe the relationships between object types and their fields. Sudograph has a variety of relation capabilities. Please note that the `name` argument of the `@relation` directive is just an arbitrary string, there is no DSL required. The only requirement is that the `name` argument be the same on both sides of the relation.
 
 ## One-to-one relations
 
@@ -47,12 +47,12 @@ If you care about retrieving relation information from both sides of the relatio
 ```graphql
 type Foot {
     id: ID!
-    shoe: Shoe @relation(name: "Foot:shoe and Shoe:foot")
+    shoe: Shoe @relation(name: "Foot:shoe::Shoe:foot")
 }
 
 type Shoe {
     id: ID!
-    foot: Foot @relation(name: "Foot:shoe and Shoe:foot")
+    foot: Foot @relation(name: "Foot:shoe::Shoe:foot")
 }
 ```
 
@@ -108,14 +108,14 @@ If you care about retrieving relation information from both sides of the relatio
 type Monkey {
     id: ID!
     name: String!
-    bananas: [Banana!]! @relation(name: "Monkey:bananas and Banana:monkey")
+    bananas: [Banana!]! @relation(name: "Monkey:bananas::Banana:monkey")
 }
 
 type Banana {
     id: ID!
     color: String!
     size: Int!
-    monkey: Monkey @relation(name: "Monkey:bananas and Banana:monkey")
+    monkey: Monkey @relation(name: "Monkey:bananas::Banana:monkey")
 }
 ```
 
@@ -126,12 +126,12 @@ Many-to-many relations allow you to connect multiple objects with multiple other
 ```graphql
 type Author {
     id: ID!
-    documents: [Document!]! @relation(name: "Author:documents and Document:authors")
+    documents: [Document!]! @relation(name: "Author:documents::Document:authors")
 }
 
 type Document {
     id: ID!
     text: String!
-    authors: [Author!]! @relation(name: "Author:documents and Document:authors")
+    authors: [Author!]! @relation(name: "Author:documents::Document:authors")
 }
 ```

@@ -8,14 +8,14 @@ You could model a user with blog posts like so:
 type User {
     id: ID!
     username: String!
-    blogPosts: [BlogPost!]! @relation(name: "User:blogPosts and BlogPost:author")
+    blogPosts: [BlogPost!]! @relation(name: "User:blogPosts::BlogPost:author")
 }
 
 type BlogPost {
     id: ID!
     publishedAt: Date
     title: String!
-    author: User! @relation(name: "User:blogPosts and BlogPost:author")
+    author: User! @relation(name: "User:blogPosts::BlogPost:author")
 }
 ```
 
@@ -26,11 +26,11 @@ type Person {
     id: ID!
     firstName: String!
     lastName: String!
-    father: Person @relation(name: "Person:father and Person:children")
-    mother: Person @relation(name: "Person:mother and Person:children")
+    father: Person @relation(name: "Person:father::Person:children")
+    mother: Person @relation(name: "Person:mother::Person:children")
     children: [Person!]!
-        @relation(name: "Person:father and Person:children")
-        @relation(name: "Person:mother and Person:children")
+        @relation(name: "Person:father::Person:children")
+        @relation(name: "Person:mother::Person:children")
 }
 ```
 
@@ -52,7 +52,7 @@ type Block {
     gasLimit: String!
     gasUsed: String!
     timestamp: Date!
-    transactions: [Transaction!]! @relation(name: "Block:transactions and Transaction:block")
+    transactions: [Transaction!]! @relation(name: "Block:transactions::Transaction:block")
 }
 
 type Transaction {
@@ -65,7 +65,7 @@ type Transaction {
     gasPrice: String!
     gas: String!
     inputData: String!
-    block: Block! @relation(name: "Block:transactions and Transaction:block")
+    block: Block! @relation(name: "Block:transactions::Transaction:block")
     gasUsed: String!
 }
 ```
