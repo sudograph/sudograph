@@ -7,8 +7,20 @@ import {
 } from './sudograph';
 
 class SudoPlayground extends HTMLElement {
-    get canisterId() {
-        return this.getAttribute('canister-id');
+    get canisterIdLocal() {
+        return this.getAttribute('canister-id-local');
+    }
+
+    get canisterIdIc() {
+        return this.getAttribute('canister-id-ic');
+    }
+
+    get originLocal() {
+        return this.getAttribute('origin-local');
+    }
+
+    get originIc() {
+        return this.getAttribute('origin-ic');
     }
 
     get queryFunctionName() {
@@ -37,11 +49,16 @@ class SudoPlayground extends HTMLElement {
         // TODO I have tried solving this multiple times, if you want to try again here's a good issue to start with: https://github.com/graphql/graphiql/issues/770
         // (window as any).g.refresh();
         setTimeout(() => {
+            const environment = getEnvironment(
+                this.originLocal,
+                this.originIc
+            );
+
             ReactDOM.render(
                 React.createElement(
                     GraphiQL, {
                         fetcher: graphQLFetcher(
-                            this.canisterId,
+                            environment === 'ic' ? this.canisterIdIc : this.canisterIdLocal,
                             this.queryFunctionName,
                             this.mutationFunctionName
                         )
@@ -97,4 +114,23 @@ function getQueryOrMutation(queryString) {
     }
 
     return (firstDefinition as any).operation === 'query' ? 'QUERY' : 'MUTATION';
+}
+
+function getEnvironment(
+    originLocal: string | null,
+    originIc: string | null
+): 'ic' | 'local' {
+    if (
+        window.location.origin === originLocal ||
+        window.location.origin.endsWith('localhost:8000')
+    ) {
+        return 'local';
+    }
+
+    if (
+        window.location.origin === originIc ||
+        window.location.origin.endsWith('ic0.app')
+    ) {
+        return 'ic';
+    }
 }
