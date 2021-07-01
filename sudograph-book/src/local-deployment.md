@@ -36,6 +36,10 @@ dfx canister call graphql graphql_query '("query { readUser { id } }", "{}")'
 dfx canister call graphql graphql_mutation '("mutation { createUser(input: { username: \"lastmjs\" }) { id } }", "{}")'
 ```
 
+## Sudograph Client
+
+Still needs to be documented.
+
 ## Rust canister
 
 If you want to call into the `graphql canister` from another Rust canister:

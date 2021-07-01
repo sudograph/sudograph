@@ -9,6 +9,7 @@
 - [IC deployment](./ic-deployment.md)
 - [Wasm binary optimization](./wasm-binary-optimization.md)
 - [Sudograph Client](./sudograph-client.md)
+- [agent-js](./agent-js.md)
 - [Schema](./schema.md)
   - [Scalars](./schema-scalars.md)
   - [Objects](./schema-objects.md)
