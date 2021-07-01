@@ -1,6 +1,10 @@
 # Relations
 
-Relations allow you to describe the relationships between object types and their fields. Sudograph has a variety of relation capabilities. Please note that the `name` argument of the `@relation` directive is just an arbitrary string, there is no DSL required. The only requirement is that the `name` argument be the same on both sides of the relation.
+Relations allow you to describe the relationships between object types and their fields. Sudograph has a variety of relation capabilities.
+
+Please note that the `name` argument of the `@relation` directive is just an arbitrary string, there is no DSL required. The only requirement is that the `name` argument be the same on both sides of the relation.
+
+Also note that you can only have one `@relation` directive per field for now.
 
 ## One-to-one relations
 

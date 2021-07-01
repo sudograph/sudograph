@@ -166,13 +166,92 @@
                         <h1 id="scalars"><a class="header" href="#scalars">Scalars</a></h1>
 <p>Scalar types are not divisible, they have no fields of their own. The scalar types automatically available to you in a Sudograph schema are:</p>
 <ul>
+<li><a href="#blob">Blob</a></li>
 <li><a href="#boolean">Boolean</a></li>
 <li><a href="#date">Date</a></li>
 <li><a href="#float">Float</a></li>
 <li><a href="#id">ID</a></li>
 <li><a href="#int">Int</a></li>
+<li><a href="#json">JSON</a></li>
 <li><a href="#string">String</a></li>
 </ul>
+<h2 id="blob"><a class="header" href="#blob">Blob</a></h2>
+<p>A <code>Blob</code> value maps to a Rust <code>Vec&lt;u8&gt;</code>.</p>
+<pre><code class="language-graphql">type File {
+    id: ID!
+    contents: Blob!
+}
+</code></pre>
+<p>Query or mutation inputs of type <code>Blob</code> should be strings or arrays of numbers that can be converted into Rust u8 numbers. <code>Blob</code> types in selection sets are always returned as JSON arrays of numbers.</p>
+<p>An example in JavaScript of inputting a string for a <code>Blob</code>:</p>
+<pre><code class="language-javascript">async function createSmallFile() {
+    const result = await mutation(gql`
+        mutation ($contents: Blob!) {
+            createFile(input: {
+                contents: $contents
+            }) {
+                contents
+            }
+        }
+    `, {
+        contents: 'hello'
+    });
+
+    const file = result.data.createFile;
+
+    console.log(file);
+}
+</code></pre>
+<p>The logged contents of the file would be this: <code>[104, 101, 108, 108, 111]</code>.</p>
+<p>You can convert the array of numbers back to a string like so:</p>
+<pre><code class="language-javascript">[104, 101, 108, 108, 111].map(x =&gt; String.fromCharCode(x)).join('')
+</code></pre>
+<p>An example in JavaScript of inputting an array of numbers for a <code>Blob</code>:</p>
+<pre><code class="language-javascript">async function createSmallFile() {
+    const result = await mutation(gql`
+        mutation ($contents: Blob!) {
+            createFile(input: {
+                contents: $contents
+            }) {
+                contents
+            }
+        }
+    `, {
+        contents: 'hello'.split('').map(x =&gt; x.charCodeAt())
+    });
+
+    const file = result.data.createFile;
+
+    console.log(file);
+}
+</code></pre>
+<p>The logged contents of the file would be this: <code>[104, 101, 108, 108, 111]</code>.</p>
+<p>You can convert the array of numbers back to a string like so:</p>
+<pre><code class="language-javascript">[104, 101, 108, 108, 111].map(x =&gt; String.fromCharCode(x)).join('')
+</code></pre>
+<p><code>Blob</code> types in selection sets can use <code>offset</code> and <code>limit</code> to grab specific bytes:</p>
+<pre><code class="language-javascript">async function createSmallFile() {
+    const result = await mutation(gql`
+        mutation ($contents: Blob!) {
+            createFile(input: {
+                contents: $contents
+            }) {
+                contents(offset: 1, limit: 3)
+            }
+        }
+    `, {
+        contents: 'hello'
+    });
+
+    const file = result.data.createFile;
+
+    console.log(file);
+}
+</code></pre>
+<p>The logged contents of the file would be this: <code>[101, 108, 108]</code>.</p>
+<p>You can convert the array of numbers back to a string like so:</p>
+<pre><code class="language-javascript">[101, 108, 108].map(x =&gt; String.fromCharCode(x)).join('')
+</code></pre>
 <h2 id="boolean"><a class="header" href="#boolean">Boolean</a></h2>
 <p>A <code>Boolean</code> value maps to a Rust <code>bool</code>.</p>
 <pre><code class="language-graphql">type User {
@@ -185,6 +264,30 @@
 <pre><code class="language-graphql">type User {
     id: ID!
     dateOfBirth: Date!
+}
+</code></pre>
+<p>Query or mutation inputs of type <code>Date</code> should be strings that can be parsed by <a href="https://docs.rs/chrono/0.4.19/chrono/struct.DateTime.html">chrono::DateTime</a>. For example, in JavaScript <code>new Date().toISOString()</code> would be an acceptable format.</p>
+<p>An example in JavaScript:</p>
+<pre><code class="language-javascript">async function getUsersInInterval() {
+    const result = await query(gql`
+        query ($startDate: Date!, $endDate: Date!) {
+            readUser(search: {
+                dateOfBirth: {
+                    gte: $startDate
+                    lt: $endDate
+                }
+            }) {
+                id
+            }
+        }
+    `, {
+        startDate: new Date('2021-07-01').toISOString(),
+        endDate: new Date('2021-07-02').toISOString()
+    });
+
+    const users = result.data.readUser;
+
+    return users;
 }
 </code></pre>
 <h2 id="float"><a class="header" href="#float">Float</a></h2>
@@ -207,6 +310,14 @@
     age: Int!
 }
 </code></pre>
+<h2 id="json"><a class="header" href="#json">JSON</a></h2>
+<p>A <code>JSON</code> value maps to a Rust <code>String</code>.</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    meta: JSON!
+}
+</code></pre>
+<p>Query or mutation inputs of type <code>JSON</code> should be any valid JSON value. <code>JSON</code> types in selection sets are always returned as JSON values.</p>
 <h2 id="string"><a class="header" href="#string">String</a></h2>
 <p>A <code>String</code> value maps to a Rust <code>String</code>.</p>
 <pre><code class="language-graphql">type User {

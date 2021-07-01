@@ -22,6 +22,8 @@ type BlogPost {
 You could model a family tree like so:
 
 ```graphql
+# TODO this example will not work yet
+# TODO the self-referencing has some issues and multiple @relation directives per field is not yet supported
 type Person {
     id: ID!
     firstName: String!
@@ -33,10 +35,6 @@ type Person {
         @relation(name: "Person:mother::Person:children")
 }
 ```
-
-TODO the example above will not work yet
-
-TODO the self-referencing has some issues and multiple @relation directives per field is not yet supported
 
 You could model Ethereum block data like so:
 

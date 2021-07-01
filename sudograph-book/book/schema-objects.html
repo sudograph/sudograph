@@ -180,7 +180,9 @@ type BlogPost {
 }
 </code></pre>
 <p>You could model a family tree like so:</p>
-<pre><code class="language-graphql">type Person {
+<pre><code class="language-graphql"># TODO this example will not work yet
+# TODO the self-referencing has some issues and multiple @relation directives per field is not yet supported
+type Person {
     id: ID!
     firstName: String!
     lastName: String!
@@ -191,8 +193,6 @@ type BlogPost {
         @relation(name: &quot;Person:mother::Person:children&quot;)
 }
 </code></pre>
-<p>TODO the example above will not work yet</p>
-<p>TODO the self-referencing has some issues and multiple @relation directives per field is not yet supported</p>
 <p>You could model Ethereum block data like so:</p>
 <pre><code class="language-graphql">type Block {
     id: ID!
