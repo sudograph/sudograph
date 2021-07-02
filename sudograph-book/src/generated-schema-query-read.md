@@ -1,5 +1,7 @@
 # read
 
+The `read` query is the main way to read data from your GraphQL database.
+
 Per object type defined in your GraphQL schema, Sudograph generates one `read` field on the `Query` object type. We'll focus in on what happens with one object type defined. Imagine your schema looks like this:
 
 ```graphql
@@ -14,10 +16,25 @@ Sudograph will generate the following (we're focusing on just one part of the ge
 type Query {
     readUser(
         search: ReadUserInput,
-        limit: LimitInput
-        offset: OffsetInput
+        limit: Int
+        offset: Int
         order: OrderUserInput
     ): [User!]!
+}
+
+input ReadUserInput {
+	id: ReadIDInput
+	and: [ReadUserInput!]
+	or: [ReadUserInput!]
+}
+
+input OrderUserInput {
+	id: OrderDirection
+}
+
+enum OrderDirection {
+	ASC
+	DESC
 }
 ```
 

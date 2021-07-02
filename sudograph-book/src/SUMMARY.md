@@ -26,6 +26,7 @@
     - [create](./generated-schema-mutation-create.md)
     - [update](./generated-schema-mutation-update.md)
     - [delete](./generated-schema-mutation-delete.md)
+    - [init](./generated-schema-mutation-init.md)
   - [Subscription](./generated-schema-subscription.md)
   - [Search](./generated-schema-search.md)
   - [Limit](./generated-schema-limit.md)
