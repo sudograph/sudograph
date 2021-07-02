@@ -17,6 +17,7 @@
   - [Custom scalars](./schema-custom-scalars.md)
   - [Custom resolvers](./schema-custom-resolvers.md)
   - [Custom directives](./schema-custom-directives.md)
+  - [Sudograph directives](./schema-sudograph-directives.md)
   - [Sudograph settings](./schema-sudograph-settings.md)
 - [Generated schema](./generated-schema.md)
   - [Query](./query.md)
