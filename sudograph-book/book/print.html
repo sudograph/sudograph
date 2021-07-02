@@ -1765,6 +1765,594 @@ type BlogPost {
 <p>Because the Internet Computer itself does not have any push mechanisms exposed, it will be difficult to provide subscription capabilities in the normal ways e.g. web sockets.</p>
 <p>For now you will have to implement your own polling solutions to know when data has been updated.</p>
 <h1 id="search"><a class="header" href="#search">Search</a></h1>
+<p>The <code>search</code> input allows for flexible querying of records. You can query by <a href="generated-schema-search.html#scalar-search">scalars</a> and <a href="generated-schema-search.html#relation-search">relations</a> to arbitrary depths (assuming performance allows). You can also use arbitrary combinations of <a href="generated-schema-search.html#and">and</a> and <a href="generated-schema-search.html#or">or</a> in your searches.</p>
+<h2 id="scalar-search"><a class="header" href="#scalar-search">Scalar search</a></h2>
+<p>You can search by scalar fields using the inputs generated for each scalar type.</p>
+<h3 id="blob-1"><a class="header" href="#blob-1">Blob</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadBlobInput {
+	eq: Blob
+	contains: Blob
+	startsWith: Blob
+	endsWith: Blob
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readFile(search: {
+        contents: {
+            eq: [101, 108, 108]
+        }
+    }) {
+        id
+        contents
+    }
+}
+
+query {
+    readFile(search: {
+        contents: {
+            contains: [108, 108]
+        }
+    }) {
+        id
+        contents
+    }
+}
+
+query {
+    readFile(search: {
+        contents: {
+            startsWith: [101]
+        }
+    }) {
+        id
+        contents
+    }
+}
+
+query {
+    readFile(search: {
+        contents: {
+            endsWith: [108]
+        }
+    }) {
+        id
+        contents
+    }
+}
+</code></pre>
+<h3 id="boolean-1"><a class="header" href="#boolean-1">Boolean</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadBooleanInput {
+	eq: Boolean
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        living: {
+            eq: true
+        }
+    }) {
+        id
+        living
+    }
+}
+</code></pre>
+<h3 id="date-1"><a class="header" href="#date-1">Date</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadDateInput {
+	eq: Date
+	gt: Date
+	gte: Date
+	lt: Date
+	lte: Date
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readBlogPost(search: {
+        createdAt: {
+            eq: &quot;2021-07-02T22:45:44.001Z&quot;
+        }
+    }) {
+        id
+        title
+    }
+}
+
+query {
+    readBlogPost(search: {
+        createdAt: {
+            gt: &quot;2021-07-02T22:45:44.001Z&quot;
+        }
+    }) {
+        id
+        title
+    }
+}
+
+query {
+    readBlogPost(search: {
+        createdAt: {
+            gte: &quot;2021-07-02T22:45:44.001Z&quot;
+        }
+    }) {
+        id
+        title
+    }
+}
+
+query {
+    readBlogPost(search: {
+        createdAt: {
+            lt: &quot;2021-07-02T22:45:44.001Z&quot;
+        }
+    }) {
+        id
+        title
+    }
+}
+
+query {
+    readBlogPost(search: {
+        createdAt: {
+            lte: &quot;2021-07-02T22:45:44.001Z&quot;
+        }
+    }) {
+        id
+        title
+    }
+}
+</code></pre>
+<h3 id="float-1"><a class="header" href="#float-1">Float</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadFloatInput {
+	eq: Float
+	gt: Float
+	gte: Float
+	lt: Float
+	lte: Float
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        height: {
+            eq: 5.8
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        height: {
+            gt: 5.8
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        height: {
+            gte: 5.8
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        height: {
+            lt: 5.8
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        height: {
+            lte: 5.8
+        }
+    }) {
+        id
+    }
+}
+</code></pre>
+<h3 id="id-1"><a class="header" href="#id-1">ID</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadIDInput {
+	eq: ID
+	gt: ID
+	gte: ID
+	lt: ID
+	lte: ID
+	contains: ID
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        id: {
+            eq: &quot;7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        id: {
+            gt: &quot;1&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        id: {
+            gte: &quot;1&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        id: {
+            lt: &quot;100&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        id: {
+            lte: &quot;100&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        id: {
+            contains: &quot;7c3nrr&quot;
+        }
+    }) {
+        id
+    }
+}
+</code></pre>
+<h3 id="int-1"><a class="header" href="#int-1">Int</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadIntInput {
+	eq: Int
+	gt: Int
+	gte: Int
+	lt: Int
+	lte: Int
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        age: {
+            eq: 25
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        age: {
+            gt: 20
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        age: {
+            gte: 30
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        age: {
+            lt: 45
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        age: {
+            lte: 70
+        }
+    }) {
+        id
+    }
+}
+</code></pre>
+<h3 id="json-1"><a class="header" href="#json-1">JSON</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadJSONInput {
+	eq: String
+	gt: String
+	gte: String
+	lt: String
+	lte: String
+	contains: String
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        meta: {
+            eq: &quot;{ \&quot;zone\&quot;: 5 }&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        meta: {
+            gt: &quot;{ \&quot;zone\&quot;: 5 }&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        meta: {
+            gte: &quot;{ \&quot;zone\&quot;: 5 }&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        meta: {
+            lt: &quot;{ \&quot;zone\&quot;: 5 }&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        meta: {
+            lte: &quot;{ \&quot;zone\&quot;: 5 }&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        meta: {
+            contains: &quot;zone&quot;
+        }
+    }) {
+        id
+    }
+}
+</code></pre>
+<h3 id="string-1"><a class="header" href="#string-1">String</a></h3>
+<p>Generated input:</p>
+<pre><code class="language-graphql">input ReadStringInput {
+    eq: String
+	gt: String
+	gte: String
+	lt: String
+	lte: String
+	contains: String
+}
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        username: {
+            eq: &quot;lastmjs&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        username: {
+            gt: &quot;lastmjs&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        username: {
+            gte: &quot;lastmjs&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        username: {
+            lt: &quot;lastmjs&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        username: {
+            lte: &quot;lastmjs&quot;
+        }
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(search: {
+        username: {
+            contains: &quot;mjs&quot;
+        }
+    }) {
+        id
+    }
+}
+</code></pre>
+<h2 id="and"><a class="header" href="#and">and</a></h2>
+<p>The search input for each object type, in addition to all scalar and relation fields, contains an <code>and</code> field. If you want to <code>and</code> together multiple searches of the same field, there are two ways to do so:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        age: {
+            gte: 5
+            lte: 10
+        }
+    }) {
+        id
+        age
+    }
+}
+</code></pre>
+<p>This can also be achieved like so:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        and: [
+            {
+                age: {
+                    gte: 5
+                }
+            },
+            {
+                age: {
+                    lte: 10
+                }
+            }
+        ]
+    }) {
+        id
+        age
+    }
+}
+</code></pre>
+<h2 id="or"><a class="header" href="#or">or</a></h2>
+<p>The search input for each object type, in addition to all scalar and relation fields, contains an <code>or</code> field. If you want to <code>or</code> together multiple searches of the same field, you can do so:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        or: [
+            {
+                age: {
+                    eq: 5
+                }
+            },
+            {
+                age: {
+                    eq: 6
+                }
+            }
+        ]
+    }) {
+        id
+        age
+    }
+}
+</code></pre>
+<h2 id="relation-search"><a class="header" href="#relation-search">Relation search</a></h2>
+<p>You can search by relation fields using the search inputs generated for each object type.</p>
+<p>Imagine the following schema:</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    username: String!
+    blogPosts: [BlogPost!]! @relation(name: &quot;User:blogPosts::BlogPost:author&quot;)
+}
+
+type BlogPost {
+    id: ID!
+    publishedAt: Date
+    title: String!
+    author: User! @relation(name: &quot;User:blogPosts::BlogPost:author&quot;)
+}
+</code></pre>
+<p>The search inputs generated for each object type would be:</p>
+<pre><code class="language-graphql">input ReadUserInput {
+	id: ReadIDInput
+	username: ReadStringInput
+	blogPosts: ReadBlogPostInput
+	and: [ReadUserInput!]
+	or: [ReadUserInput!]
+}
+
+input ReadBlogPostInput {
+	id: ReadIDInput
+	publishedAt: ReadDateInput
+	title: ReadStringInput
+	author: ReadUserInput
+	and: [ReadBlogPostInput!]
+	or: [ReadBlogPostInput!]
+}
+</code></pre>
+<p>You can search across relations like so:</p>
+<pre><code class="language-graphql">query {
+    readUser(search: {
+        blogPosts: {
+            title: {
+                contains: &quot;The&quot;
+            }
+        }
+    }) {
+        id
+        username
+        blogPosts {
+            id
+            title
+        }
+    }
+}
+</code></pre>
 <h1 id="limit"><a class="header" href="#limit">Limit</a></h1>
 <p>The <code>limit</code> input argument is an <code>Int</code> that allows you to specify how many records to return for a selection. For example, a <code>limit</code> of 0 would always return 0 records, and a <code>limit</code> of 10 would return no more than 10 records.</p>
 <p>If the <code>limit</code> specified is greater than the number of records available based on the query inputs, then the total number of records available will be returned.</p>
@@ -1909,7 +2497,7 @@ mutation {
 }
 </code></pre>
 <h1 id="order"><a class="header" href="#order">Order</a></h1>
-<p>The <code>order</code> input argument allows you to order by any one scalar field of an object type. In the future it may be possible to order by multiple fields. There are two possible orderings, <code>DESC</code> and <code>ASC</code>.</p>
+<p>The <code>order</code> input allows you to order by any one scalar field of an object type. In the future it may be possible to order by multiple fields. There are two possible orderings, <code>DESC</code> and <code>ASC</code>.</p>
 <p>Here are some examples assuming the following schema:</p>
 <pre><code class="language-graphql">type User {
     id: ID!

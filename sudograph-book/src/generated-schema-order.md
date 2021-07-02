@@ -1,6 +1,6 @@
 # Order
 
-The `order` input argument allows you to order by any one scalar field of an object type. In the future it may be possible to order by multiple fields. There are two possible orderings, `DESC` and `ASC`.
+The `order` input allows you to order by any one scalar field of an object type. In the future it may be possible to order by multiple fields. There are two possible orderings, `DESC` and `ASC`.
 
 Here are some examples assuming the following schema:
 
