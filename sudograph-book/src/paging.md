@@ -1,3 +1,0 @@
-# Paging
-
-Not yet implemented

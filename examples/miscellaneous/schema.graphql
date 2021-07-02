@@ -12,9 +12,9 @@ type Person {
     id: ID!
     firstName: String!
     lastName: String!
-    father: Person @relation(name: "Person:father and Person:children")
-    mother: Person @relation(name: "Person:mother and Person:children")
+    father: Person @relation(name: "Person:father::Person:children")
+    mother: Person @relation(name: "Person:mother::Person:children")
     children: [Person!]!
-        @relation(name: "Person:father and Person:children")
-        @relation(name: "Person:mother and Person:children")
+        @relation(name: "Person:father::Person:children")
+        @relation(name: "Person:mother::Person:children")
 }

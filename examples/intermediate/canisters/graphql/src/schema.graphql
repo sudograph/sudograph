@@ -7,9 +7,9 @@ type SudographSettings {
 
 type Student {
     id: ID!
-    courses: [Course!]! @relation(name: "Student:courses and Course:students")
+    courses: [Course!]! @relation(name: "Student:courses::Course:students")
     firstName: String!
-    grades: [Grade!]! @relation(name: "Student:grades and Grade:student")
+    grades: [Grade!]! @relation(name: "Student:grades::Grade:student")
     lastName: String!
     meta: JSON!
 }
@@ -18,14 +18,14 @@ type Course {
     id: ID!
     name: String!
     subject: Subject!
-    students: [Student!]! @relation(name: "Student:courses and Course:students")
+    students: [Student!]! @relation(name: "Student:courses::Course:students")
 }
 
 type Grade {
     id: ID!
     course: Course!
     score: Float!
-    student: Student! @relation(name: "Student:grades and Grade:student")
+    student: Student! @relation(name: "Student:grades::Grade:student")
 }
 
 enum Subject {
