@@ -164,6 +164,90 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="order"><a class="header" href="#order">Order</a></h1>
+<p>The <code>order</code> input argument allows you to order by any one scalar field of an object type. In the future it may be possible to order by multiple fields. There are two possible orderings, <code>DESC</code> and <code>ASC</code>.</p>
+<p>Here are some examples assuming the following schema:</p>
+<pre><code class="language-graphql">type User {
+    id: ID!
+    age: Int!
+    username: String!
+}
+</code></pre>
+<pre><code class="language-graphql">query {
+    readUser(order: {
+        id: DESC
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(order: {
+        age: ASC
+    }) {
+        id
+    }
+}
+
+query {
+    readUser(order: {
+        username: DESC
+    }) {
+        id
+    }
+}
+</code></pre>
+<p>It's important to remember that within any selection sets you have the ability to order on any <code>many-relation</code>:</p>
+<pre><code class="language-graphql">query {
+    readUser {
+        id
+        blogPosts(order: {
+            title: DESC
+        }) {
+            title
+        }
+    }
+}
+
+mutation {
+    createUser(input: {
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(order: {
+            title: DESC
+        }) {
+            title
+        }
+    }
+}
+
+mutation {
+    updateUser(input: {
+        id: &quot;0&quot;
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(order: {
+            title: DESC
+        }) {
+            title
+        }
+    }
+}
+
+mutation {
+    deleteUser(input: {
+        id: &quot;0&quot;
+    }) {
+        id
+        blogPosts(order: {
+            title: DESC
+        }) {
+            title
+        }
+    }
+}
+</code></pre>
 
                     </main>
 

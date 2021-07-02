@@ -164,6 +164,81 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="limit"><a class="header" href="#limit">Limit</a></h1>
+<p>The <code>limit</code> input argument is an <code>Int</code> that allows you to specify how many records to return for a selection. For example, a <code>limit</code> of 0 would always return 0 records, and a <code>limit</code> of 10 would return no more than 10 records.</p>
+<p>If the <code>limit</code> specified is greater than the number of records available based on the query inputs, then the total number of records available will be returned.</p>
+<p>Combining <code>limit</code> with <a href="./generated-schema-offset.html">offset</a> allows for flexible paging capabilities. A good example of paging can be found in the <a href="https://github.com/sudograph/sudograph/blob/main/examples/files/canisters/files/elements/files-app.ts">frontend of the files example</a>.</p>
+<p>Assuming there are 10 <code>User</code> records in the database:</p>
+<pre><code class="language-graphql">query {
+    readUser(limit: 10) {
+        id
+    }
+}
+
+# The readUser property in the selection set would be:
+# [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]
+</code></pre>
+<pre><code class="language-graphql">query {
+    readUser(limit: 5) {
+        id
+    }
+}
+
+# The readUser property in the selection set would be:
+# [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]
+</code></pre>
+<pre><code class="language-graphql">query {
+    readUser(limit: 0) {
+        id
+    }
+}
+
+# The readUser property in the selection set would be:
+# []
+</code></pre>
+<p>It's important to remember that within any selection sets you have the ability to limit on any <code>many-relation</code>:</p>
+<pre><code class="language-graphql">query {
+    readUser {
+        id
+        blogPosts(limit: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    createUser(input: {
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(limit: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    updateUser(input: {
+        id: &quot;0&quot;
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(limit: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    deleteUser(input: {
+        id: &quot;0&quot;
+    }) {
+        id
+        blogPosts(limit: 5) {
+            title
+        }
+    }
+}
+</code></pre>
 
                     </main>
 

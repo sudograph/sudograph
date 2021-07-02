@@ -193,9 +193,12 @@ type BlogPost {
 </code></pre>
 <p>You could write a query like this:</p>
 <pre><code class="language-graphql">mutation {
-    updateUser(blogPosts: {
-        connect: [&quot;7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y&quot;]
-    }) {
+    updateUser(
+        id: &quot;7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y&quot;
+        blogPosts: {
+            connect: [&quot;2c3nrr-4jhf3-2gozt-hj37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y&quot;]
+        }
+    ) {
         id
         blogPosts(
             search: {

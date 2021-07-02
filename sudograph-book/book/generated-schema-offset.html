@@ -164,6 +164,72 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="offset"><a class="header" href="#offset">Offset</a></h1>
+<p>The <code>offset</code> input argument is an <code>Int</code> that allows you to specify the starting index in the selection of records. For example, imagine there are 10 <code>User</code> records in the database. An <code>offset</code> of 0 would return all 10 records starting at index 0 which is the first record (assuming they are ordered already in the database):</p>
+<pre><code class="language-graphql">query {
+    readUser(offset: 0) {
+        id
+    }
+}
+
+# The readUser property in the selection set would be:
+# [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]
+</code></pre>
+<p>An <code>offset</code> of 1 would return 9 records starting at index 1 which is the second record:</p>
+<pre><code class="language-graphql">query {
+    readUser(offset: 1) {
+        id
+    }
+}
+
+# The readUser property in the selection set would be:
+# [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]
+</code></pre>
+<p>If the <code>offset</code> specified is greater than or equal to the number of records available based on the query inputs, Sudograph will panic causing the call to trap. Essentially at this point the offset has gone beyond the end of the selection array. If you disagree with this choice let me know <a href="https://twitter.com/lastmjs">@lastmjs</a> or open an issue in the <a href="https://github.com/sudograph/sudograph">repository</a>.</p>
+<p>Combining <code>offset</code> with <a href="./generated-schema-limit.html">limit</a> allows for flexible paging capabilities. A good example of paging can be found in the <a href="https://github.com/sudograph/sudograph/blob/main/examples/files/canisters/files/elements/files-app.ts">frontend of the files example</a>.</p>
+<p>It's important to remember that within any selection sets you have the ability to offset on any <code>many-relation</code>:</p>
+<pre><code class="language-graphql">query {
+    readUser {
+        id
+        blogPosts(offset: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    createUser(input: {
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(offset: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    updateUser(input: {
+        id: &quot;0&quot;
+        username: &quot;lastmjs&quot;
+    }) {
+        id
+        blogPosts(offset: 5) {
+            title
+        }
+    }
+}
+
+mutation {
+    deleteUser(input: {
+        id: &quot;0&quot;
+    }) {
+        id
+        blogPosts(offset: 5) {
+            title
+        }
+    }
+}
+</code></pre>
 
                     </main>
 

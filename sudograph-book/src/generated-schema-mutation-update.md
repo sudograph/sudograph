@@ -42,9 +42,12 @@ You could write a query like this:
 
 ```graphql
 mutation {
-    updateUser(blogPosts: {
-        connect: ["7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y"]
-    }) {
+    updateUser(
+        id: "7c3nrr-6jhf3-2gozt-hh37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y"
+        blogPosts: {
+            connect: ["2c3nrr-4jhf3-2gozt-hj37a-d6nvf-lsdwv-d7bhp-uk5nt-r42y"]
+        }
+    ) {
         id
         blogPosts(
             search: {
