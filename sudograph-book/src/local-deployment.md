@@ -52,7 +52,7 @@ If you want to call into the `graphql canister` from another Rust canister:
 
 If you want to call into the `graphql canister` from a Motoko canister:
 
-```motoko
+```swift
 // TODO fill out this example, show queries and mutations
 ```
 
