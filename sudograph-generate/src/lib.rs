@@ -552,6 +552,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                 EmptySubscription
             );
 
+            ic_cdk::println!("{}", schema.federation_sdl());
+
             // TODO sudosettings should turn these on and off
             // TODO it would be nice to print these out prettily
             // TODO also, it would be nice to turn off these kinds of logs

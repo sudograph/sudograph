@@ -1,3 +1,0 @@
-# Ordering
-
-Not yet implemented
