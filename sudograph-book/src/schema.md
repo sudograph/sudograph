@@ -29,4 +29,5 @@ The schema is an incredibly powerful yet simple tool for defining the complex da
 * [Custom scalars](./schema-custom-scalars.md)
 * [Custom resolvers](./schema-custom-resolvers.md)
 * [Custom directives](./schema-custom-directives.md)
+* [Sudograph directives](./schema-sudograph-directives.md)
 * [Sudograph settings](./schema-sudograph-settings.md)
