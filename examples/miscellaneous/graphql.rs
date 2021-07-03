@@ -21,3 +21,22 @@ fn whoami() -> String {
 
     return principal.to_text();
 }
+
+// TODO this would go in a post_upgrade function
+// This is an example of a migration
+// // First grab the object type for User
+// let user_object_type = object_type_store.get_mut("User").expect("User object type should exist");
+
+// // Then add the type information for the username field
+// user_object_type.field_types_store.insert(
+//     "username".to_string(),
+//     sudograph::sudodb::FieldType::String
+// );
+
+// // Finally add the initial values for the username field
+// for field_value_store in user_object_type.field_values_store.values_mut() {
+//     field_value_store.insert(
+//         "username".to_string(),
+//         sudograph::sudodb::FieldValue::Scalar(None)
+//     );
+// }

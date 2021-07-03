@@ -1,3 +1,0 @@
-# Query
-
-This section is not yet well-documented, but assuming you've generated an example project with `npx sudograph` and deployed your canisters, then navigate to the playground at [http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000](http://r7inp-6aaaa-aaaaa-aaabq-cai.localhost:8000) in a Chromium browser and click the Docs button in the top right corner. That documentation explains everything that you can do with your newly generated schema.

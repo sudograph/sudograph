@@ -1626,6 +1626,7 @@ dependencies = [
  "chrono",
  "ic-cdk 0.2.4",
  "rand 0.8.3",
+ "serde",
  "sha2",
 ]
 
