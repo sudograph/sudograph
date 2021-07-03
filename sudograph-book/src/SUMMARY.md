@@ -13,6 +13,7 @@
 - [agent-js](./agent-js.md)
 - [Schema](./schema.md)
   - [Scalars](./schema-scalars.md)
+  - [Enums](./schema-enums.md)
   - [Objects](./schema-objects.md)
   - [Relations](./schema-relations.md)
   - [Custom scalars](./schema-custom-scalars.md)

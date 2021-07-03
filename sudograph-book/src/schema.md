@@ -24,6 +24,7 @@ We have told Sudograph that we have two object types, `User` and `BlogPost`. We'
 The schema is an incredibly powerful yet simple tool for defining the complex data types of your application. Get to know the possibilities of your schema:
 
 * [Scalars](./schema-scalars.md)
+* [Enums](./schema-enums.md)
 * [Objects](./schema-objects.md)
 * [Relations](./schema-relations.md)
 * [Custom scalars](./schema-custom-scalars.md)
