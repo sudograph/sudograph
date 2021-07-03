@@ -1,18 +1,3 @@
-# Custom database operations
-
-Sudograph is designed to generate much of the CRUD functionality you might need, but it can't handle every situation. You might find the need to have access to the underlying data structures.
-
-## Sudodb
-
-One layer below Sudograph is Sudodb. Sudodb is a very simple relational database that uses the Internet Computer's orthogonal persistence directly. It exposes a few basic functions like `create`, `read`, `update`, and `delete`. You can use those functions directly in custom resolvers or your own functions. You can dig through the documentation and source code below:
-
-* [Repository](https://github.com/sudograph/sudograph/tree/main/sudodb)
-* [Crates.io](https://crates.io/crates/sudodb)
-* [Docs.rs](https://docs.rs/sudodb/0.2.2/sudodb/)
-
-Here's an example of how you would use Sudodb directly:
-
-```rust
 use sudograph::graphql_database;
 
 graphql_database!("canisters/graphql/src/schema.graphql");
@@ -59,18 +44,7 @@ async fn read_all_users() -> Vec<User> {
         }
     };
 }
-```
 
-## ObjectTypeStore
-
-One layer below Sudodb is the `ObjectTypeStore`. The `ObjectTypeStore` is the main data structure that makes up the GraphQL database. You can directly read from or update the `ObjectTypeStore` in custom resolvers or your own functions. You can dig into its structure in the documentation and source code below:
-
-* [Repository](https://github.com/sudograph/sudograph/blob/main/sudodb/src/lib.rs)
-* [Docs.rs](https://docs.rs/sudodb/0.2.2/sudodb/type.ObjectTypeStore.html)
-
-Here's an example of how you would use the `ObjectTypeStore` directly:
-
-```rust
 #[sudograph::ic_cdk_macros::query]
 async fn read_all_users() -> Vec<User> {
     let object_type_store = sudograph::ic_cdk::storage::get::<ObjectTypeStore>();
@@ -108,4 +82,3 @@ async fn read_all_users() -> Vec<User> {
 
     return users;
 }
-```

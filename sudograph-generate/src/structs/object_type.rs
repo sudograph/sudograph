@@ -55,7 +55,7 @@ fn generate_object_type_struct(
     );
     
     return quote! {
-        #[derive(Serialize, Deserialize, Default, Clone, Debug)]
+        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
         #[serde(crate="self::serde", default)]
         struct #object_type_name {
             #(#generated_read_input_fields),*

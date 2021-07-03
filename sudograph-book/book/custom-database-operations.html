@@ -164,7 +164,115 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="custom-database-operations"><a class="header" href="#custom-database-operations">Custom database operations</a></h1>
-<p>Describe Sudodb a little and especially the database data structures. Users can use Sudodb directly if they wish, but also the database data structures directly. Link to the automatically generated documentation, that should be sufficient for now.</p>
+<p>Sudograph is designed to generate much of the CRUD functionality you might need, but it can't handle every situation. You might find the need to have access to the underlying data structures.</p>
+<h2 id="sudodb"><a class="header" href="#sudodb">Sudodb</a></h2>
+<p>One layer below Sudograph is Sudodb. Sudodb is a very simple relational database that uses the Internet Computer's orthogonal persistence directly. It exposes a few basic functions like <code>create</code>, <code>read</code>, <code>update</code>, and <code>delete</code>. You can use those functions directly in custom resolvers or your own functions. You can dig through the documentation and source code below:</p>
+<ul>
+<li><a href="https://github.com/sudograph/sudograph/tree/main/sudodb">Repository</a></li>
+<li><a href="https://crates.io/crates/sudodb">Crates.io</a></li>
+<li><a href="https://docs.rs/sudodb/0.2.2/sudodb/">Docs.rs</a></li>
+</ul>
+<p>Here's an example of how you would use Sudodb directly:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use sudograph::graphql_database;
+
+graphql_database!(&quot;canisters/graphql/src/schema.graphql&quot;);
+
+#[sudograph::ic_cdk_macros::query]
+async fn read_all_users() -&gt; Vec&lt;User&gt; {
+    let object_type_store = sudograph::ic_cdk::storage::get::&lt;ObjectTypeStore&gt;();
+
+    let mut selection_set_map = HashMap::new();
+
+    selection_set_map.insert(
+        String::from(&quot;id&quot;),
+        sudograph::sudodb::SelectionSetInfo {
+            selection_set: sudograph::sudodb::SelectionSet(None),
+            search_inputs: vec![],
+            limit_option: None,
+            offset_option: None,
+            order_inputs: vec![]
+        }
+    );
+    
+    let selection_set = sudograph::sudodb::SelectionSet(Some(selection_set_map));
+
+    let read_result = sudograph::sudodb::read(
+        object_type_store,
+        &quot;User&quot;,
+        &amp;vec![],
+        None,
+        None,
+        &amp;vec![],
+        &amp;selection_set
+    );
+
+    match read_result {
+        Ok(strings) =&gt; {
+            let deserialized_strings: Vec&lt;User&gt; = strings.iter().map(|string| {
+                return sudograph::serde_json::from_str(string).unwrap();
+            }).collect();
+
+            return deserialized_strings;
+        },
+        Err(_) =&gt; {
+            return vec![];
+        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="objecttypestore"><a class="header" href="#objecttypestore">ObjectTypeStore</a></h2>
+<p>One layer below Sudodb is the <code>ObjectTypeStore</code>. The <code>ObjectTypeStore</code> is the main data structure that makes up the GraphQL database. You can directly read from or update the <code>ObjectTypeStore</code> in custom resolvers or your own functions. You can dig into its structure in the documentation and source code below:</p>
+<ul>
+<li><a href="https://github.com/sudograph/sudograph/blob/main/sudodb/src/lib.rs">Repository</a></li>
+<li><a href="https://docs.rs/sudodb/0.2.2/sudodb/type.ObjectTypeStore.html">Docs.rs</a></li>
+</ul>
+<p>Here's an example of how you would use the <code>ObjectTypeStore</code> directly:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[sudograph::ic_cdk_macros::query]
+async fn read_all_users() -&gt; Vec&lt;User&gt; {
+    let object_type_store = sudograph::ic_cdk::storage::get::&lt;ObjectTypeStore&gt;();
+
+    let object_type = object_type_store.get(&quot;User&quot;).expect(&quot;should exist&quot;);
+
+    let users = object_type.field_values_store.iter().map(|(_, field_value_store)| {
+        let id = match field_value_store.get(&quot;id&quot;).expect(&quot;should exist&quot;) {
+            FieldValue::Scalar(field_value_scalar_option) =&gt; match field_value_scalar_option.as_ref().expect(&quot;should exist&quot;) {
+                FieldValueScalar::String(id) =&gt; ID(id.to_string()),
+                _ =&gt; panic!(&quot;should not happen&quot;)
+            },
+            _ =&gt; panic!(&quot;should not happen&quot;)
+        };
+
+        let username = match field_value_store.get(&quot;username&quot;).expect(&quot;should exist&quot;) {
+            FieldValue::Scalar(field_value_scalar_option) =&gt; match field_value_scalar_option.as_ref().expect(&quot;should exist&quot;) {
+                FieldValueScalar::String(username) =&gt; username.to_string(),
+                _ =&gt; panic!(&quot;should not happen&quot;)
+            },
+            _ =&gt; panic!(&quot;should not happen&quot;)
+        };
+
+        // This example does not show you how to resolve relations
+        // You would need to go and get the blog posts by using information in the blogPosts FieldValue
+        // and retrieving the records from the BlogPost object type
+        let blog_posts = vec![];
+
+        return User {
+            id,
+            username,
+            blogPosts: blog_posts
+        };
+    }).collect();
+
+    return users;
+}
+<span class="boring">}
+</span></code></pre></pre>
 
                     </main>
 

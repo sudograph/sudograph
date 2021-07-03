@@ -32,9 +32,9 @@ type ObjectTypeName = String;
 
 #[derive(Debug)]
 pub struct ObjectType {
-    object_type_name: String,
-    field_types_store: FieldTypesStore,
-    field_values_store: FieldValuesStore,
+    pub object_type_name: String,
+    pub field_types_store: FieldTypesStore,
+    pub field_values_store: FieldValuesStore,
     // field_indexes_store: FieldIndexStore
     // TODO the indexes will go here
 }
