@@ -10,7 +10,7 @@
     "@dfinity/principal": "0.9.1",
     "lit-html": "1.4.1",
     "reduxular": "0.0.6",
-    "sudograph": "0.3.0-beta.18"
+    "sudograph": "0.3.0-beta.19"
   },
   "devDependencies": {
     "snowpack": "3.5.1"
