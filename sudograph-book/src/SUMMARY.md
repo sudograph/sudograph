@@ -1,6 +1,7 @@
 # Summary
 
 - [Sudograph](./sudograph.md)
+- [Vision and motivation](./vision-and-motivation.md)
 - [Examples](./examples.md)
 - [Quickest of quick starts](./quickest-of-quick-starts.md)
 - [Quick start](./quick-start.md)
@@ -32,10 +33,10 @@
   - [Limit](./generated-schema-limit.md)
   - [Offset](./generated-schema-offset.md)
   - [Order](./generated-schema-order.md)
-- [Custom database operations](./custom-database-operations.md)
+- [Authorization](./authorization.md)
 - [Migrations](./migrations.md)
 - [Transactions](./transactions.md)
-- [Authorization](./authorization.md)
-- [Vision](./vision.md)
-- [Limitations](./limitations.md)
 - [Multi-canister scaling](./multi-canister-scaling.md)
+- [Custom database operations](./custom-database-operations.md)
+- [Custom async_graphql integration](./custom-async-graphql-integration.md)
+- [Limitations](./limitations.md)

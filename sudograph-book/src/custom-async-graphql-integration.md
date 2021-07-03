@@ -1,0 +1,7 @@
+# Custom async_graphql integration
+
+Sudograph is built on the bedrock of [async_graphql](https://github.com/async-graphql/async-graphql). `async_graphql` is the library providing most of the fundamental GraphQL functionality, includes resolving queries and mutations. Sudograph is mostly tasked with transforming your provided schema into the Rust data structures that `async_graphql` expects. Though Sudograph is designed to provide a lot of functionality for you automatically, you may find the need to dig deeper and integrate with `async_graphql` more directly.
+
+The automatically generated `graphql_query` and `graphql_mutation` functions create an `async_graphql` schema data structure. These functions also accept queries and mutations and execute them against that schema. You can always generate your own functions (see [Sudograph Settings](./schema-sudograph-settings.md)) and use `async_graphql` directly if you wish. You can see how Sudograph creates an `async_graphql` schema [here](https://github.com/sudograph/sudograph/blob/main/sudograph-generate/src/lib.rs) (look for the `graphql_query` and `graphql_mutation` functions).
+
+You can write your own `async_graphql` types as well. Basically, if you understand how Sudograph is simply generating `async_graphql` Rust data structures, including queries and mutations, you will be able to figure out how to augment the schema yourself. This could be very useful if you are waiting on Sudograph to implement a feature for you, as you might be able to implement it yourself right away with minimal effort.
