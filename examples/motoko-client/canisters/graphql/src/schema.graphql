@@ -1,0 +1,7 @@
+type SudographSettings {
+    exportGeneratedQueryFunction: false
+}
+
+type User {
+    id: ID!
+}
