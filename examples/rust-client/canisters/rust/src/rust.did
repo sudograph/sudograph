@@ -1,0 +1,3 @@
+service : {
+    "get_all_users": () -> (text) query;
+}

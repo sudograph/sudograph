@@ -1,0 +1,23 @@
+{
+    "canisters": {
+        "graphql": {
+            "type": "custom",
+            "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
+            "candid": "canisters/graphql/src/graphql.did",
+            "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
+        },
+        "playground": {
+            "type": "assets",
+            "source": ["canisters/playground/build"]
+        },
+        "rust": {
+            "type": "custom",
+            "build": "cargo build --target wasm32-unknown-unknown --package rust --release",
+            "candid": "canisters/rust/src/rust.did",
+            "wasm": "target/wasm32-unknown-unknown/release/rust.wasm",
+            "dependencies": [
+                "graphql"
+            ]
+        }
+    }
+}
