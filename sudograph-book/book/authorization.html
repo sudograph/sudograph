@@ -196,6 +196,79 @@ async fn graphql_mutation_custom(mutation_string: String, variables_json_string:
 <p>This is a very simple example, but it illustrates how you can create custom functions designed for a specific purpose with authorization, using Sudograph to perform CRUD operations.</p>
 <p>The plan is to eventually introduce authorization configuration into the GraphQL schema, allowing you to use a directive like <code>@auth</code> to enforce authorization.</p>
 <p>Until you can configure authorization from within the schema itself, it will probably be necessary to control all access to queries and mutations from custom canister functions that enforce their own authorization. Custom resolvers won't really be useful if any data in the schema needs authorized access.</p>
+<h2 id="canister-authorization"><a class="header" href="#canister-authorization">Canister authorization</a></h2>
+<p>If you are interested in using a Rust or Motoko canister as a client to your <code>graphql canister</code>, then take a look at the <a href="https://github.com/sudograph/sudograph/tree/main/examples/rust-client">rust-client</a> and <a href="https://github.com/sudograph/sudograph/tree/main/examples/motoko-client">motoko-client</a> examples.</p>
+<p>The <code>graphql canister</code> can be configured to only authorize queries or updates from a specific canister. This will allow you to create authorized data-specific functions in your Rust or Motoko canisters, and those functions can then use GraphQL to call into the <code>graphql canister</code>. This is probably the best way to implement authorization in your applications until something like the <code>@auth</code> directive is implemented.</p>
+<h3 id="rust-authorization"><a class="header" href="#rust-authorization">Rust authorization</a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use ic_cdk;
+use ic_cdk_macros;
+
+#[ic_cdk_macros::import(canister = &quot;graphql&quot;)]
+struct GraphQLCanister;
+
+#[ic_cdk_macros::query]
+async fn get_all_users() -&gt; String {
+    // TODO here you can implement your custom authorization for get_all_users
+    
+    let result = GraphQLCanister::graphql_query_custom(
+        &quot;
+            query {
+                readUser {
+                    id
+                }
+            }
+        &quot;.to_string(),
+        &quot;{}&quot;.to_string()
+    ).await;
+
+    let result_string = result.0;
+
+    return result_string;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h3 id="motoko-authorization"><a class="header" href="#motoko-authorization">Motoko authorization</a></h3>
+<pre><code class="language-swift">import Text &quot;mo:base/Text&quot;;
+
+actor Motoko {
+    let GraphQLCanister = actor &quot;rrkah-fqaaa-aaaaa-aaaaq-cai&quot;: actor {
+        graphql_query_custom: query (Text, Text) -&gt; async (Text);
+        graphql_mutation: (Text, Text) -&gt; async (Text);
+    };
+
+    public func get_all_users(): async (Text) {
+        // TODO here you can implement your custom authorization for get_all_users
+        let result = await GraphQLCanister.graphql_query_custom(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
+
+        return result;
+    }
+}
+</code></pre>
+<p>You can then authorize specific canisters in the <code>graphql canister</code> like this:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use sudograph::graphql_database;
+
+graphql_database!(&quot;canisters/graphql/src/schema.graphql&quot;);
+
+#[sudograph::ic_cdk_macros::query]
+async fn graphql_query_custom(query: String, variables: String) -&gt; String {
+    let motoko_canister_principal = sudograph::ic_cdk::export::Principal::from_text(&quot;ryjl3-tyaaa-aaaaa-aaaba-cai&quot;).expect(&quot;should be able to decode&quot;);
+
+    if sudograph::ic_cdk::caller() != motoko_canister_principal {
+        panic!(&quot;Not authorized&quot;);
+    }
+
+    return graphql_query(query, variables).await;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><code>graphql_query_custom</code> will only accept calls from the <code>ryjl3-tyaaa-aaaaa-aaaba-cai</code> canister. Now all authorization logic can be implemented in the <code>ryjl3-tyaaa-aaaaa-aaaba-cai</code> canister.</p>
+<p>Again, the goal is to allow you to write custom authorization into your schema with something like an <code>@auth</code> directive, which should greatly simplify authorization and allow for GraphQL operations to be made directly from a frontend client.</p>
 
                     </main>
 

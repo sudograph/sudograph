@@ -191,16 +191,77 @@ dfx canister call graphql graphql_mutation '(&quot;mutation { createUser(input: 
 <h2 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h2>
 <p>Still needs to be documented.</p>
 <h2 id="rust-canister"><a class="header" href="#rust-canister">Rust canister</a></h2>
-<p>If you want to call into the <code>graphql canister</code> from another Rust canister:</p>
+<p>If you want to call into the <code>graphql canister</code> from another Rust canister, first you update the <code>dfx.json</code> and then implement your <code>rust canister</code>.</p>
+<p>Make sure to include the <code>graphql canister</code> as a dependency to your <code>rust canister</code> in <code>dfx.json</code>:</p>
+<pre><code class="language-json">{
+    &quot;canisters&quot;: {
+        &quot;graphql&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package graphql --release&quot;,
+            &quot;candid&quot;: &quot;canisters/graphql/src/graphql.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql.wasm&quot;
+        },
+        &quot;playground&quot;: {
+            &quot;type&quot;: &quot;assets&quot;,
+            &quot;source&quot;: [&quot;canisters/playground/build&quot;]
+        },
+        &quot;rust&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package rust --release&quot;,
+            &quot;candid&quot;: &quot;canisters/rust/src/rust.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/rust.wasm&quot;,
+            &quot;dependencies&quot;: [
+                &quot;graphql&quot;
+            ]
+        }
+    }
+}
+</code></pre>
+<p>And then in your <code>rust canister</code>:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>// TODO fill out this example, show queries and mutations
+</span>use ic_cdk;
+use ic_cdk_macros;
+
+#[ic_cdk_macros::import(canister = &quot;graphql&quot;)]
+struct GraphQLCanister;
+
+#[ic_cdk_macros::query]
+async fn get_all_users() -&gt; String {
+    let result = GraphQLCanister::graphql_query(
+        &quot;
+            query {
+                readUser {
+                    id
+                }
+            }
+        &quot;.to_string(),
+        &quot;{}&quot;.to_string()
+    ).await;
+
+    let result_string = result.0;
+
+    return result_string;
+}
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="motoko-canister"><a class="header" href="#motoko-canister">Motoko canister</a></h2>
 <p>If you want to call into the <code>graphql canister</code> from a Motoko canister:</p>
-<pre><code class="language-swift">// TODO fill out this example, show queries and mutations
+<pre><code class="language-swift">import Text &quot;mo:base/Text&quot;;
+
+actor Motoko {
+    let GraphQLCanister = actor &quot;rrkah-fqaaa-aaaaa-aaaaq-cai&quot;: actor {
+        graphql_query: query (Text, Text) -&gt; async (Text);
+        graphql_mutation: (Text, Text) -&gt; async (Text);
+    };
+
+    public func get_all_users(): async (Text) {
+        let result = await GraphQLCanister.graphql_query(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
+
+        return result;
+    }
+}
 </code></pre>
 <h2 id="wasm-binary-optimization"><a class="header" href="#wasm-binary-optimization">Wasm binary optimization</a></h2>
 <p>If the replica rejects deployment of your canister because the payload is too large, you may need to <a href="./wasm-binary-optimization.html">optimize your Wasm binary</a>.</p>
