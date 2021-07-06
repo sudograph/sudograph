@@ -1,6 +1,6 @@
 # Objects
 
-Object types have fields that may be other object types or scalar types. Object types allow you to define the truly custom data types and relations that make up your application.
+Object types have fields that may be types such as other object types or scalars or enums. Object types allow you to define the truly custom data types and relations that make up your application.
 
 You could model a user with blog posts like so:
 

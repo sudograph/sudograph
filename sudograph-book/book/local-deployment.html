@@ -189,7 +189,33 @@ dfx canister call graphql graphql_query '(&quot;query { readUser { id } }&quot;,
 dfx canister call graphql graphql_mutation '(&quot;mutation { createUser(input: { username: \&quot;lastmjs\&quot; }) { id } }&quot;, &quot;{}&quot;)'
 </code></pre>
 <h2 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h2>
-<p>Still needs to be documented.</p>
+<p>See the <a href="./sudograph-client.html">Sudograph Client documentation</a> for more information. Here's a simple example of using Sudograph Client from a JavaScript frontend:</p>
+<pre><code class="language-javascript">import {
+    gql,
+    sudograph
+} from 'sudograph';
+
+const {
+    query,
+    mutation
+} = sudograph({
+    canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai'
+});
+
+async function getUserIds() {
+    const result = await query(gql`
+        query {
+            readUser {
+                id
+            }
+        }
+    `);
+
+    const users = result.data.readUser;
+
+    return users;
+}
+</code></pre>
 <h2 id="rust-canister"><a class="header" href="#rust-canister">Rust canister</a></h2>
 <p>If you want to call into the <code>graphql canister</code> from another Rust canister, first you update the <code>dfx.json</code> and then implement your <code>rust canister</code>.</p>
 <p>Make sure to include the <code>graphql canister</code> as a dependency to your <code>rust canister</code> in <code>dfx.json</code>:</p>

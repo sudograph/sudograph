@@ -4,7 +4,7 @@ The [quickest of quick starts](./quickest-of-quick-starts.md) and [quick start](
 
 Basically you need to add a new Rust canister to your project and import and call the `graphql_database` procedural macro. If you're new to developing for the Internet Computer, you might want to check the [documentation](https://sdk.dfinity.org/docs/quickstart/quickstart-intro.html) to get familiar with canister development. The detailed steps are listed out below, but looking at [examples](./examples.md) might also help a lot.
 
-Make sure you at least have Rust, the wasm32-unknown-unknown Rust compilation target, and dfx 0.7.2 installed on your system. If you need help setting all of that up, look at the [prerequisites section of the quick start](http://localhost:3000/quick-start.html#prerequisites).
+Make sure you at least have Rust, the wasm32-unknown-unknown Rust compilation target, and dfx 0.7.2 installed on your system. If you need help setting all of that up, look at the [prerequisites section of the quick start](./quick-start.html#prerequisites).
 
 There are a few basic steps to integrate Sudograph into an existing project:
 

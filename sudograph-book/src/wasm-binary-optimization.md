@@ -70,4 +70,4 @@ Another way is to adopt npm scripts. Your `package.json` could look something li
 
 Then instead of running `dfx deploy` or `dfx deploy graphql` you would run `npm run dfx-deploy` or `npm run dfx-deploy-graphql`.
 
-In the future it would be nice for the `dfx.json` to allow for some sort of build scripts, which would make this process less messy. There is an open forum post about this [here](https://forum.dfinity.org/t/dfx-json-build-scripts/4922)
+In the future it would be nice for the `dfx.json` to allow for some sort of build scripts, which would make this process less messy. There is an open forum post about this [here](https://forum.dfinity.org/t/dfx-json-build-scripts/4922).

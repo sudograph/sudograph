@@ -38,7 +38,35 @@ dfx canister call graphql graphql_mutation '("mutation { createUser(input: { use
 
 ## Sudograph Client
 
-Still needs to be documented.
+See the [Sudograph Client documentation](./sudograph-client.md) for more information. Here's a simple example of using Sudograph Client from a JavaScript frontend:
+
+```javascript
+import {
+    gql,
+    sudograph
+} from 'sudograph';
+
+const {
+    query,
+    mutation
+} = sudograph({
+    canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai'
+});
+
+async function getUserIds() {
+    const result = await query(gql`
+        query {
+            readUser {
+                id
+            }
+        }
+    `);
+
+    const users = result.data.readUser;
+
+    return users;
+}
+```
 
 ## Rust canister
 

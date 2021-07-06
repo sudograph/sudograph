@@ -109,8 +109,6 @@ echo -e "example: rust-client"
 
 cd examples/rust-client/canisters/graphql
 sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
-cd ../rust
-sed -E -i "s/(^sudograph = \{ version = \")(.*)(\", path = \"\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sudograph\" \})/\1$VERSION\3/" Cargo.toml
 cd ../playground
 sed -E -i "s/(\"sudograph\": \")(.*)(\")/\1$VERSION\3/" package.json
 npm install
