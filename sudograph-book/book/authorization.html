@@ -241,6 +241,7 @@ actor Motoko {
 
     public func get_all_users(): async (Text) {
         // TODO here you can implement your custom authorization for get_all_users
+        
         let result = await GraphQLCanister.graphql_query_custom(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
 
         return result;

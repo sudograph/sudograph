@@ -170,6 +170,21 @@
 <p>Its goal is to become the simplest way to develop applications for the IC. Developers start by defining a <a href="https://graphql.org/learn/schema/">GraphQL schema</a> using the <a href="https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl">GraphQL SDL</a>. Once the schema is defined, it can be included within a canister and deployed to the IC. An entire relational database is generated from the schema, with GraphQL queries and mutations enabling a variety of <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> operations, including advanced querying over relational data.</p>
 <p>Sudograph should be considered somewhere between alpha and beta software.</p>
 <h1 id="vision-and-motivation"><a class="header" href="#vision-and-motivation">Vision and motivation</a></h1>
+<h2 id="vision"><a class="header" href="#vision">Vision</a></h2>
+<p><a href="https://twitter.com/lastmjs">My</a> goal for Sudograph is for it to become the simplest, most flexible, and in the end most powerful way to develop internet applications. That's the grand vision.</p>
+<p>To scope the vision down a bit, more realistically I want Sudograph to become the simplest, most flexible, and in the end most powerful way to develop Internet Computer applications.</p>
+<p>Sudograph will achieve this vision by reading your GraphQL schema and generating an amazingly flexible, super simple, infinitely scalable, and extremely secure backend.</p>
+<p>That's a lot of hyperbole! But that's also the future I want to build with Sudograph.</p>
+<p>Achieving this vision begins with enabling CRUD operations within a single canister, then quickly moves into <a href="./migrations.html">migrations</a>, <a href="authorization.html">authorization</a>, and <a href="./multi-canister-scaling.html">multi-canister scaling</a>.</p>
+<p>Sudograph is currently transitioning from alpha into beta, and there's a long journey ahead.</p>
+<h2 id="motivation"><a class="header" href="#motivation">Motivation</a></h2>
+<p>I have been developing with GraphQL since somewhere around 2016. It immediately struck me as a powerful way to deal with the complexities of managing the reading and writing of data for non-trivial internet applications. It has proven to me since that it is extremely versatile, and I have used it for a number of projects with a number of different underlying data sources.</p>
+<p>Though GraphQL simplifies development, implementing it is not always simple. It still requires you to write a lot of code to bring your schema to life, in large part because GraphQL does not solve the problem of how data is read and written.</p>
+<p>There are a number of libraries that have been developed in the recent past to address this problem. You can think of these as GraphQL generators. They attempt in one way or another to take a GraphQL schema and generate the code required to read and write data.</p>
+<p>During my journey to find the perfect GraphQL generator, I went from <a href="https://github.com/Graphcool/graphcool-framework">Graphcool</a> to <a href="https://github.com/prisma/prisma1">Prisma</a> to <a href="https://github.com/aerogear/graphback">Graphback</a> to finally writing a <a href="https://github.com/jillsoffice/graphql-sql-builder">GraphQL generator from scratch</a>. And there are other similar projects out there, like <a href="https://github.com/hasura/graphql-engine">Hasura</a> and <a href="https://github.com/graphile/postgraphile">PostGraphile</a>.</p>
+<p>No project has gotten it right yet, and each library has trade-offs and falls short of the vision of generating an amazingly flexible, super simple, infinitely scalable, and extremely secure backend from a GraphQL schema. It's a very difficult problem.</p>
+<p>The Internet Computer may provide a very interesting solution.</p>
+<p>The Internet Computer promises flexibility, simplicity, scalability, and security like no other platform before it. Combining the powers of GraphQL with the Internet Computer may be the best chance we have yet to achieve this vision.</p>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>Multiple examples are located in the <a href="https://github.com/sudograph/sudograph/tree/main/examples">examples directory</a> in the <a href="https://github.com/sudograph/sudograph">Sudograph repository</a>.</p>
 <p>Here's a list of possibly useful examples:</p>
@@ -2739,6 +2754,7 @@ actor Motoko {
 
     public func get_all_users(): async (Text) {
         // TODO here you can implement your custom authorization for get_all_users
+        
         let result = await GraphQLCanister.graphql_query_custom(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
 
         return result;
