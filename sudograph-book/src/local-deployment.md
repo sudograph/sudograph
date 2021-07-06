@@ -42,10 +42,62 @@ Still needs to be documented.
 
 ## Rust canister
 
-If you want to call into the `graphql canister` from another Rust canister:
+If you want to call into the `graphql canister` from another Rust canister, first you update the `dfx.json` and then implement your `rust canister`.
+
+Make sure to include the `graphql canister` as a dependency to your `rust canister` in `dfx.json`:
+
+```json
+{
+    "canisters": {
+        "graphql": {
+            "type": "custom",
+            "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
+            "candid": "canisters/graphql/src/graphql.did",
+            "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
+        },
+        "playground": {
+            "type": "assets",
+            "source": ["canisters/playground/build"]
+        },
+        "rust": {
+            "type": "custom",
+            "build": "cargo build --target wasm32-unknown-unknown --package rust --release",
+            "candid": "canisters/rust/src/rust.did",
+            "wasm": "target/wasm32-unknown-unknown/release/rust.wasm",
+            "dependencies": [
+                "graphql"
+            ]
+        }
+    }
+}
+```
+
+And then in your `rust canister`:
 
 ```rust
-// TODO fill out this example, show queries and mutations
+use ic_cdk;
+use ic_cdk_macros;
+
+#[ic_cdk_macros::import(canister = "graphql")]
+struct GraphQLCanister;
+
+#[ic_cdk_macros::query]
+async fn get_all_users() -> String {
+    let result = GraphQLCanister::graphql_query(
+        "
+            query {
+                readUser {
+                    id
+                }
+            }
+        ".to_string(),
+        "{}".to_string()
+    ).await;
+
+    let result_string = result.0;
+
+    return result_string;
+}
 ```
 
 ## Motoko canister
@@ -53,7 +105,20 @@ If you want to call into the `graphql canister` from another Rust canister:
 If you want to call into the `graphql canister` from a Motoko canister:
 
 ```swift
-// TODO fill out this example, show queries and mutations
+import Text "mo:base/Text";
+
+actor Motoko {
+    let GraphQLCanister = actor "rrkah-fqaaa-aaaaa-aaaaq-cai": actor {
+        graphql_query: query (Text, Text) -> async (Text);
+        graphql_mutation: (Text, Text) -> async (Text);
+    };
+
+    public func get_all_users(): async (Text) {
+        let result = await GraphQLCanister.graphql_query("query { readUser { id } }", "{}");
+
+        return result;
+    }
+}
 ```
 
 ## Wasm binary optimization

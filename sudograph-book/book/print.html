@@ -170,6 +170,21 @@
 <p>Its goal is to become the simplest way to develop applications for the IC. Developers start by defining a <a href="https://graphql.org/learn/schema/">GraphQL schema</a> using the <a href="https://www.digitalocean.com/community/tutorials/graphql-graphql-sdl">GraphQL SDL</a>. Once the schema is defined, it can be included within a canister and deployed to the IC. An entire relational database is generated from the schema, with GraphQL queries and mutations enabling a variety of <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> operations, including advanced querying over relational data.</p>
 <p>Sudograph should be considered somewhere between alpha and beta software.</p>
 <h1 id="vision-and-motivation"><a class="header" href="#vision-and-motivation">Vision and motivation</a></h1>
+<h2 id="vision"><a class="header" href="#vision">Vision</a></h2>
+<p><a href="https://twitter.com/lastmjs">My</a> goal for Sudograph is for it to become the simplest, most flexible, and in the end most powerful way to develop internet applications. That's the grand vision.</p>
+<p>To scope the vision down a bit, more realistically I want Sudograph to become the simplest, most flexible, and in the end most powerful way to develop Internet Computer applications.</p>
+<p>Sudograph will achieve this vision by reading your GraphQL schema and generating an amazingly flexible, super simple, infinitely scalable, and extremely secure backend.</p>
+<p>That's a lot of hyperbole! But that's also the future I want to build with Sudograph.</p>
+<p>Achieving this vision begins with enabling CRUD operations within a single canister, then quickly moves into <a href="./migrations.html">migrations</a>, <a href="authorization.html">authorization</a>, and <a href="./multi-canister-scaling.html">multi-canister scaling</a>.</p>
+<p>Sudograph is currently transitioning from alpha into beta, and there's a long journey ahead.</p>
+<h2 id="motivation"><a class="header" href="#motivation">Motivation</a></h2>
+<p>I have been developing with GraphQL since somewhere around 2016. It immediately struck me as a powerful way to deal with the complexities of managing the reading and writing of data for non-trivial internet applications. It has proven to me since that it is extremely versatile, and I have used it for a number of projects with a number of different underlying data sources.</p>
+<p>Though GraphQL simplifies development, implementing it is not always simple. It still requires you to write a lot of code to bring your schema to life, in large part because GraphQL does not solve the problem of how data is read and written.</p>
+<p>There are a number of libraries that have been developed in the recent past to address this problem. You can think of these as GraphQL generators. They attempt in one way or another to take a GraphQL schema and generate the code required to read and write data.</p>
+<p>During my journey to find the perfect GraphQL generator, I went from <a href="https://github.com/Graphcool/graphcool-framework">Graphcool</a> to <a href="https://github.com/prisma/prisma1">Prisma</a> to <a href="https://github.com/aerogear/graphback">Graphback</a> to finally writing a <a href="https://github.com/jillsoffice/graphql-sql-builder">GraphQL generator from scratch</a>. And there are other similar projects out there, like <a href="https://github.com/hasura/graphql-engine">Hasura</a> and <a href="https://github.com/graphile/postgraphile">PostGraphile</a>.</p>
+<p>No project has gotten it right yet, and each library has trade-offs and falls short of the vision of generating an amazingly flexible, super simple, infinitely scalable, and extremely secure backend from a GraphQL schema. It's a very difficult problem.</p>
+<p>The Internet Computer may provide a very interesting solution.</p>
+<p>The Internet Computer promises flexibility, simplicity, scalability, and security like no other platform before it. Combining the powers of GraphQL with the Internet Computer may be the best chance we have yet to achieve this vision.</p>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>Multiple examples are located in the <a href="https://github.com/sudograph/sudograph/tree/main/examples">examples directory</a> in the <a href="https://github.com/sudograph/sudograph">Sudograph repository</a>.</p>
 <p>Here's a list of possibly useful examples:</p>
@@ -360,16 +375,77 @@ dfx canister call graphql graphql_mutation '(&quot;mutation { createUser(input: 
 <h2 id="sudograph-client"><a class="header" href="#sudograph-client">Sudograph Client</a></h2>
 <p>Still needs to be documented.</p>
 <h2 id="rust-canister"><a class="header" href="#rust-canister">Rust canister</a></h2>
-<p>If you want to call into the <code>graphql canister</code> from another Rust canister:</p>
+<p>If you want to call into the <code>graphql canister</code> from another Rust canister, first you update the <code>dfx.json</code> and then implement your <code>rust canister</code>.</p>
+<p>Make sure to include the <code>graphql canister</code> as a dependency to your <code>rust canister</code> in <code>dfx.json</code>:</p>
+<pre><code class="language-json">{
+    &quot;canisters&quot;: {
+        &quot;graphql&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package graphql --release&quot;,
+            &quot;candid&quot;: &quot;canisters/graphql/src/graphql.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/graphql.wasm&quot;
+        },
+        &quot;playground&quot;: {
+            &quot;type&quot;: &quot;assets&quot;,
+            &quot;source&quot;: [&quot;canisters/playground/build&quot;]
+        },
+        &quot;rust&quot;: {
+            &quot;type&quot;: &quot;custom&quot;,
+            &quot;build&quot;: &quot;cargo build --target wasm32-unknown-unknown --package rust --release&quot;,
+            &quot;candid&quot;: &quot;canisters/rust/src/rust.did&quot;,
+            &quot;wasm&quot;: &quot;target/wasm32-unknown-unknown/release/rust.wasm&quot;,
+            &quot;dependencies&quot;: [
+                &quot;graphql&quot;
+            ]
+        }
+    }
+}
+</code></pre>
+<p>And then in your <code>rust canister</code>:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>// TODO fill out this example, show queries and mutations
+</span>use ic_cdk;
+use ic_cdk_macros;
+
+#[ic_cdk_macros::import(canister = &quot;graphql&quot;)]
+struct GraphQLCanister;
+
+#[ic_cdk_macros::query]
+async fn get_all_users() -&gt; String {
+    let result = GraphQLCanister::graphql_query(
+        &quot;
+            query {
+                readUser {
+                    id
+                }
+            }
+        &quot;.to_string(),
+        &quot;{}&quot;.to_string()
+    ).await;
+
+    let result_string = result.0;
+
+    return result_string;
+}
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="motoko-canister"><a class="header" href="#motoko-canister">Motoko canister</a></h2>
 <p>If you want to call into the <code>graphql canister</code> from a Motoko canister:</p>
-<pre><code class="language-swift">// TODO fill out this example, show queries and mutations
+<pre><code class="language-swift">import Text &quot;mo:base/Text&quot;;
+
+actor Motoko {
+    let GraphQLCanister = actor &quot;rrkah-fqaaa-aaaaa-aaaaq-cai&quot;: actor {
+        graphql_query: query (Text, Text) -&gt; async (Text);
+        graphql_mutation: (Text, Text) -&gt; async (Text);
+    };
+
+    public func get_all_users(): async (Text) {
+        let result = await GraphQLCanister.graphql_query(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
+
+        return result;
+    }
+}
 </code></pre>
 <h2 id="wasm-binary-optimization"><a class="header" href="#wasm-binary-optimization">Wasm binary optimization</a></h2>
 <p>If the replica rejects deployment of your canister because the payload is too large, you may need to <a href="./wasm-binary-optimization.html">optimize your Wasm binary</a>.</p>
@@ -2633,6 +2709,80 @@ async fn graphql_mutation_custom(mutation_string: String, variables_json_string:
 <p>This is a very simple example, but it illustrates how you can create custom functions designed for a specific purpose with authorization, using Sudograph to perform CRUD operations.</p>
 <p>The plan is to eventually introduce authorization configuration into the GraphQL schema, allowing you to use a directive like <code>@auth</code> to enforce authorization.</p>
 <p>Until you can configure authorization from within the schema itself, it will probably be necessary to control all access to queries and mutations from custom canister functions that enforce their own authorization. Custom resolvers won't really be useful if any data in the schema needs authorized access.</p>
+<h2 id="canister-authorization"><a class="header" href="#canister-authorization">Canister authorization</a></h2>
+<p>If you are interested in using a Rust or Motoko canister as a client to your <code>graphql canister</code>, then take a look at the <a href="https://github.com/sudograph/sudograph/tree/main/examples/rust-client">rust-client</a> and <a href="https://github.com/sudograph/sudograph/tree/main/examples/motoko-client">motoko-client</a> examples.</p>
+<p>The <code>graphql canister</code> can be configured to only authorize queries or updates from a specific canister. This will allow you to create authorized data-specific functions in your Rust or Motoko canisters, and those functions can then use GraphQL to call into the <code>graphql canister</code>. This is probably the best way to implement authorization in your applications until something like the <code>@auth</code> directive is implemented.</p>
+<h3 id="rust-authorization"><a class="header" href="#rust-authorization">Rust authorization</a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use ic_cdk;
+use ic_cdk_macros;
+
+#[ic_cdk_macros::import(canister = &quot;graphql&quot;)]
+struct GraphQLCanister;
+
+#[ic_cdk_macros::query]
+async fn get_all_users() -&gt; String {
+    // TODO here you can implement your custom authorization for get_all_users
+    
+    let result = GraphQLCanister::graphql_query_custom(
+        &quot;
+            query {
+                readUser {
+                    id
+                }
+            }
+        &quot;.to_string(),
+        &quot;{}&quot;.to_string()
+    ).await;
+
+    let result_string = result.0;
+
+    return result_string;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h3 id="motoko-authorization"><a class="header" href="#motoko-authorization">Motoko authorization</a></h3>
+<pre><code class="language-swift">import Text &quot;mo:base/Text&quot;;
+
+actor Motoko {
+    let GraphQLCanister = actor &quot;rrkah-fqaaa-aaaaa-aaaaq-cai&quot;: actor {
+        graphql_query_custom: query (Text, Text) -&gt; async (Text);
+        graphql_mutation: (Text, Text) -&gt; async (Text);
+    };
+
+    public func get_all_users(): async (Text) {
+        // TODO here you can implement your custom authorization for get_all_users
+        
+        let result = await GraphQLCanister.graphql_query_custom(&quot;query { readUser { id } }&quot;, &quot;{}&quot;);
+
+        return result;
+    }
+}
+</code></pre>
+<p>You can then authorize specific canisters in the <code>graphql canister</code> like this:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use sudograph::graphql_database;
+
+graphql_database!(&quot;canisters/graphql/src/schema.graphql&quot;);
+
+#[sudograph::ic_cdk_macros::query]
+async fn graphql_query_custom(query: String, variables: String) -&gt; String {
+    let motoko_canister_principal = sudograph::ic_cdk::export::Principal::from_text(&quot;ryjl3-tyaaa-aaaaa-aaaba-cai&quot;).expect(&quot;should be able to decode&quot;);
+
+    if sudograph::ic_cdk::caller() != motoko_canister_principal {
+        panic!(&quot;Not authorized&quot;);
+    }
+
+    return graphql_query(query, variables).await;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><code>graphql_query_custom</code> will only accept calls from the <code>ryjl3-tyaaa-aaaaa-aaaba-cai</code> canister. Now all authorization logic can be implemented in the <code>ryjl3-tyaaa-aaaaa-aaaba-cai</code> canister.</p>
+<p>Again, the goal is to allow you to write custom authorization into your schema with something like an <code>@auth</code> directive, which should greatly simplify authorization and allow for GraphQL operations to be made directly from a frontend client.</p>
 <h1 id="migrations"><a class="header" href="#migrations">Migrations</a></h1>
 <p>Whenever you wish to make changes to a canister without losing that canister's state, you must perform what is called an <a href="https://sdk.dfinity.org/docs/developers-guide/working-with-canisters.html#upgrade-canister">upgrade</a>.</p>
 <p>An <code>upgrade</code> allows you to preserve your canister's state while changing its code. You can see a full example of an upgrade <a href="https://github.com/sudograph/sudograph/blob/main/examples/files/canisters/graphql/src/graphql.rs">here</a>.</p>
