@@ -1,0 +1,16 @@
+# TODO we want to generate this file automatically using arbitraries somehow
+# TODO we will want to configure its complexity...it would be nice to vary
+# TODO the number of object types, fields per object type, etc
+# TODO If I have to, I can come up with my own hard-coded schema that seems
+# TODO appropriate though, testing all combinations I can think of for now
+
+type User {
+    id: ID!
+    username: String!
+    age: Int!
+    height: Float!
+    citizen: Boolean!
+    birthdate: Date!
+    bytes: Blob!
+    meta: JSON!
+}

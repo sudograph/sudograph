@@ -55,7 +55,14 @@ fn generate_object_type_struct(
     );
     
     return quote! {
-        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[derive(
+            Serialize,
+            Deserialize,
+            Default,
+            Clone,
+            Debug,
+            // CandidType // TODO reenable https://github.com/sudograph/sudograph/issues/123
+        )]
         #[serde(crate="self::serde", default)]
         struct #object_type_name {
             #(#generated_read_input_fields),*

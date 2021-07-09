@@ -301,7 +301,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             SeedableRng,
             rngs::StdRng
         };
-        use sudograph::ic_cdk::export::candid::CandidType;
+        // use sudograph::ic_cdk::export::candid::CandidType; // TODO reenable https://github.com/sudograph/sudograph/issues/123
 
         // TODO this is just to test out storing a source of randomness per update call
         // TODO the best way I believe would to somehow
@@ -319,7 +319,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
         // We are creating our own custom ID scalar so that we can derive the Default trait
         // Default traits are needed so that serde has default values when the selection set
         // Does not provide all required values
-        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[derive(
+            Serialize,
+            Deserialize,
+            Default,
+            Clone,
+            Debug,
+            // CandidType // TODO reenable https://github.com/sudograph/sudograph/issues/123
+        )]
         // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct ID(String);
@@ -332,14 +339,28 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         scalar!(ID);
 
-        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[derive(
+            Serialize,
+            Deserialize,
+            Default,
+            Clone,
+            Debug,
+            // CandidType // TODO reenable https://github.com/sudograph/sudograph/issues/123
+        )]
         // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct Date(String);
 
         scalar!(Date);
 
-        #[derive(Serialize, Deserialize, Default, Clone, Debug, CandidType)]
+        #[derive(
+            Serialize,
+            Deserialize,
+            Default,
+            Clone,
+            Debug,
+            // CandidType // TODO reenable https://github.com/sudograph/sudograph/issues/123
+        )]
         // #[candid_path("::sudograph::ic_cdk::export::candid")] TODO reenable once https://github.com/dfinity/candid/issues/248 is released
         #[serde(crate="self::serde")]
         struct Blob(Vec<u8>);
@@ -544,6 +565,11 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         #export_generated_query_function_attribute
         async fn graphql_query(query_string: String, variables_json_string: String) -> String {
+            
+            // TODO create a sudograph setting for logs
+            // ic_cdk::println!("query_string: {}", query_string);
+            // ic_cdk::println!("variables_json_string: {}", variables_json_string);
+
             // TODO figure out how to create global variable to store the schema in
             // TODO we can probably just store this in a map or something with ic storage
             let schema = Schema::new(
@@ -572,6 +598,10 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         #export_generated_mutation_function_attribute
         async fn graphql_mutation(mutation_string: String, variables_json_string: String) -> String {
+            // TODO create a sudograph setting for logs
+            // ic_cdk::println!("mutation_string: {}", mutation_string);
+            // ic_cdk::println!("variables_json_string: {}", variables_json_string);
+
             let rand_store = storage::get_mut::<RandStore>();
 
             let rng_option = rand_store.get("RNG");
@@ -608,9 +638,15 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
             let response = schema.execute(request).await;
 
-            let json_result = to_json_string(&response);
+            // TODO create a sudograph setting for logs
+            // ic_cdk::println!("response: {:?}", response);
 
-            return json_result.expect("This should work");
+            let json_result = to_json_string(&response).expect("This should work");
+
+            // TODO create a sudograph setting for logs
+            // ic_cdk::println!("json_result {}", &json_result);
+
+            return json_result;
         }
 
         #export_generated_init_function_attribute
