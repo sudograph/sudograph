@@ -3,7 +3,9 @@ use graphql_parser::schema::{
     TypeDefinition,
     ObjectType,
     Type,
-    Document
+    Document,
+    EnumType,
+    Field
 };
 use ic_cdk::export::candid::{
     Decode,
@@ -110,4 +112,57 @@ pub fn get_graphql_type_name(graphql_type: &Type<String>) -> String {
             return get_graphql_type_name(list_type);
         }
     };
+}
+
+pub fn is_graphql_type_an_enum(
+    graphql_ast: &Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    let enum_types = get_enum_types(graphql_ast);
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+
+    let graphql_type_is_an_enum = enum_types.iter().any(|enum_type| {
+        return enum_type.name == graphql_type_name;
+    });
+
+    return graphql_type_is_an_enum;
+}
+
+fn get_enum_types<'a>(graphql_ast: &Document<'a, String>) -> Vec<EnumType<'a, String>> {
+    let type_definitions: Vec<TypeDefinition<String>> = graphql_ast.definitions.iter().filter_map(|definition| {
+        match definition {
+            Definition::TypeDefinition(type_definition) => {
+                return Some(type_definition.clone());
+            },
+            _ => {
+                return None;
+            }
+        };
+    }).collect();
+
+    let enum_types: Vec<EnumType<String>> = type_definitions.into_iter().filter_map(|type_definition| {
+        match type_definition {
+            TypeDefinition::Enum(enum_type) => {
+                return Some(enum_type);
+            },
+            _ => {
+                return None;
+            }
+        }
+    }).collect();
+
+    return enum_types;
+}
+
+pub fn get_enum_type_from_field<'a>(
+    graphql_ast: &Document<'a, String>,
+    field: &Field<String>
+) -> Option<EnumType<'a, String>> {
+    let enum_type_name = get_graphql_type_name(&field.field_type);
+
+    let enum_types = get_enum_types(graphql_ast);
+
+    return enum_types.into_iter().find(|enum_type| {
+        return enum_type.name == enum_type_name;
+    }).clone();
 }

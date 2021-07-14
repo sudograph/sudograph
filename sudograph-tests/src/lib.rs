@@ -6,6 +6,7 @@ pub mod arbitraries {
     pub mod json;
     pub mod datetime;
     pub mod string;
+    pub mod arb_enum;
 }
 
 use arbitraries::sudograph::InputValues;

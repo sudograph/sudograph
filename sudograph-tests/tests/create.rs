@@ -3,7 +3,11 @@
 // TODO then separate from the above two are the object_type and field arbitraries that actually produce arbitrary object types
 // TODO and fields, which I could then use to create a random schema
 
-use graphql_parser::schema::parse_schema;
+use graphql_parser::schema::{
+    parse_schema,
+    Document,
+    ObjectType
+};
 use std::fs;
 use sudograph_tests::{
     assert_correct_result,
@@ -23,12 +27,14 @@ use proptest::{
 };
 
 #[test]
-fn test_create() {
-    let schema_file_contents = fs::read_to_string("canisters/graphql/src/schema.graphql").unwrap();
-    let graphql_ast = parse_schema::<String>(&schema_file_contents).unwrap();
-    let object_types = get_object_types(&graphql_ast);
+fn test_create() {    
+    // TODO I am leaking here because I am using BoxedStrategy, which has a 'static trait bound
+    // TODO I am not sure I can get around leaking here, but it should be okay for tests
+    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql").unwrap().into_boxed_str());
+    let graphql_ast = Box::leak(Box::new(parse_schema::<'static, String>(&schema_file_contents).unwrap()));
+    let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
-    for object_type in object_types {
+    for object_type in object_types.iter() {
         
         let mut runner = TestRunner::new(Config {
             cases: 10,
@@ -36,7 +42,10 @@ fn test_create() {
             .. Config::default()
         });
 
-        let arb_mutation_create = arb_mutation_create(object_type);
+        let arb_mutation_create = arb_mutation_create(
+            graphql_ast,
+            object_type
+        );
 
         runner.run(&arb_mutation_create, |mutation_create_result| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
@@ -61,8 +70,14 @@ fn test_create() {
             return Ok(());
         }).unwrap();
 
-        // TODO once this works for scalars, we should move on to enums
         // TODO once this works for enums, we should move on to relations
+
+        // TODO do we also want to test multiple mutations per query?
+        // TODO we should do a random number of mutations per mutation query
+
+        // TODO we also need to test nullable types
+        // TODO so every type that is nullable should be able to produce either a null or value
+        // TODO should be relatively simple, just add a null bool for each field in the struct
         
         // TODO we should also experiment with random combinations of fields...
         // TODO we should consider how random we want the combinations to be, and how deterministic we want them to be
