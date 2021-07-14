@@ -166,3 +166,14 @@ pub fn get_enum_type_from_field<'a>(
         return enum_type.name == enum_type_name;
     }).clone();
 }
+
+pub fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
+    match graphql_type {
+        Type::NonNullType(_) => {
+            return false;
+        },
+        _ => {
+            return true;
+        }
+    };
+}

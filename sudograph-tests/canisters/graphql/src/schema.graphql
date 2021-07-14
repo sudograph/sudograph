@@ -4,18 +4,24 @@
 # TODO If I have to, I can come up with my own hard-coded schema that seems
 # TODO appropriate though, testing all combinations I can think of for now
 
-# TODO we also need to test nullable types
-# TODO right now nothing is nullable
 type User {
     id: ID!
     username: String!
+    username_nullable: String
     age: Int!
+    age_nullable: Int
     color: Color!
+    color_nullable: Color
     height: Float!
+    height_nullable: Float
     citizen: Boolean!
+    citizen_nullable: Boolean
     birthdate: Date!
+    birthdate_nullable: Date
     bytes: Blob!
+    bytes_nullable: Blob
     meta: JSON!
+    meta_nullable: JSON
 }
 
 enum Color {

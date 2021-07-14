@@ -1,29 +1,20 @@
 // TODO consider making a very simple way to clear the entire database between tests
-
 // TODO then separate from the above two are the object_type and field arbitraries that actually produce arbitrary object types
 // TODO and fields, which I could then use to create a random schema
 
-use graphql_parser::schema::{
-    parse_schema,
-    Document,
-    ObjectType
-};
+use graphql_parser::schema::parse_schema;
 use std::fs;
 use sudograph_tests::{
     assert_correct_result,
-    arbitraries::{
-        sudograph::arb_mutation_create
-    },
+    arbitraries::sudograph::arb_mutation_create,
     utilities::graphql::{
         graphql_mutation,
         get_object_types
     }
 };
-use proptest::{
-    test_runner::{
-        TestRunner,
-        Config
-    }
+use proptest::test_runner::{
+    TestRunner,
+    Config
 };
 
 #[test]
@@ -38,7 +29,7 @@ fn test_create() {
         
         let mut runner = TestRunner::new(Config {
             cases: 10,
-            max_shrink_iters: 100000,
+            max_shrink_iters: 100000, // TODO play with this number
             .. Config::default()
         });
 
@@ -51,7 +42,10 @@ fn test_create() {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
                 println!("query: {}", mutation_create_result.query);
                 println!("variables: {}\n\n", mutation_create_result.variables);
-            
+
+                // TODO this is here for testing shrinking
+                // panic!();
+
                 let result_json = graphql_mutation(
                     &mutation_create_result.query,
                     &mutation_create_result.variables
@@ -74,21 +68,7 @@ fn test_create() {
 
         // TODO do we also want to test multiple mutations per query?
         // TODO we should do a random number of mutations per mutation query
-
-        // TODO we also need to test nullable types
-        // TODO so every type that is nullable should be able to produce either a null or value
-        // TODO should be relatively simple, just add a null bool for each field in the struct
         
-        // TODO we should also experiment with random combinations of fields...
-        // TODO we should consider how random we want the combinations to be, and how deterministic we want them to be
-        // TODO for example do we want to test all scalars, all single relations, all many relations individually?
-        // TODO or do we just want to just random iterations of all of them?
-        // TODO perhaps to make it easy, we should start with just random iterations of all, and then
-        // TODO write down possible improvements
-        // TODO if we try as many random inputs as possible, that will be easier
-        // TODO then over time if bugs crop up that the random tests did not find, we should
-        // TODO be able to improve the tests over time with that knowledge
-
         // TODO once we feel comfortable with the create tests, let's make a GitHub action and get continuous integration going
         // TODO make sure to have the cool badge and stuff, and maybe do something crazy like 100,000 iterations
     }
