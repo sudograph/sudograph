@@ -241,3 +241,70 @@ fn is_graphql_type_a_list_type(
         }
     };
 }
+
+// TODO this search needs to exclude the relation's own entity field...
+// TODO you could have a relation to your same type, but you need to skip your original field
+pub fn get_opposing_relation_field<'a>(
+    graphql_ast: &'a Document<'a, String>,
+    relation_field: &Field<String>
+) -> Option<Field<'a, String>> {
+    let relation_name = get_directive_argument_value_from_field(
+        relation_field,
+        "relation",
+        "name"
+    )?;
+
+    let opposing_object_type_name = get_graphql_type_name(&relation_field.field_type);
+    
+    let object_types = get_object_types(graphql_ast);
+
+    return object_types.iter().filter(|object_type| {
+        return object_type.name == opposing_object_type_name; // TODO a find might make more sense than a filter
+    }).fold(None, |_, object_type| {
+        return object_type.fields.iter().fold(None, |result, field| {
+            if result != None {
+                return result;
+            }
+
+            let opposing_relation_name = get_directive_argument_value_from_field(
+                field,
+                "relation",
+                "name"
+            )?;
+
+            if opposing_relation_name == relation_name {
+                return Some(field.clone());
+            }
+            else {
+                return result;
+            }
+        });
+    });
+}
+
+fn get_directive_argument_value_from_field(
+    field: &Field<String>,
+    directive_name: &str,
+    argument_name: &str
+) -> Option<String> {
+    let directive = field.directives.iter().find(|directive| {
+        return directive.name == directive_name;
+    })?;
+
+    let argument = directive.arguments.iter().find(|argument| {
+        return argument.0 == argument_name;
+    })?;
+
+    return Some(argument.1.to_string());
+}
+
+pub fn get_object_type_from_field<'a>(
+    object_types: &'static Vec<ObjectType<'a, String>>,
+    field: &Field<String>
+) -> Option<&'static ObjectType<'a, String>> {
+    let object_type_name = get_graphql_type_name(&field.field_type);
+
+    return object_types.into_iter().find(|object_type| {
+        return object_type.name == object_type_name;
+    }).clone();
+}

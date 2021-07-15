@@ -15,7 +15,17 @@ use graphql_parser::schema::{
     Field,
     Document
 };
-use crate::utilities::graphql::{get_enum_type_from_field, get_graphql_type_name, graphql_mutation, is_graphql_type_a_relation_many, is_graphql_type_a_relation_one, is_graphql_type_an_enum, is_graphql_type_nullable};
+use crate::utilities::graphql::{
+    get_enum_type_from_field,
+    get_graphql_type_name,
+    get_object_type_from_field,
+    get_opposing_relation_field,
+    graphql_mutation,
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one,
+    is_graphql_type_an_enum,
+    is_graphql_type_nullable
+};
 
 #[derive(Debug, Clone)]
 pub struct InputValue {
@@ -37,24 +47,28 @@ pub struct ArbitraryResult {
     pub input_values: InputValues
 }
 
+// TODO this should probably be defined in a trait?
 pub fn arb_mutation_create<'a>(
     graphql_ast: &'static Document<String>,
-    object_type: &'static ObjectType<String>
-) -> impl Strategy<Value = ArbitraryResult> {
+    object_types: &'static Vec<ObjectType<String>>,
+    object_type: &'static ObjectType<String>,
+    relation_test: bool
+) -> BoxedStrategy<ArbitraryResult> {
     let input_value_strategies = get_input_value_strategies(
         graphql_ast,
-        object_type
+        object_types,
+        object_type,
+        relation_test
     );
 
     // TODO the shrinking seems to never be finishing now, on relation one at least
-    // TODO actually we still want to exclude the id field sometimes, so move it out of non_nullable types
     return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
         let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
-            return input_value.nullable == false;
+            return input_value.nullable == false && input_value.field_name != "id";
         }).collect();
 
         let nullable_input_values: Vec<InputValue> = input_values.into_iter().filter(|input_value| {
-            return input_value.nullable == true;
+            return input_value.nullable == true || input_value.field_name == "id";
         }).collect();
 
         return (0..nullable_input_values.len() + 1).prop_map(move |index| {
@@ -68,7 +82,7 @@ pub fn arb_mutation_create<'a>(
 
             return object_type.arbitrary_mutation_create(input_values);
         });
-    });
+    }).boxed();
 }
 
 pub trait SudographObjectTypeArbitrary {
@@ -118,9 +132,7 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
                     field_name = &input_value.field_name
                 );
             }).collect::<Vec<String>>().join("\n                        "),
-            selections = input_values.iter().map(|input_value| {
-                return input_value.selection.to_string();
-            }).collect::<Vec<String>>().join("\n                        ")
+            selections = get_selections(&input_values).join("\n                        ")
         );
 
         let mut hash_map = std::collections::HashMap::<String, serde_json::Value>::new();
@@ -147,13 +159,51 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
     // }
 }
 
+fn get_selections(input_values: &InputValues) -> Vec<String> {
+    let input_value_strings_possible_id = input_values.iter().map(|input_value| {
+        return input_value.selection.to_string();
+    }).collect::<Vec<String>>();
+
+    if input_value_strings_possible_id.contains(&"id".to_string()) == false {
+        return vec![
+            vec!["id".to_string()],
+            input_value_strings_possible_id
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+    }
+    else {
+        return input_value_strings_possible_id;
+    }
+}
+
 fn get_input_value_strategies(
     graphql_ast: &'static Document<String>,
-    object_type: &'static ObjectType<String>
+    object_types: &'static Vec<ObjectType<String>>,
+    object_type: &'static ObjectType<String>,
+    relation_test: bool
 ) -> Vec<BoxedStrategy<InputValue>> {
-    return object_type.fields.iter().map(|field| {
+    return object_type
+        .fields
+        .iter()
+        .filter(|field| {
+            let field_is_nullable = is_graphql_type_nullable(&field.field_type);
+            let field_is_relation_many = is_graphql_type_a_relation_many(
+                graphql_ast,
+                &field.field_type
+            );
+
+            if relation_test == true {
+                return !field_is_nullable && !field_is_relation_many;
+            }
+            else {
+                return true;
+            }
+        }).map(|field| {
         return get_input_value_strategy(
             graphql_ast,
+            object_types,
             field
         );
     }).collect();
@@ -161,9 +211,9 @@ fn get_input_value_strategies(
 
 fn get_input_value_strategy(
     graphql_ast: &'static Document<String>,
+    object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>
 ) -> BoxedStrategy<InputValue> {
-    // TODO figure out why type_name can be used within some of these closures and not others
     let type_name = get_graphql_type_name(&field.field_type);
 
     match &type_name[..] {
@@ -193,7 +243,7 @@ fn get_input_value_strategy(
         },
         _ => {
             if is_graphql_type_an_enum(
-                &graphql_ast,
+                graphql_ast,
                 &field.field_type
             ) == true {
                 return get_input_value_strategy_enum(
@@ -203,21 +253,23 @@ fn get_input_value_strategy(
             }
 
             if is_graphql_type_a_relation_many(
-                &graphql_ast,
+                graphql_ast,
                 &field.field_type
             ) == true {
                 return get_input_value_strategy_relation_many(
                     graphql_ast,
+                    object_types,
                     field
                 );
             }
 
             if is_graphql_type_a_relation_one(
-                &graphql_ast,
+                graphql_ast,
                 &field.field_type
             ) == true {
                 return get_input_value_strategy_relation_one(
                     graphql_ast,
+                    object_types,
                     field
                 );
             }
@@ -247,7 +299,7 @@ fn get_input_value_strategy_nullable(
                 selection: if relation_many == true || relation_one == true { format!(
                     "{field_name} {{ id }}",
                     field_name = field_name.to_string()
-                ) } else { field_name.to_string() }, // TODO this will have to be modified for relations
+                ) } else { field_name.to_string() },
                 nullable: true,
                 input_value,
                 selection_value
@@ -622,86 +674,123 @@ fn get_input_value_strategy_enum(
     }
 }
 
-// TODO to improve this we want to create a variable amount of relations
+// TODO to improve this we want to create a variable amount of relations, more than just one
 fn get_input_value_strategy_relation_many(
     graphql_ast: &'static Document<String>,
+    object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>
 ) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
-    let strategy = any::<String>().prop_map(move |string| {
-        return tokio::runtime::Runtime::new().unwrap().block_on(async {
-            let field_type = get_graphql_type_name(&field.field_type);
-            let input_type = "CreateRelationManyInput".to_string();
-    
-            // let created_relation_id = "0".to_string();
-    
-            let id = string.replace("\\", "").replace("\"", "");
 
-            // TODO perhaps create a trait method that will generate
-            // TODO one of these function for a field
-            // TODO you just call field.create_relation
-            // TODO that would be awesome
-            let result_json = graphql_mutation(
-                &format!(
-                    "
-                        mutation ($id: ID!) {{
-                            create{relation_type_name}(input: {{
-                                id: $id
-                            }}) {{
-                                id
-                            }}
-                        }}
-                    ",
-                    relation_type_name = field_type
-                ),
-                &serde_json::json!({
-                    "id": id
-                }).to_string()
+    let relation_object_type = get_object_type_from_field(
+        object_types,
+        field
+    ).unwrap();
+
+    let relation_mutation_create_arbitrary = arb_mutation_create(
+        graphql_ast,
+        object_types,
+        relation_object_type,
+        true
+    );
+
+    let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create| {
+        let future = async {
+            return graphql_mutation(
+                &relation_mutation_create.query,
+                &relation_mutation_create.variables
             ).await;
+        };
 
-            // let result = serde_json::from_value(result_json).unwrap();
+        let result_json = tokio::runtime::Runtime::new().unwrap().block_on(future);
+        
+        let field_type = get_graphql_type_name(&field.field_type);
+        let input_type = "CreateRelationManyInput".to_string();
 
-            // TODO consider whether we should be using a deterministic id or letting one get generated on its own
-            // let relation_id = &result.data.createIdentity[0].id;
-            // let relation_id = match result_json {
-            //     serde_json::Value::Object(object) => match object.get("data").unwrap() {
-            //         serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
-            //             serde_json::Value::Array(array) => match &array[0] {
-            //                 serde_json::Value::Object(object) => object.get("id").unwrap().to_string(),
-            //                 _ => panic!()
-            //             }
-            //             _ => panic!()
-            //         },
-            //         _ => panic!()
-            //     },
-            //     _ => panic!()
-            // };
+        let id = match result_json {
+            serde_json::Value::Object(object) => match object.get("data").unwrap() {
+                serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
+                    serde_json::Value::Array(array) => match &array[0] {
+                        serde_json::Value::Object(object) => object.get("id").unwrap().to_string(), // TODO might have to replace id strings
+                        _ => panic!()
+                    }
+                    _ => panic!()
+                },
+                _ => panic!()
+            },
+            _ => panic!()
+        }.replace("\\", "").replace("\"", "");
 
-            let input_value = serde_json::json!({
-                "connect": [id]
-            });
-
-            // TODO actually I think we want to check both sides of the relation
-            // TODO so build out both sides of the relation so they can be checked
-            // TODO this might be difficult without having access to the id for this item
-            // TODO think about this
-            // TODO we should only do the double-sided check if the relation has two sides
-            let selection_value = serde_json::json!([{
-                "id": id
-            }]);
-    
-            return InputValue {
-                field_name: field.name.to_string(),
-                field_type: input_type,
-                selection: format!(
-                    "{field_name} {{ id }}",
-                    field_name = field.name.to_string()
-                ),
-                nullable,
-                input_value,
-                selection_value
-            };
+        let input_value = serde_json::json!({
+            "connect": [id]
         });
+
+        let opposing_relation_field_option = get_opposing_relation_field(
+            graphql_ast,
+            field
+        );
+
+        let selection_value = match &opposing_relation_field_option {
+            Some(opposing_relation_field) => {
+                let relation_field_name = field.name.to_string();
+                let opposing_relation_field_name = &opposing_relation_field.name;
+
+                if is_graphql_type_a_relation_many(
+                    graphql_ast,
+                    &opposing_relation_field.field_type
+                ) {
+                    serde_json::json!([{
+                        "id": id,
+                        opposing_relation_field_name: [{
+                            relation_field_name: [{
+                                "id": id
+                            }]
+                        }]
+                    }])
+                }
+                else {
+                    serde_json::json!([{
+                        "id": id,
+                        opposing_relation_field_name: {
+                            relation_field_name: [{
+                                "id": id
+                            }]
+                        }
+                    }])
+                }
+            },
+            None => serde_json::json!([{
+                "id": id
+            }])
+        };
+
+        let selection = match opposing_relation_field_option {
+            Some(opposing_relation_field) => format!(
+                "{field_name} {{
+                    id
+                    {opposing_relation_field_name} {{
+                        {field_name} {{
+                            id
+                        }}
+                    }}
+                }}",
+                field_name = field.name.to_string(),
+                opposing_relation_field_name = opposing_relation_field.name
+            ),
+            None => format!(
+                "{field_name} {{ id }}",
+                field_name = field.name.to_string()
+            )
+        };
+
+        return InputValue {
+            field_name: field.name.to_string(),
+            field_type: input_type,
+            selection,
+            nullable,
+            input_value,
+            selection_value
+        };
 
     }).boxed();
 
@@ -720,84 +809,120 @@ fn get_input_value_strategy_relation_many(
 
 fn get_input_value_strategy_relation_one(
     graphql_ast: &'static Document<String>,
+    object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>
 ) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
-    let strategy = any::<String>().prop_map(move |string| {
-        return tokio::runtime::Runtime::new().unwrap().block_on(async {
-            let field_type = get_graphql_type_name(&field.field_type);
-            let input_type = "CreateRelationOneInput".to_string();
-    
-            // let created_relation_id = "0".to_string();
-    
-            let id = string.replace("\\", "").replace("\"", "");
 
-            // TODO perhaps create a trait method that will generate
-            // TODO one of these function for a field
-            // TODO you just call field.create_relation
-            // TODO that would be awesome
-            let result_json = graphql_mutation(
-                &format!(
-                    "
-                        mutation ($id: ID!) {{
-                            create{relation_type_name}(input: {{
-                                id: $id
-                            }}) {{
-                                id
-                            }}
-                        }}
-                    ",
-                    relation_type_name = field_type
-                ),
-                &serde_json::json!({
-                    "id": id
-                }).to_string()
+    let relation_object_type = get_object_type_from_field(
+        object_types,
+        field
+    ).unwrap();
+
+    let relation_mutation_create_arbitrary = arb_mutation_create(
+        graphql_ast,
+        object_types,
+        relation_object_type,
+        true
+    );
+
+    let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create| {
+        let future = async {
+            return graphql_mutation(
+                &relation_mutation_create.query,
+                &relation_mutation_create.variables
             ).await;
+        };
 
-            // let result = serde_json::from_value(result_json).unwrap();
+        let result_json = tokio::runtime::Runtime::new().unwrap().block_on(future);
 
-            // TODO consider whether we should be using a deterministic id or letting one get generated on its own
-            // let relation_id = &result.data.createIdentity[0].id;
-            // let relation_id = match result_json {
-            //     serde_json::Value::Object(object) => match object.get("data").unwrap() {
-            //         serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
-            //             serde_json::Value::Array(array) => match &array[0] {
-            //                 serde_json::Value::Object(object) => object.get("id").unwrap().to_string(),
-            //                 _ => panic!()
-            //             }
-            //             _ => panic!()
-            //         },
-            //         _ => panic!()
-            //     },
-            //     _ => panic!()
-            // };
+        let field_type = get_graphql_type_name(&field.field_type);
+        let input_type = "CreateRelationOneInput".to_string();
 
-            let input_value = serde_json::json!({
-                "connect": id
-            });
+        let id = match result_json {
+            serde_json::Value::Object(object) => match object.get("data").unwrap() {
+                serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
+                    serde_json::Value::Array(array) => match &array[0] {
+                        serde_json::Value::Object(object) => object.get("id").unwrap().to_string(), // TODO might have to replace id strings
+                        _ => panic!()
+                    }
+                    _ => panic!()
+                },
+                _ => panic!()
+            },
+            _ => panic!()
+        }.replace("\\", "").replace("\"", "");
 
-            // TODO actually I think we want to check both sides of the relation
-            // TODO so build out both sides of the relation so they can be checked
-            // TODO this might be difficult without having access to the id for this item
-            // TODO think about this
-            // TODO we should only do the double-sided check if the relation has two sides
-            let selection_value = serde_json::json!({
-                "id": id
-            });
-    
-            return InputValue {
-                field_name: field.name.to_string(),
-                field_type: input_type,
-                selection: format!(
-                    "{field_name} {{ id }}",
-                    field_name = field.name.to_string()
-                ),
-                nullable,
-                input_value,
-                selection_value
-            };
+        let input_value = serde_json::json!({
+            "connect": id
         });
 
+        let opposing_relation_field_option = get_opposing_relation_field(
+            graphql_ast,
+            field
+        );
+                    
+        let selection_value = match &opposing_relation_field_option {
+            Some(opposing_relation_field) => {
+                let relation_field_name = field.name.to_string();
+                let opposing_relation_field_name = &opposing_relation_field.name;
+
+                if is_graphql_type_a_relation_many(
+                    graphql_ast,
+                    &opposing_relation_field.field_type
+                ) {
+                    serde_json::json!({
+                        "id": id,
+                        opposing_relation_field_name: [{
+                            relation_field_name: {
+                                "id": id
+                            }
+                        }]
+                    })
+                }
+                else {
+                    serde_json::json!({
+                        "id": id,
+                        opposing_relation_field_name: {
+                            relation_field_name: {
+                                "id": id
+                            }
+                        }
+                    })
+                }
+            },
+            None => serde_json::json!({
+                "id": id
+            })
+        };
+
+        let selection = match opposing_relation_field_option {
+            Some(opposing_relation_field) => format!(
+                "{field_name} {{
+                    id
+                    {opposing_relation_field_name} {{
+                        {field_name} {{
+                            id
+                        }}
+                    }}
+                }}",
+                field_name = field.name.to_string(),
+                opposing_relation_field_name = opposing_relation_field.name
+            ),
+            None => format!(
+                "{field_name} {{ id }}",
+                field_name = field.name.to_string()
+            )
+        };
+
+        return InputValue {
+            field_name: field.name.to_string(),
+            field_type: input_type,
+            selection,
+            nullable,
+            input_value,
+            selection_value
+        };
     }).boxed();
 
     if nullable == true {

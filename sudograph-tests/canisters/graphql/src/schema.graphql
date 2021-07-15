@@ -26,6 +26,21 @@ type User {
     identity_nullable: Identity
     votes: [Vote!]!
     votes_nullable: [Vote!]
+    horse: Horse! @relation(name: "User:horse::Horse::primary_rider")
+    second_horse: Horse @relation(name: "User:second_horse::Horse::secondary_rider")
+    ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
+    ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
+    bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+    best_friend: User
+    best_friends: [User!]!
+    bestest_friends: [User!]
+}
+
+type Bacterium {
+    id: ID!
+    hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 }
 
 type Identity {
@@ -34,6 +49,18 @@ type Identity {
 
 type Vote {
     id: ID!
+}
+
+type Horse {
+    id: ID!
+    primary_rider: User @relation(name: "User:horse::Horse::primary_rider")
+    secondary_rider: User @relation(name: "User:second_horse::Horse::secondary_rider")
+}
+
+type Duck {
+    id: ID!
+    hunter: User! @relation(name: "User:ducks::Duck:hunter")
+    foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
 }
 
 enum Color {
