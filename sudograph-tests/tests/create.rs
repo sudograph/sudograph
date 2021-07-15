@@ -41,7 +41,7 @@ fn test_create() {
         runner.run(&arb_mutation_create, |mutation_create_result| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
                 println!("query: {}", mutation_create_result.query);
-                println!("variables: {}\n\n", mutation_create_result.variables);
+                println!("variables: {}", mutation_create_result.variables);
 
                 // TODO this is here for testing shrinking
                 // panic!();
@@ -64,7 +64,16 @@ fn test_create() {
             return Ok(());
         }).unwrap();
 
-        // TODO once this works for enums, we should move on to relations
+        // TODO once we have relation one and many working from one side, do from both sides
+
+        // TODO clean up the relation code
+
+        // TODO make sure relations can shrink
+        // TODO because the ids created currently are not deterministic, I don't think it will ever be able to shrink
+        // TODO we might need to deterministically create the ids
+
+        // TODO do we also want to test that not putting a value in doesn't change the value?
+        // TODO for example, we want to make sure that not putting a value in the input doesn't set it to null for some reason
 
         // TODO do we also want to test multiple mutations per query?
         // TODO we should do a random number of mutations per mutation query

@@ -15,12 +15,13 @@ use graphql_parser::schema::{
     Field,
     Document
 };
-use crate::utilities::graphql::{get_enum_type_from_field, get_graphql_type_name, is_graphql_type_an_enum, is_graphql_type_nullable};
+use crate::utilities::graphql::{get_enum_type_from_field, get_graphql_type_name, graphql_mutation, is_graphql_type_a_relation_many, is_graphql_type_a_relation_one, is_graphql_type_an_enum, is_graphql_type_nullable};
 
 #[derive(Debug, Clone)]
 pub struct InputValue {
     pub field_name: String,
     pub field_type: String,
+    pub selection: String,
     pub nullable: bool,
     pub input_value: serde_json::Value,
     pub selection_value: serde_json::Value
@@ -45,6 +46,8 @@ pub fn arb_mutation_create<'a>(
         object_type
     );
 
+    // TODO the shrinking seems to never be finishing now, on relation one at least
+    // TODO actually we still want to exclude the id field sometimes, so move it out of non_nullable types
     return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
         let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
             return input_value.nullable == false;
@@ -116,7 +119,7 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
                 );
             }).collect::<Vec<String>>().join("\n                        "),
             selections = input_values.iter().map(|input_value| {
-                return input_value.field_name.to_string();
+                return input_value.selection.to_string();
             }).collect::<Vec<String>>().join("\n                        ")
         );
 
@@ -199,13 +202,61 @@ fn get_input_value_strategy(
                 );
             }
 
-            // TODO implement single relation
+            if is_graphql_type_a_relation_many(
+                &graphql_ast,
+                &field.field_type
+            ) == true {
+                return get_input_value_strategy_relation_many(
+                    graphql_ast,
+                    field
+                );
+            }
 
-            // TODO implement many relation
+            if is_graphql_type_a_relation_one(
+                &graphql_ast,
+                &field.field_type
+            ) == true {
+                return get_input_value_strategy_relation_one(
+                    graphql_ast,
+                    field
+                );
+            }
 
             panic!("");
         }
     };
+}
+
+fn get_input_value_strategy_nullable(
+    field: &'static Field<String>,
+    strategy: BoxedStrategy<InputValue>,
+    relation_many: bool,
+    relation_one: bool
+) -> BoxedStrategy<InputValue> {
+    return any::<bool>().prop_flat_map(move |null| {
+        let field_name = field.name.to_string();
+        let field_type = get_graphql_type_name(&field.field_type);
+
+        if null == true {
+            let input_value = serde_json::json!(null);
+            let selection_value = input_value.clone();
+
+            return Just(InputValue {
+                field_name: field_name.to_string(),
+                field_type: if relation_many == true { "CreateRelationManyInput".to_string() } else if relation_one == true { "CreateRelationOneInput".to_string() } else { field_type.to_string() },
+                selection: if relation_many == true || relation_one == true { format!(
+                    "{field_name} {{ id }}",
+                    field_name = field_name.to_string()
+                ) } else { field_name.to_string() }, // TODO this will have to be modified for relations
+                nullable: true,
+                input_value,
+                selection_value
+            }).boxed();
+        }
+        else {
+            return strategy.clone();
+        }
+    }).boxed();
 }
 
 fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
@@ -213,15 +264,15 @@ fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy
     let strategy = any::<bool>().prop_flat_map(move |bool| {        
         if bool == true {                    
             return any::<String>().prop_map(move |string| {
-                let field_name = field.name.to_string();
                 let field_type = get_graphql_type_name(&field.field_type);
 
                 let input_value = serde_json::json!(string);
                 let selection_value = serde_json::json!(string.as_bytes());
 
                 return InputValue {
-                    field_name,
+                    field_name: field.name.to_string(),
                     field_type,
+                    selection: field.name.to_string(),
                     nullable,
                     input_value,
                     selection_value
@@ -230,15 +281,15 @@ fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy
         }
         else {
             return any::<Vec<u8>>().prop_map(move |vec| {
-                let field_name = field.name.to_string();
                 let field_type = get_graphql_type_name(&field.field_type);
 
                 let input_value = serde_json::json!(vec);
                 let selection_value = input_value.clone();
 
                 return InputValue {
-                    field_name,
+                    field_name: field.name.to_string(),
                     field_type,
+                    selection: field.name.to_string(),
                     nullable,
                     input_value,
                     selection_value
@@ -250,7 +301,9 @@ fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -261,15 +314,15 @@ fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy
 fn get_input_value_strategy_boolean(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<bool>().prop_map(move |bool| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(bool);
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -279,7 +332,9 @@ fn get_input_value_strategy_boolean(field: &'static Field<String>) -> BoxedStrat
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -290,15 +345,15 @@ fn get_input_value_strategy_boolean(field: &'static Field<String>) -> BoxedStrat
 fn get_input_value_strategy_date(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = Just(chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)).prop_map(move |datetime| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
         
         let input_value = serde_json::json!(datetime);
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -308,7 +363,9 @@ fn get_input_value_strategy_date(field: &'static Field<String>) -> BoxedStrategy
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -319,15 +376,15 @@ fn get_input_value_strategy_date(field: &'static Field<String>) -> BoxedStrategy
 fn get_input_value_strategy_float(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<f32>().prop_map(move |float| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(float);
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -337,7 +394,9 @@ fn get_input_value_strategy_float(field: &'static Field<String>) -> BoxedStrateg
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -348,15 +407,15 @@ fn get_input_value_strategy_float(field: &'static Field<String>) -> BoxedStrateg
 fn get_input_value_strategy_id(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<String>().prop_map(move |string| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(string.replace("\\", "").replace("\"", ""));
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -366,7 +425,9 @@ fn get_input_value_strategy_id(field: &'static Field<String>) -> BoxedStrategy<I
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -377,15 +438,15 @@ fn get_input_value_strategy_id(field: &'static Field<String>) -> BoxedStrategy<I
 fn get_input_value_strategy_int(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<i32>().prop_map(move |int| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(int);
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -395,7 +456,9 @@ fn get_input_value_strategy_int(field: &'static Field<String>) -> BoxedStrategy<
     if is_graphql_type_nullable(&field.field_type) == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -406,15 +469,15 @@ fn get_input_value_strategy_int(field: &'static Field<String>) -> BoxedStrategy<
 fn get_input_value_strategy_string(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<String>().prop_map(move |string| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(string.replace("\\", "").replace("\"", ""));
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -424,7 +487,9 @@ fn get_input_value_strategy_string(field: &'static Field<String>) -> BoxedStrate
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -487,15 +552,15 @@ fn get_input_value_strategy_json(field: &'static Field<String>) -> BoxedStrategy
             proptest::collection::hash_map(".*", inner, 0..10).prop_map(Json::Map)
         ]
     ).prop_map(move |json| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(json);
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -505,7 +570,9 @@ fn get_input_value_strategy_json(field: &'static Field<String>) -> BoxedStrategy
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -527,15 +594,15 @@ fn get_input_value_strategy_enum(
     let enum_values_len = enum_type.values.len();
 
     let strategy = (0..enum_values_len - 1).prop_map(move |index| {
-        let field_name = field.name.to_string();
         let field_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(enum_type.clone().values.get(index).unwrap().name.clone());
         let selection_value = input_value.clone();
 
         return InputValue {
-            field_name,
+            field_name: field.name.to_string(),
             field_type,
+            selection: field.name.to_string(),
             nullable,
             input_value,
             selection_value
@@ -545,7 +612,9 @@ fn get_input_value_strategy_enum(
     if nullable == true {
         return get_input_value_strategy_nullable(
             field,
-            strategy
+            strategy,
+            false,
+            false
         );
     }
     else {
@@ -553,28 +622,193 @@ fn get_input_value_strategy_enum(
     }
 }
 
-fn get_input_value_strategy_nullable(
-    field: &'static Field<String>,
-    strategy: BoxedStrategy<InputValue>
+// TODO to improve this we want to create a variable amount of relations
+fn get_input_value_strategy_relation_many(
+    graphql_ast: &'static Document<String>,
+    field: &'static Field<String>
 ) -> BoxedStrategy<InputValue> {
-    return any::<bool>().prop_flat_map(move |null| {
-        let field_name = field.name.to_string();
-        let field_type = get_graphql_type_name(&field.field_type);
+    let nullable = is_graphql_type_nullable(&field.field_type);
+    let strategy = any::<String>().prop_map(move |string| {
+        return tokio::runtime::Runtime::new().unwrap().block_on(async {
+            let field_type = get_graphql_type_name(&field.field_type);
+            let input_type = "CreateRelationManyInput".to_string();
+    
+            // let created_relation_id = "0".to_string();
+    
+            let id = string.replace("\\", "").replace("\"", "");
 
-        if null == true {
-            let input_value = serde_json::json!(null);
-            let selection_value = input_value.clone();
+            // TODO perhaps create a trait method that will generate
+            // TODO one of these function for a field
+            // TODO you just call field.create_relation
+            // TODO that would be awesome
+            let result_json = graphql_mutation(
+                &format!(
+                    "
+                        mutation ($id: ID!) {{
+                            create{relation_type_name}(input: {{
+                                id: $id
+                            }}) {{
+                                id
+                            }}
+                        }}
+                    ",
+                    relation_type_name = field_type
+                ),
+                &serde_json::json!({
+                    "id": id
+                }).to_string()
+            ).await;
 
-            return Just(InputValue {
-                field_name: field_name.to_string(),
-                field_type: field_type.to_string(),
-                nullable: true,
+            // let result = serde_json::from_value(result_json).unwrap();
+
+            // TODO consider whether we should be using a deterministic id or letting one get generated on its own
+            // let relation_id = &result.data.createIdentity[0].id;
+            // let relation_id = match result_json {
+            //     serde_json::Value::Object(object) => match object.get("data").unwrap() {
+            //         serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
+            //             serde_json::Value::Array(array) => match &array[0] {
+            //                 serde_json::Value::Object(object) => object.get("id").unwrap().to_string(),
+            //                 _ => panic!()
+            //             }
+            //             _ => panic!()
+            //         },
+            //         _ => panic!()
+            //     },
+            //     _ => panic!()
+            // };
+
+            let input_value = serde_json::json!({
+                "connect": [id]
+            });
+
+            // TODO actually I think we want to check both sides of the relation
+            // TODO so build out both sides of the relation so they can be checked
+            // TODO this might be difficult without having access to the id for this item
+            // TODO think about this
+            // TODO we should only do the double-sided check if the relation has two sides
+            let selection_value = serde_json::json!([{
+                "id": id
+            }]);
+    
+            return InputValue {
+                field_name: field.name.to_string(),
+                field_type: input_type,
+                selection: format!(
+                    "{field_name} {{ id }}",
+                    field_name = field.name.to_string()
+                ),
+                nullable,
                 input_value,
                 selection_value
-            }).boxed();
-        }
-        else {
-            return strategy.clone();
-        }
+            };
+        });
+
     }).boxed();
+
+    if nullable == true {
+        return get_input_value_strategy_nullable(
+            field,
+            strategy,
+            true,
+            false
+        );
+    }
+    else {
+        return strategy;
+    }
+}
+
+fn get_input_value_strategy_relation_one(
+    graphql_ast: &'static Document<String>,
+    field: &'static Field<String>
+) -> BoxedStrategy<InputValue> {
+    let nullable = is_graphql_type_nullable(&field.field_type);
+    let strategy = any::<String>().prop_map(move |string| {
+        return tokio::runtime::Runtime::new().unwrap().block_on(async {
+            let field_type = get_graphql_type_name(&field.field_type);
+            let input_type = "CreateRelationOneInput".to_string();
+    
+            // let created_relation_id = "0".to_string();
+    
+            let id = string.replace("\\", "").replace("\"", "");
+
+            // TODO perhaps create a trait method that will generate
+            // TODO one of these function for a field
+            // TODO you just call field.create_relation
+            // TODO that would be awesome
+            let result_json = graphql_mutation(
+                &format!(
+                    "
+                        mutation ($id: ID!) {{
+                            create{relation_type_name}(input: {{
+                                id: $id
+                            }}) {{
+                                id
+                            }}
+                        }}
+                    ",
+                    relation_type_name = field_type
+                ),
+                &serde_json::json!({
+                    "id": id
+                }).to_string()
+            ).await;
+
+            // let result = serde_json::from_value(result_json).unwrap();
+
+            // TODO consider whether we should be using a deterministic id or letting one get generated on its own
+            // let relation_id = &result.data.createIdentity[0].id;
+            // let relation_id = match result_json {
+            //     serde_json::Value::Object(object) => match object.get("data").unwrap() {
+            //         serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
+            //             serde_json::Value::Array(array) => match &array[0] {
+            //                 serde_json::Value::Object(object) => object.get("id").unwrap().to_string(),
+            //                 _ => panic!()
+            //             }
+            //             _ => panic!()
+            //         },
+            //         _ => panic!()
+            //     },
+            //     _ => panic!()
+            // };
+
+            let input_value = serde_json::json!({
+                "connect": id
+            });
+
+            // TODO actually I think we want to check both sides of the relation
+            // TODO so build out both sides of the relation so they can be checked
+            // TODO this might be difficult without having access to the id for this item
+            // TODO think about this
+            // TODO we should only do the double-sided check if the relation has two sides
+            let selection_value = serde_json::json!({
+                "id": id
+            });
+    
+            return InputValue {
+                field_name: field.name.to_string(),
+                field_type: input_type,
+                selection: format!(
+                    "{field_name} {{ id }}",
+                    field_name = field.name.to_string()
+                ),
+                nullable,
+                input_value,
+                selection_value
+            };
+        });
+
+    }).boxed();
+
+    if nullable == true {
+        return get_input_value_strategy_nullable(
+            field,
+            strategy,
+            false,
+            true
+        );
+    }
+    else {
+        return strategy;
+    }
 }

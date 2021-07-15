@@ -54,7 +54,7 @@ pub async fn graphql_mutation(
     let response = update_builder_with_args.call_and_wait(waiter).await.unwrap();
     let response_string = Decode!(response.as_slice(), String).unwrap();
 
-    println!("response_string: {}", response_string);
+    println!("response_string: {}\n\n", response_string);
 
     let response_value: serde_json::Value = serde_json::from_str(&response_string).unwrap();
 
@@ -173,6 +173,70 @@ pub fn is_graphql_type_nullable(graphql_type: &Type<String>) -> bool {
             return false;
         },
         _ => {
+            return true;
+        }
+    };
+}
+
+pub fn is_graphql_type_a_relation_many(
+    graphql_ast: &Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    let object_types = get_object_types(graphql_ast);
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
+    });
+
+    let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+        graphql_ast,
+        graphql_type
+    );
+
+    return 
+        graphql_type_is_a_relation == true &&
+        graphql_type_is_a_list_type == true
+    ;
+}
+
+pub fn is_graphql_type_a_relation_one(
+    graphql_ast: &Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    let object_types = get_object_types(graphql_ast);
+    let graphql_type_name = get_graphql_type_name(graphql_type);
+
+    let graphql_type_is_a_relation = object_types.iter().any(|object_type| {
+        return object_type.name == graphql_type_name;
+    });
+
+    let graphql_type_is_a_list_type = is_graphql_type_a_list_type(
+        graphql_ast,
+        graphql_type
+    );
+
+    return 
+        graphql_type_is_a_relation == true &&
+        graphql_type_is_a_list_type == false
+    ;
+}
+
+fn is_graphql_type_a_list_type(
+    graphql_ast: &Document<String>,
+    graphql_type: &Type<String>
+) -> bool {
+    match graphql_type {
+        Type::NamedType(_) => {
+            return false;
+        },
+        Type::NonNullType(non_null_type) => {
+            return is_graphql_type_a_list_type(
+                graphql_ast,
+                non_null_type
+            );
+        },
+        Type::ListType(_) => {
             return true;
         }
     };

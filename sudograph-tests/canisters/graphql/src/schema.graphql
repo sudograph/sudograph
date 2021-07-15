@@ -22,6 +22,18 @@ type User {
     bytes_nullable: Blob
     meta: JSON!
     meta_nullable: JSON
+    identity: Identity!
+    identity_nullable: Identity
+    votes: [Vote!]!
+    votes_nullable: [Vote!]
+}
+
+type Identity {
+    id: ID!
+}
+
+type Vote {
+    id: ID!
 }
 
 enum Color {
