@@ -25,13 +25,17 @@ pub use update::update;
 pub use delete::delete;
 
 use serde::Deserialize;
-use ic_cdk::export::candid::CandidType;
+// use ic_cdk::export::candid::CandidType; // TODO reenable https://github.com/sudograph/sudograph/issues/123
 
 pub type ObjectTypeStore = BTreeMap<ObjectTypeName, ObjectType>;
 
 type ObjectTypeName = String;
 
-#[derive(Deserialize, Debug, CandidType)]
+#[derive(
+    Deserialize,
+    Debug,
+    // CandidType // TODO reenable https://github.com/sudograph/sudograph/issues/123
+)]
 pub struct ObjectType {
     pub object_type_name: String,
     pub field_types_store: FieldTypesStore,
@@ -46,7 +50,12 @@ pub type FieldName = String;
 
 // TODO time to get relations working!!!
 // TODO it might be nice to have a FieldType Scalar that is itself an enum of the scalar types, or something
-#[derive(Debug, Clone, CandidType, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub enum FieldType {
     Blob,
     Boolean,
@@ -59,7 +68,12 @@ pub enum FieldType {
     String
 }
 
-#[derive(Debug, Clone, CandidType, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub struct FieldTypeRelationInfo {
     pub object_name: String,
     pub opposing_object_name: String,
@@ -73,7 +87,12 @@ type PrimaryKey = String;
 
 type FieldValueStore = BTreeMap<FieldName, FieldValue>;
 
-#[derive(Debug, Clone, CandidType, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub enum FieldValue {
     Scalar(Option<FieldValueScalar>),
     RelationMany(Option<FieldValueRelationMany>),
@@ -94,7 +113,12 @@ pub enum UpdateOperation {
 // TODO consider using a lambda/closure on the update inputs
 
 // TODO do we want ID to be a scalar type as well?
-#[derive(Clone, Debug, CandidType, Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub enum FieldValueScalar {
     Blob(Vec<u8>),
     Boolean(bool),
@@ -105,14 +129,24 @@ pub enum FieldValueScalar {
     String(String)
 }
 
-#[derive(Clone, Debug, CandidType, Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub struct FieldValueRelationMany {
     pub relation_object_type_name: ObjectTypeName,
     pub relation_primary_keys: Vec<PrimaryKey>,
     pub relation_primary_keys_to_remove: Vec<PrimaryKey> // TODO this is a really bad way of doing this, what we really need to do is have the FieldInput have its own types, and we can have a specific type for removing fields
 }
 
-#[derive(Clone, Debug, CandidType, Deserialize)]
+#[derive(
+    Clone,
+    Debug,
+    // CandidType, // TODO reenable https://github.com/sudograph/sudograph/issues/123
+    Deserialize
+)]
 pub struct FieldValueRelationOne {
     pub relation_object_type_name: ObjectTypeName,
     pub relation_primary_key: PrimaryKey
