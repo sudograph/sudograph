@@ -15,6 +15,7 @@ mod create;
 mod read;
 mod update;
 mod delete;
+mod clear;
 
 pub use create::create;
 pub use read::{
@@ -23,6 +24,7 @@ pub use read::{
 };
 pub use update::update;
 pub use delete::delete;
+pub use clear::clear;
 
 use serde::Deserialize;
 // use ic_cdk::export::candid::CandidType; // TODO reenable https://github.com/sudograph/sudograph/issues/123

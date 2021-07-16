@@ -3,6 +3,7 @@
 // TODO this article was so helpful: https://translate.google.com/translate?hl=en&sl=ja&u=https://qiita.com/legokichi/items/2c3fdcbf84d959668a0f&prev=search&pto=aue
 // TODO I think this is the original Japanese article: https://qiita.com/legokichi/items/2c3fdcbf84d959668a0f
 
+use graphql_parser::query::Mutation;
 use proptest::strategy::BoxedStrategy;
 use proptest::prelude::{
     any,
@@ -39,70 +40,165 @@ pub struct InputValue {
 
 pub type InputValues = Vec<InputValue>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArbitraryResult {
+    pub object_type_name: String,
     pub query: String,
     pub variables: String,
     pub selection_name: String,
     pub input_values: InputValues
 }
 
-// TODO this should probably be defined in a trait?
-pub fn arb_mutation_create<'a>(
-    graphql_ast: &'static Document<String>,
-    object_types: &'static Vec<ObjectType<String>>,
-    object_type: &'static ObjectType<String>,
-    relation_test: bool
-) -> BoxedStrategy<ArbitraryResult> {
-    let input_value_strategies = get_input_value_strategies(
-        graphql_ast,
-        object_types,
-        object_type,
-        relation_test
-    );
-
-    // TODO the shrinking seems to never be finishing now, on relation one at least
-    return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
-        let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
-            return input_value.nullable == false && input_value.field_name != "id";
-        }).collect();
-
-        let nullable_input_values: Vec<InputValue> = input_values.into_iter().filter(|input_value| {
-            return input_value.nullable == true || input_value.field_name == "id";
-        }).collect();
-
-        return (0..nullable_input_values.len() + 1).prop_map(move |index| {
-            let input_values = vec![
-                non_nullable_input_values.iter().cloned(),
-                nullable_input_values[0..index].iter().cloned()
-            ]
-            .into_iter()
-            .flatten()
-            .collect();
-
-            return object_type.arbitrary_mutation_create(input_values);
-        });
-    }).boxed();
+#[derive(Clone, Copy)]
+enum MutationType {
+    Create,
+    Update
 }
 
 pub trait SudographObjectTypeArbitrary {
-    fn arbitrary_mutation_create(
+    fn arb_mutation_create(
         &self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>,
+        object_type: &'static ObjectType<String>,
+        relation_test: bool
+    ) -> BoxedStrategy<ArbitraryResult>;
+
+    fn arb_mutation_update(
+        &self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>,
+        object_type: &'static ObjectType<String>
+    ) -> BoxedStrategy<ArbitraryResult>;
+
+    fn generate_arbitrary_result(
+        &self,
+        mutation_name: &str,
         input_values: InputValues
     ) -> ArbitraryResult;
-
-    // fn get_field_strategies(&self) -> Strategy<Value = serde_json::Value>;
 }
 
 impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
-    fn arbitrary_mutation_create<'a>(
+    fn arb_mutation_create(
         &self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>,
+        object_type: &'static ObjectType<String>,
+        relation_test: bool
+    ) -> BoxedStrategy<ArbitraryResult> {
+        let input_value_strategies = get_input_value_strategies(
+            graphql_ast,
+            object_types,
+            object_type,
+            MutationType::Create,
+            relation_test,
+            None
+        );
+    
+        // TODO the shrinking seems to never be finishing now, on relation one at least
+        return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
+            let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
+                return input_value.nullable == false && input_value.field_name != "id";
+            }).collect();
+    
+            let nullable_input_values: Vec<InputValue> = input_values.into_iter().filter(|input_value| {
+                return input_value.nullable == true || input_value.field_name == "id";
+            }).collect();
+    
+            return (0..nullable_input_values.len() + 1).prop_map(move |index| {
+                let input_values = vec![
+                    non_nullable_input_values.iter().cloned(),
+                    nullable_input_values[0..index].iter().cloned()
+                ]
+                .into_iter()
+                .flatten()
+                .collect();
+    
+                return object_type.generate_arbitrary_result(
+                    "create",
+                    input_values
+                );
+            });
+        }).boxed();
+    }
+
+    fn arb_mutation_update(
+        &self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>,
+        object_type: &'static ObjectType<String>
+    ) -> BoxedStrategy<ArbitraryResult> {
+        let mutation_create_arbitrary = self.arb_mutation_create(
+            graphql_ast,
+            object_types,
+            object_type,
+            true
+        );
+
+        return mutation_create_arbitrary.prop_flat_map(move |mutation_create| {
+            // TODO I believe I need to get the blobs out of here if there are any
+            // TODO the blobs need to be passed down to the blob area, so that I can
+            // TODO properly check if append actually works
+            // TODO just send down the whole object I suppose???
+            let root_object = create_and_retrieve(mutation_create.clone());
+
+            let input_value_strategies = get_input_value_strategies(
+                graphql_ast,
+                object_types,
+                object_type,
+                MutationType::Update,
+                false,
+                Some(root_object.clone())
+            );
+            
+            return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
+
+                let id = root_object.get("id").unwrap().to_string().replace("\\", "").replace("\"", "");
+
+                let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
+                    return input_value.nullable == false && input_value.field_name != "id";
+                }).collect();
+        
+                let nullable_input_values: Vec<InputValue> = input_values.into_iter().filter(|input_value| {
+                    return input_value.nullable == true && input_value.field_name != "id";
+                }).collect();
+        
+                return (0..nullable_input_values.len() + 1).prop_map(move |index| {
+                    let input_values = vec![
+                        vec![InputValue {
+                            field_name: "id".to_string(),
+                            field_type: "ID".to_string(),
+                            selection: "id".to_string(),
+                            nullable: false,
+                            input_value: serde_json::json!(id),
+                            selection_value: serde_json::json!(id)
+                        }].iter().cloned(),
+                        non_nullable_input_values.iter().cloned(),
+                        nullable_input_values[0..index].iter().cloned()
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect();
+        
+                    return object_type.generate_arbitrary_result(
+                        "update",
+                        input_values
+                    );
+                });
+            }).boxed();
+        }).boxed();
+    }
+
+    fn generate_arbitrary_result(
+        &self,
+        mutation_name: &str,
         input_values: InputValues
     ) -> ArbitraryResult {
         let object_type_name = &self.name;
 
         let selection_name = format!(
-            "create{object_type_name}",
+            "{mutation_name}{object_type_name}",
+            mutation_name = mutation_name,
             object_type_name = object_type_name
         );
 
@@ -111,7 +207,7 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
                 mutation (
                     {variable_declarations}
                 ) {{
-                    create{object_type_name}(input: {{
+                    {mutation_name}{object_type_name}(input: {{
                         {fields}
                     }}) {{
                         {selections}
@@ -125,6 +221,7 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
                     field_type = input_value.field_type
                 );
             }).collect::<Vec<String>>().join("\n                        "),
+            mutation_name = mutation_name,
             object_type_name = object_type_name,
             fields = input_values.iter().map(|input_value| {
                 return format!(
@@ -147,6 +244,7 @@ impl SudographObjectTypeArbitrary for ObjectType<'_, String> {
         let variables = serde_json::json!(hash_map).to_string();
 
         return ArbitraryResult {
+            object_type_name: self.name.to_string(),
             query,
             variables,
             selection_name,
@@ -182,7 +280,9 @@ fn get_input_value_strategies(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>,
-    relation_test: bool
+    mutation_type: MutationType,
+    relation_test: bool,
+    root_object: Option<serde_json::value::Map<String, serde_json::Value>>
 ) -> Vec<BoxedStrategy<InputValue>> {
     return object_type
         .fields
@@ -204,7 +304,9 @@ fn get_input_value_strategies(
         return get_input_value_strategy(
             graphql_ast,
             object_types,
-            field
+            field,
+            mutation_type.clone(),
+            root_object.clone()
         );
     }).collect();
 }
@@ -212,13 +314,19 @@ fn get_input_value_strategies(
 fn get_input_value_strategy(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
-    field: &'static Field<String>
+    field: &'static Field<String>,
+    mutation_type: MutationType,
+    root_object: Option<serde_json::value::Map<String, serde_json::Value>>
 ) -> BoxedStrategy<InputValue> {
     let type_name = get_graphql_type_name(&field.field_type);
 
     match &type_name[..] {
         "Blob" => {
-            return get_input_value_strategy_blob(field);
+            return get_input_value_strategy_blob(
+                field,
+                mutation_type,
+                root_object
+            );
         },
         "Boolean" => {
             return get_input_value_strategy_boolean(field);
@@ -293,6 +401,7 @@ fn get_input_value_strategy_nullable(
             let input_value = serde_json::json!(null);
             let selection_value = input_value.clone();
 
+            // TODO perhaps consolidate the relation_many, relation_one into some kind of enum
             return Just(InputValue {
                 field_name: field_name.to_string(),
                 field_type: if relation_many == true { "CreateRelationManyInput".to_string() } else if relation_one == true { "CreateRelationOneInput".to_string() } else { field_type.to_string() },
@@ -311,15 +420,76 @@ fn get_input_value_strategy_nullable(
     }).boxed();
 }
 
-fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
+fn get_input_value_strategy_blob(
+    field: &'static Field<String>,
+    mutation_type: MutationType,
+    root_object: Option<serde_json::value::Map<String, serde_json::Value>>
+) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
-    let strategy = any::<bool>().prop_flat_map(move |bool| {        
+    let strategy = any::<bool>().prop_flat_map(move |bool| {
+        let second_root_object_option = root_object.clone();
+        
         if bool == true {                    
-            return any::<String>().prop_map(move |string| {
-                let field_type = get_graphql_type_name(&field.field_type);
+            return (any::<String>(), "append|replace").prop_map(move |(string, append_or_replace)| {
+                let field_type = match mutation_type {
+                    MutationType::Create => {
+                        get_graphql_type_name(&field.field_type)
+                    },
+                    MutationType::Update => {
+                        "UpdateBlobInput".to_string()
+                    }
+                };
 
-                let input_value = serde_json::json!(string);
-                let selection_value = serde_json::json!(string.as_bytes());
+                let append_or_replace_name = append_or_replace.clone();
+
+                let input_value = match mutation_type {
+                    MutationType::Create => {
+                        serde_json::json!(string)
+                    },
+                    MutationType::Update => {
+                        serde_json::json!({
+                            append_or_replace_name: serde_json::json!(string)
+                        })
+                    }
+                };
+
+                let selection_value = match &append_or_replace.clone()[..] {
+                    "replace" => {
+                        serde_json::json!(string.as_bytes())
+                    },
+                    "append" => {
+                        match &second_root_object_option {
+                            Some(second_root_object) => {
+                                let original_bytes_option = second_root_object.get(&field.name);
+
+                                let empty_vec = &serde_json::json!(vec![] as Vec<u8>);
+
+                                let original_bytes = match original_bytes_option {
+                                    Some(original_bytes) => original_bytes,
+                                    None => empty_vec
+                                }
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|value| {
+                                    return value.as_f64().unwrap() as u8;
+                                }).collect::<Vec<u8>>();
+        
+                                serde_json::json!(
+                                    original_bytes
+                                    .iter()
+                                    .chain(string.as_bytes())
+                                    .cloned()
+                                    .collect::<Vec<u8>>()
+                                )
+                            },
+                            None => {
+                                serde_json::json!(string.as_bytes())
+                            }
+                        }
+                    },
+                    _ => panic!()
+                };
 
                 return InputValue {
                     field_name: field.name.to_string(),
@@ -332,11 +502,65 @@ fn get_input_value_strategy_blob(field: &'static Field<String>) -> BoxedStrategy
             }).boxed();
         }
         else {
-            return any::<Vec<u8>>().prop_map(move |vec| {
-                let field_type = get_graphql_type_name(&field.field_type);
+            return (any::<Vec<u8>>(), "append|replace").prop_map(move |(vec, append_or_replace)| {
+                let field_type = match mutation_type {
+                    MutationType::Create => {
+                        get_graphql_type_name(&field.field_type)
+                    },
+                    MutationType::Update => {
+                        "UpdateBlobInput".to_string()
+                    }
+                };
 
-                let input_value = serde_json::json!(vec);
-                let selection_value = input_value.clone();
+                let append_or_replace_name = append_or_replace.clone();
+
+                let input_value = match mutation_type {
+                    MutationType::Create => {
+                        serde_json::json!(vec)
+                    },
+                    MutationType::Update => {
+                        serde_json::json!({
+                            append_or_replace: serde_json::json!(vec)
+                        })
+                    }
+                };
+
+                let selection_value = match &append_or_replace_name.clone()[..] {
+                    "replace" => {
+                        serde_json::json!(vec)
+                    },
+                    "append" => {
+                        match &second_root_object_option {
+                            Some(second_root_object) => {
+                                let original_bytes_option = second_root_object.get(&field.name);
+
+                                let empty_vec = &serde_json::json!(vec![] as Vec<u8>);
+
+                                let original_bytes = match original_bytes_option {
+                                    Some(original_bytes) => original_bytes,
+                                    None => empty_vec
+                                }
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|value| {
+                                    return value.as_f64().unwrap() as u8;
+                                }).collect::<Vec<u8>>();
+        
+                                serde_json::json!(
+                                    original_bytes
+                                    .into_iter()
+                                    .chain(vec)
+                                    .collect::<Vec<u8>>()
+                                )
+                            },
+                            None => {
+                                serde_json::json!(vec)
+                            }
+                        }
+                    },
+                    _ => panic!()
+                };
 
                 return InputValue {
                     field_name: field.name.to_string(),
@@ -456,6 +680,7 @@ fn get_input_value_strategy_float(field: &'static Field<String>) -> BoxedStrateg
     }
 }
 
+// TODO consider whether or not this should even have the ability to be nullable
 fn get_input_value_strategy_id(field: &'static Field<String>) -> BoxedStrategy<InputValue> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let strategy = any::<String>().prop_map(move |string| {
@@ -687,7 +912,7 @@ fn get_input_value_strategy_relation_many(
         field
     ).unwrap();
 
-    let relation_mutation_create_arbitrary = arb_mutation_create(
+    let relation_mutation_create_arbitrary = relation_object_type.arb_mutation_create(
         graphql_ast,
         object_types,
         relation_object_type,
@@ -695,32 +920,12 @@ fn get_input_value_strategy_relation_many(
     );
 
     let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create| {
-        let future = async {
-            return graphql_mutation(
-                &relation_mutation_create.query,
-                &relation_mutation_create.variables
-            ).await;
-        };
+        let relation = create_and_retrieve(relation_mutation_create);
 
-        let result_json = tokio::runtime::Runtime::new().unwrap().block_on(future);
-        
-        let field_type = get_graphql_type_name(&field.field_type);
+        let id = relation.get("id").unwrap().to_string().replace("\\", "").replace("\"", "");
+
         let input_type = "CreateRelationManyInput".to_string();
-
-        let id = match result_json {
-            serde_json::Value::Object(object) => match object.get("data").unwrap() {
-                serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
-                    serde_json::Value::Array(array) => match &array[0] {
-                        serde_json::Value::Object(object) => object.get("id").unwrap().to_string(), // TODO might have to replace id strings
-                        _ => panic!()
-                    }
-                    _ => panic!()
-                },
-                _ => panic!()
-            },
-            _ => panic!()
-        }.replace("\\", "").replace("\"", "");
-
+        
         let input_value = serde_json::json!({
             "connect": [id]
         });
@@ -819,7 +1024,7 @@ fn get_input_value_strategy_relation_one(
         field
     ).unwrap();
 
-    let relation_mutation_create_arbitrary = arb_mutation_create(
+    let relation_mutation_create_arbitrary = relation_object_type.arb_mutation_create(
         graphql_ast,
         object_types,
         relation_object_type,
@@ -827,31 +1032,11 @@ fn get_input_value_strategy_relation_one(
     );
 
     let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create| {
-        let future = async {
-            return graphql_mutation(
-                &relation_mutation_create.query,
-                &relation_mutation_create.variables
-            ).await;
-        };
+        let relation = create_and_retrieve(relation_mutation_create);
 
-        let result_json = tokio::runtime::Runtime::new().unwrap().block_on(future);
+        let id = relation.get("id").unwrap().to_string().replace("\\", "").replace("\"", "");
 
-        let field_type = get_graphql_type_name(&field.field_type);
         let input_type = "CreateRelationOneInput".to_string();
-
-        let id = match result_json {
-            serde_json::Value::Object(object) => match object.get("data").unwrap() {
-                serde_json::Value::Object(object) => match object.get(&format!("create{field_type}", field_type = field_type)).unwrap() {
-                    serde_json::Value::Array(array) => match &array[0] {
-                        serde_json::Value::Object(object) => object.get("id").unwrap().to_string(), // TODO might have to replace id strings
-                        _ => panic!()
-                    }
-                    _ => panic!()
-                },
-                _ => panic!()
-            },
-            _ => panic!()
-        }.replace("\\", "").replace("\"", "");
 
         let input_value = serde_json::json!({
             "connect": id
@@ -936,4 +1121,33 @@ fn get_input_value_strategy_relation_one(
     else {
         return strategy;
     }
+}
+
+// TODO I think this should be a trait on ArbitraryResult
+fn create_and_retrieve(mutation_create: ArbitraryResult) -> serde_json::value::Map<String, serde_json::Value> {
+    let future = async {
+        return graphql_mutation(
+            &mutation_create.query,
+            &mutation_create.variables
+        ).await;
+    };
+
+    let result_json = tokio::runtime::Runtime::new().unwrap().block_on(future);
+
+    // TODO I think there are much better ways of doing this, using the .as_whatever stuff and using ? with Results and options
+    let object = match result_json {
+        serde_json::Value::Object(object) => match object.get("data").unwrap() {
+            serde_json::Value::Object(object) => match object.get(&format!("create{object_type_name}", object_type_name = mutation_create.object_type_name)).unwrap() {
+                serde_json::Value::Array(array) => match &array[0] {
+                    serde_json::Value::Object(object) => object.clone(),
+                    _ => panic!()
+                }
+                _ => panic!()
+            },
+            _ => panic!()
+        },
+        _ => panic!()
+    };
+
+    return object;
 }

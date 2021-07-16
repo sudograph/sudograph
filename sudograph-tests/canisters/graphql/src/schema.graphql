@@ -22,6 +22,7 @@ type User {
     bytes_nullable: Blob
     meta: JSON!
     meta_nullable: JSON
+
     identity: Identity!
     identity_nullable: Identity
     votes: [Vote!]!
