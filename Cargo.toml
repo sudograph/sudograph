@@ -7,10 +7,10 @@ license = "MIT"
 homepage = "https://sudograph.org"
 description = "GraphQL database for the Internet Computer"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-# [replace]
-# "ic-cdk:0.3.0" = { git = "https://github.com/lastmjs/cdk-rs", branch = "sudograph" }
+[workspace]
+members = [
+    "sudograph-tests",
+]
 
 [dependencies]
 sudodb = { version = "0.3.0", path = "./sudodb" }
