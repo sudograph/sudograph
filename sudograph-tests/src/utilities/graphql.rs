@@ -16,7 +16,39 @@ pub async fn graphql_query(
     query: &str,
     variables: &str
 ) -> serde_json::Value {
-    return serde_json::from_str("{}").unwrap();
+    let agent = ic_agent::Agent::builder()
+        .with_url("http://localhost:8000")
+        // .with_transport() // TODO figure out with_transport
+        .build()
+        .expect("should work");
+
+    agent.fetch_root_key().await.unwrap();
+
+    let canister_id = ic_cdk::export::Principal::from_text("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap();
+    let method_name = "graphql_query";
+
+    let mut query_builder = ic_agent::agent::QueryBuilder::new(
+        &agent,
+        canister_id,
+        method_name.to_string()
+    );
+
+    let query_builder_with_args = query_builder
+        .with_arg(&Encode!(
+            &query.to_string(),
+            &variables.to_string()
+        ).unwrap());
+
+    let response = query_builder_with_args.call().await.unwrap();
+    let response_string = Decode!(response.as_slice(), String).unwrap();
+
+    println!("query {:#?}", query);
+    println!("variables {:#?}", variables);
+    println!("response_string: {}\n\n", response_string);
+
+    let response_value: serde_json::Value = serde_json::from_str(&response_string).unwrap();
+
+    return response_value;
 }
 
 pub async fn graphql_mutation(
@@ -54,6 +86,8 @@ pub async fn graphql_mutation(
     let response = update_builder_with_args.call_and_wait(waiter).await.unwrap();
     let response_string = Decode!(response.as_slice(), String).unwrap();
 
+    println!("mutation {:#?}", mutation);
+    println!("variables {:#?}", variables);
     println!("response_string: {}\n\n", response_string);
 
     let response_value: serde_json::Value = serde_json::from_str(&response_string).unwrap();

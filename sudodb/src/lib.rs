@@ -302,7 +302,24 @@ pub fn convert_field_value_store_to_json_string(
     if let Some(selection_set_hash_map) = &selection_set.0 {
         let inner_json = selection_set_hash_map.iter().enumerate().fold(String::from(""), |result, (i, (key, value))| {
 
+            // TODO consider whether or not to return null if there is no value
+            // TODO perhaps it really should be an error
             let field_value = field_value_store.get(key).unwrap();
+
+            // TODO My tests are now designed to find the root cause of this problem, though it would still probably
+            // TODO be good for the read tests to be very robust
+            // TODO make sure the tests test for this
+            // TODO basically, in the read tests, we should create a value and then ask for different combinations of fields
+            // TODO the fields should be correct in every case
+            // if field_value.is_none() {
+            //     return format!(
+            //         "{result}\"{key}\":{value}{comma}",
+            //         result = result,
+            //         key = key,
+            //         value = String::from("null"),
+            //         comma = if i == selection_set_hash_map.iter().len() - 1 { "" } else { "," }
+            //     );
+            // }
 
             match field_value {
                 FieldValue::Scalar(field_value_scalar_option) => {
@@ -394,7 +411,7 @@ pub fn convert_field_value_store_to_json_string(
                             "{result}\"{key}\":{value}{comma}",
                             result = result,
                             key = key,
-                            value = String::from("[]"),
+                            value = String::from("null"),
                             comma = if i == selection_set_hash_map.iter().len() - 1 { "" } else { "," }
                         );
                     }

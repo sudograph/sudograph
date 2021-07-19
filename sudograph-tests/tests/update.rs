@@ -1,13 +1,6 @@
 use graphql_parser::schema::parse_schema;
 use std::fs;
-use sudograph_tests::{
-    assert_correct_result,
-    arbitraries::sudograph::SudographObjectTypeArbitrary,
-    utilities::graphql::{
-        graphql_mutation,
-        get_object_types
-    }
-};
+use sudograph_tests::{arbitraries::sudograph::SudographObjectTypeArbitrary, assert_correct_result, utilities::graphql::{get_object_types, graphql_mutation, graphql_query}};
 use proptest::test_runner::{
     TestRunner,
     Config
@@ -30,7 +23,7 @@ fn test_update() {
         
         let mut runner = TestRunner::new(Config {
             cases: 10,
-            max_shrink_iters: 100, // TODO play with this number
+            max_shrink_iters: 100000, // TODO play with this number
             .. Config::default()
         });
 
@@ -40,24 +33,62 @@ fn test_update() {
             object_type
         );
 
+        // TODO once that is in place, work on handling updates of one-to-one relations appropriately
+        // TODO one-to-one both nullable, okay
+        // TODO one-to-one one side nullable, okay but the nullable side can never be created nor updated (modify sudograph to reflect this)
+        // TODO one-to-one both non-nullable, impossible (this should really be checked with static analysis)
+
         runner.run(&mutation_update_arbitrary, |mutation_update| {
-            tokio::runtime::Runtime::new().unwrap().block_on(async {                
-                println!("query: {}", mutation_update.query);
-                println!("variables: {}", mutation_update.variables);
+            tokio::runtime::Runtime::new().unwrap().block_on(async {    
+                let mutation = mutation_update.0;
+                
+                println!("mutation: {}", mutation.query);
+                println!("variables: {}", mutation.variables);
 
                 let result_json = graphql_mutation(
-                    &mutation_update.query,
-                    &mutation_update.variables
+                    &mutation.query,
+                    &mutation.variables
                 ).await;
 
                 assert_eq!(
                     true,
                     assert_correct_result(
                         &result_json,
-                        &mutation_update.selection_name,
-                        &mutation_update.input_values
+                        &mutation.selection_name,
+                        &mutation.input_values
                     )
                 );
+
+                // This will test the other side of a relation that has been removed
+                // TODO there is currently no capability and there are no tests for removing an object in a many-to-many relation
+                for query_arbitrary_result in mutation_update.1 {
+                    println!("query: {}", query_arbitrary_result.query);
+    
+                    let result_json = graphql_query(
+                        &query_arbitrary_result.query,
+                        &query_arbitrary_result.variables
+                    ).await;
+    
+                    assert_eq!(
+                        true,
+                        assert_correct_result(
+                            &result_json,
+                            &query_arbitrary_result.selection_name,
+                            &query_arbitrary_result.input_values
+                        )
+                    );
+                }
+
+                // let result_json = graphql_mutation(
+                //     "
+                //         mutation {
+                //             clear
+                //         }
+                //     ",
+                //     "{}"
+                // ).await;
+                
+                // println!("clear result_json {:#?}", result_json);
             });
 
             return Ok(());

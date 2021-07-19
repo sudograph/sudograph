@@ -209,40 +209,85 @@ fn generate_update_field_input_pusher_for_relation_many(field: &Field<String>) -
     );
     let relation_object_type_name = get_graphql_type_name(&field.field_type);
 
-    return quote! {
-        match &self.#field_name_ident {
-            MaybeUndefined::Value(value) => {
-                if let Some(connect) = &value.connect {
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    if let Some(connect) = &value.connect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                                relation_object_type_name: String::from(#relation_object_type_name),
+                                relation_primary_keys: connect.iter().map(|id| {
+                                    return id.to_string();
+                                }).collect(),
+                                relation_primary_keys_to_remove: vec![]
+                            })),
+                            update_operation: UpdateOperation::Replace
+                        });
+                    }
+    
+                    if let Some(disconnect) = &value.disconnect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                                relation_object_type_name: String::from(#relation_object_type_name),
+                                relation_primary_keys: vec![],
+                                relation_primary_keys_to_remove: disconnect.iter().map(|id| {
+                                    return id.to_string();
+                                }).collect()
+                            })),
+                            update_operation: UpdateOperation::Replace
+                        });
+                    }
+                },
+                MaybeUndefined::Null => {
                     update_field_inputs.push(FieldInput {
                         field_name: String::from(#field_name_string),
-                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
-                            relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_keys: connect.iter().map(|id| {
-                                return id.to_string();
-                            }).collect(),
-                            relation_primary_keys_to_remove: vec![]
-                        })),
+                        field_value: FieldValue::RelationMany(None),
                         update_operation: UpdateOperation::Replace
                     });
-                }
-
-                if let Some(disconnect) = &value.disconnect {
-                    update_field_inputs.push(FieldInput {
-                        field_name: String::from(#field_name_string),
-                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
-                            relation_object_type_name: String::from(#relation_object_type_name),
-                            relation_primary_keys: vec![],
-                            relation_primary_keys_to_remove: disconnect.iter().map(|id| {
-                                return id.to_string();
-                            }).collect()
-                        })),
-                        update_operation: UpdateOperation::Replace
-                    });
-                }
-            },
-            _ => ()
+                },
+                _ => ()
+            };
         };
-    };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    if let Some(connect) = &value.connect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                                relation_object_type_name: String::from(#relation_object_type_name),
+                                relation_primary_keys: connect.iter().map(|id| {
+                                    return id.to_string();
+                                }).collect(),
+                                relation_primary_keys_to_remove: vec![]
+                            })),
+                            update_operation: UpdateOperation::Replace
+                        });
+                    }
+    
+                    if let Some(disconnect) = &value.disconnect {
+                        update_field_inputs.push(FieldInput {
+                            field_name: String::from(#field_name_string),
+                            field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                                relation_object_type_name: String::from(#relation_object_type_name),
+                                relation_primary_keys: vec![],
+                                relation_primary_keys_to_remove: disconnect.iter().map(|id| {
+                                    return id.to_string();
+                                }).collect()
+                            })),
+                            update_operation: UpdateOperation::Replace
+                        });
+                    }
+                },
+                _ => ()
+            };
+        };
+    }
 }
 
 fn generate_update_field_input_pusher_for_relation_one(

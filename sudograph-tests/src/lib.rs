@@ -36,8 +36,8 @@ pub fn assert_correct_result(
                                                     let result_value = object.get(&input_value.field_name).unwrap();
                                                     let selection_value = &input_value.selection_value;
 
-                                                    // println!("result_value: {:?}", result_value);
-                                                    // println!("selection_value: {:?}", selection_value);
+                                                    println!("result_value: {:#?}", result_value);
+                                                    println!("selection_value: {:#?}", selection_value);
 
                                                     // return result_value == input_value;
                                                     return serde_json_values_are_equal(
@@ -84,6 +84,15 @@ fn serde_json_values_are_equal(
 ) -> bool {
     match value_1 {
         serde_json::Value::Array(value_1_array) => {
+            if value_1_array.len() == 0 {
+                if value_2.is_array() && value_2.as_array().unwrap().len() == 0 {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
             return value_1_array.iter().enumerate().all(|(value_1_index, value_1_item)| {
                 let value_2_item = match value_2 {
                     serde_json::Value::Array(value_2_array) => value_2_array.get(value_1_index).unwrap(),
@@ -110,6 +119,8 @@ fn serde_json_values_are_equal(
             });
         },
         serde_json::Value::Object(value_1_object) => {
+            // TODO what if the object has no fields? Is that even possible? Look at array above
+
             return value_1_object.iter().all(|(value_1_object_key, value_1_object_value)| {
                 let value_2_object_value = match value_2 {
                     serde_json::Value::Object(value_2_object) => value_2_object.get(value_1_object_key).unwrap(),

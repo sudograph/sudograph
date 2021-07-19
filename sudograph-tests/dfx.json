@@ -1,5 +1,9 @@
 {
     "canisters": {
+        "playground": {
+            "type": "assets",
+            "source": ["canisters/playground/build"]
+        },
         "graphql": {
             "type": "custom",
             "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
