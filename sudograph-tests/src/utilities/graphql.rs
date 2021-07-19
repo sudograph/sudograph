@@ -1,11 +1,14 @@
+// TODO many of the graphql utility functions are verbatim copied multiple times within the sudograph repository
+// TODO perhaps we should create a single crate to store all of the utilities in
+
 use graphql_parser::schema::{
     Definition,
-    TypeDefinition,
-    ObjectType,
-    Type,
     Document,
     EnumType,
-    Field
+    Field,
+    ObjectType,
+    Type,
+    TypeDefinition
 };
 use ic_cdk::export::candid::{
     Decode,

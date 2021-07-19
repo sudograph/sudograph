@@ -21,10 +21,10 @@ type User {
     # meta: JSON!
     # meta_nullable: JSON
 
-    # identity: Identity!
-    # identity_nullable: Identity
-    # votes: [Vote!]!
-    # votes_nullable: [Vote!]
+    identity: Identity!
+    identity_nullable: Identity
+    votes: [Vote!]!
+    votes_nullable: [Vote!]
 
     # TODO I thought that the following would break, if it does not then I am confused
     # horse: Horse! @relation(name: "User:horse::Horse:primary_rider") # TODO this is broken until we handle one-to-one nullables correctly
@@ -32,8 +32,8 @@ type User {
     # third_horse: Horse @relation(name: "User:third_horse::Horse:tertiary_rider")
     # ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
     # ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
-    bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
-    good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+    # bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    # good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 
     # TODO there are a few more many-to-many combinations to try, non-nullable to nullable and nullable to non-nullable
 
@@ -57,24 +57,24 @@ type User {
 #     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
 # }
 
-type Bacterium {
+# type Bacterium {
+#     id: ID!
+#     hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
+#     good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+# }
+
+type Identity {
     id: ID!
-    hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
-    good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 }
 
-# type Identity {
-#     id: ID!
-# }
+type Vote {
+    id: ID!
+}
 
-# type Vote {
-#     id: ID!
-# }
-
-# enum Color {
-#     RED
-#     WHITE
-#     BLUE
-#     GREEN
-#     YELLOW
-# }
+enum Color {
+    RED
+    WHITE
+    BLUE
+    GREEN
+    YELLOW
+}

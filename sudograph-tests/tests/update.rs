@@ -1,9 +1,19 @@
 use graphql_parser::schema::parse_schema;
-use std::fs;
-use sudograph_tests::{arbitraries::sudograph::SudographObjectTypeArbitrary, assert_correct_result, utilities::graphql::{get_object_types, graphql_mutation, graphql_query}};
 use proptest::test_runner::{
-    TestRunner,
-    Config
+    Config,
+    TestRunner
+};
+use std::fs;
+use sudograph_tests::{
+    arbitraries::queries::queries::QueriesArbitrary,
+    utilities::{
+        assert::assert_correct_result,
+        graphql::{
+            get_object_types,
+            graphql_mutation,
+            graphql_query
+        }
+    }
 };
 
 // TODO it would be nice to have some top-level config for the cases, max shrink, etc
@@ -27,7 +37,7 @@ fn test_update() {
             .. Config::default()
         });
 
-        let mutation_update_arbitrary = object_type.arb_mutation_update(
+        let mutation_update_arbitrary = object_type.mutation_update_arbitrary(
             graphql_ast,
             object_types,
             object_type

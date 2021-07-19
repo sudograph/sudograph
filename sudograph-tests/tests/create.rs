@@ -3,18 +3,20 @@
 // TODO and fields, which I could then use to create a random schema
 
 use graphql_parser::schema::parse_schema;
+use proptest::test_runner::{
+    Config,
+    TestRunner
+};
 use std::fs;
 use sudograph_tests::{
-    assert_correct_result,
-    arbitraries::sudograph::SudographObjectTypeArbitrary,
-    utilities::graphql::{
-        graphql_mutation,
-        get_object_types
+    arbitraries::queries::queries::QueriesArbitrary,
+    utilities::{
+        assert::assert_correct_result,
+        graphql::{
+            get_object_types,
+            graphql_mutation
+        }
     }
-};
-use proptest::test_runner::{
-    TestRunner,
-    Config
 };
 
 #[test]
@@ -33,7 +35,7 @@ fn test_create() {
             .. Config::default()
         });
 
-        let mutation_create_arbitrary = object_type.arb_mutation_create(
+        let mutation_create_arbitrary = object_type.mutation_create_arbitrary(
             graphql_ast,
             object_types,
             object_type,
