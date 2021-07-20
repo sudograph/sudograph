@@ -270,7 +270,7 @@ fn insert_field_value_relation_many_opposing_all_into_field_value_store(
     )?;
 
     match field_type {
-        FieldType::RelationMany(field_type_relation_info) => {
+        FieldType::RelationMany((nullable, field_type_relation_info)) => {
             match &field_type_relation_info.opposing_field_name {
                 Some(opposing_field_name) => {
                     for opposing_primary_key in &field_value_relation_many.relation_primary_keys {
@@ -349,7 +349,7 @@ fn insert_field_value_opposing_relation_one_all_into_field_value_store(
     )?;
 
     match field_type {
-        FieldType::RelationOne(field_type_relation_info) => {
+        FieldType::RelationOne((nullable, field_type_relation_info)) => {
             match &field_type_relation_info.opposing_field_name {
                 Some(opposing_field_name) => {
                     insert_field_value_relation_opposing_into_field_value_store(

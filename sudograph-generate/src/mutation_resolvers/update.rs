@@ -53,6 +53,10 @@ pub fn generate_update_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                         return Ok(deserialized_strings);
                     },
                     Err(error) => {
+                        // TODO we need to panic here to ensure all state changes are undone
+                        // TODO unfortunately this means that for now we will not be able to return
+                        // TODO a nice JSON result
+                        // TODO see this forum post for a way to possibly get around this in the future: https://forum.dfinity.org/t/discard-state-changes-from-update-call-without-trap/5862
                         return Err(sudograph::async_graphql::Error::from(error));
                     }
                 };

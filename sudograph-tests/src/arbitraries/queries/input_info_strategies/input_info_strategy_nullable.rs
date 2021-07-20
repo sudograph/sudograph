@@ -25,7 +25,8 @@ pub fn get_input_info_strategy_nullable(
     relation_many: bool,
     relation_one: bool,
     mutation_type: MutationType,
-    expected_value: serde_json::Value
+    expected_value: serde_json::Value,
+    error: bool
 ) -> BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>> {
     return any::<bool>().prop_flat_map(move |null| {
         let field_name = field.name.to_string();
@@ -59,7 +60,8 @@ pub fn get_input_info_strategy_nullable(
                     ) } else { field_name.to_string() },
                     nullable: true,
                     input_value,
-                    expected_value: expected_value.clone()
+                    expected_value: expected_value.clone(),
+                    error: false
                 });
             }).boxed();
         }

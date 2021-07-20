@@ -176,7 +176,7 @@ fn order_field_value_stores(
                 &order_input.order_direction,
                 a,
                 b
-            ).unwrap();
+            ).unwrap(); // TODO remove this unwrap
 
             return field_comparison;
         });
@@ -416,49 +416,49 @@ fn field_value_store_matches_inputs(
 
         if let (Some(field_type), Some(field_value)) = (field_type_option, field_value_option) {
             match field_type {
-                FieldType::Blob => {
+                FieldType::Blob(nullable) => {
                     return field_value_scalar_blob_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::Boolean => {
+                FieldType::Boolean(nullable) => {
                     return field_value_scalar_boolean_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::Date => {
+                FieldType::Date(nullable) => {
                     return field_value_scalar_date_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::Float => {
+                FieldType::Float(nullable) => {
                     return field_value_scalar_float_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::Int => {
+                FieldType::Int(nullable) => {
                     return field_value_scalar_int_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::JSON => {
+                FieldType::JSON(nullable) => {
                     return field_value_scalar_json_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::String => {
+                FieldType::String(nullable) => {
                     return field_value_scalar_string_matches_input(
                         field_value,
                         input
                     );
                 },
-                FieldType::RelationMany(field_type_relation_info) => {
+                FieldType::RelationMany((nullable, field_type_relation_info)) => {
                     return field_value_relation_many_matches_input(
                         object_type_store, // TODO not sure we need all of these params
                         field_type_relation_info,
@@ -466,7 +466,7 @@ fn field_value_store_matches_inputs(
                         input
                     );
                 },
-                FieldType::RelationOne(field_type_relation_info) => {
+                FieldType::RelationOne((nullable, field_type_relation_info)) => {
                     return field_value_relation_one_matches_input(
                         object_type_store, // TODO not sure we need all of these params
                         field_type_relation_info,

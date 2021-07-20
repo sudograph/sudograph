@@ -82,7 +82,8 @@ pub fn mutation_update_arbitrary(
                         selection: "id".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(id),
-                        expected_value: serde_json::json!(id)
+                        expected_value: serde_json::json!(id),
+                        error: false
                     }].iter().cloned(),
                     non_nullable_input_values.iter().cloned(),
                     nullable_input_values[0..index].iter().cloned()
@@ -115,6 +116,14 @@ fn test_removed_relation_arbitrary_results(
     update_input_values: &Vec<InputInfo>
 ) -> Result<Vec<ArbitraryResult>, Box<dyn std::error::Error>> {
     // TODO we really need a try_filter and a try_map to use the ? syntax here
+
+    let legitimate_error_exists = update_input_values.iter().any(|update_input_value| {
+        return update_input_value.error == true;
+    });
+
+    if legitimate_error_exists == true {
+        return Ok(vec![]);
+    }
 
     return Ok(mutation_create_arbitrary_result
         .input_infos
@@ -191,7 +200,8 @@ fn test_removed_relation_arbitrary_results(
                         selection: "".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(null),
-                        expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) }
+                        expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) },
+                        error: false
                     }
                 ]
             };

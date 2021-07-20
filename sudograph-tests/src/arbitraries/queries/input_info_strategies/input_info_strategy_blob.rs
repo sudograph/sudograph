@@ -59,7 +59,8 @@ pub fn get_input_info_strategy_blob(
                 get_nullable_expected_value(
                     &original_update_object_option_clone,
                     field
-                )?
+                )?,
+                false
             )
         );
     }
@@ -104,7 +105,8 @@ pub fn get_input_info_strategy_blob_string(
                 selection: field.name.to_string(),
                 nullable,
                 input_value,
-                expected_value
+                expected_value,
+                error: false
             }
         );
     }).boxed();
@@ -274,7 +276,8 @@ pub fn get_input_info_strategy_blob_vector(
                 selection: field.name.to_string(),
                 nullable,
                 input_value,
-                expected_value
+                expected_value,
+                error: false
             }
         );
     }).boxed();

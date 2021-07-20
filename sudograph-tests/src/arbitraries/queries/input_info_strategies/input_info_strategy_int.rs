@@ -38,7 +38,8 @@ pub fn get_input_info_strategy_int(
             selection: field.name.to_string(),
             nullable,
             input_value,
-            expected_value
+            expected_value,
+            error: false
         });
     }).boxed();
 
@@ -49,7 +50,8 @@ pub fn get_input_info_strategy_int(
             false,
             false,
             mutation_type,
-            serde_json::json!(null)
+            serde_json::json!(null),
+            false
         );
     }
     else {

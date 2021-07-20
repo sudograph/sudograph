@@ -236,7 +236,7 @@ fn insert_field_value_relation_many_opposing_all_into_field_value_store(
     )?;
 
     match field_type {
-        FieldType::RelationMany(field_type_relation_info) => {
+        FieldType::RelationMany((nullable, field_type_relation_info)) => {
             match &field_type_relation_info.opposing_field_name {
                 Some(opposing_field_name) => {
                     for opposing_primary_key in &field_value_relation_many.relation_primary_keys {
@@ -407,7 +407,7 @@ fn insert_field_value_opposing_relation_one_all_into_field_value_store(
     )?;
 
     match field_type {
-        FieldType::RelationOne(field_type_relation_info) => {
+        FieldType::RelationOne((nullable, field_type_relation_info)) => {
             match &field_type_relation_info.opposing_field_name {
                 Some(opposing_field_name) => {
                     insert_field_value_relation_opposing_into_field_value_store(
@@ -446,6 +446,13 @@ fn insert_field_value_relation_opposing_into_field_value_store(
     id: &str,
     insert: bool
 ) -> Result<(), Box<dyn Error>> {
+    let opposing_field_type = object_type_store
+        .get(&field_type_relation_info.opposing_object_name)
+        .ok_or("insert_field_value_relation_opposing_into_field_value_store::opposing_field_type 0")?
+        .field_types_store
+        .get(opposing_field_name)
+        .ok_or("insert_field_value_relation_opposing_into_field_value_store::opposing_field_type 1")?.clone();
+
     let opposing_field_value_store = get_mutable_field_value_store(
         object_type_store,
         String::from(&field_type_relation_info.opposing_object_name),
@@ -499,10 +506,24 @@ fn insert_field_value_relation_opposing_into_field_value_store(
                         opposing_field_value_relation_one.relation_primary_key = String::from(id);
                     }
                     else {
-                        opposing_field_value_store.insert(
-                            String::from(opposing_field_name),
-                            FieldValue::RelationOne(None)
-                        );
+                        let opposing_field_is_nullable = match opposing_field_type {
+                            FieldType::RelationOne((nullable, _)) => {
+                                nullable.clone()
+                            },
+                            _ => panic!("")
+                        };
+
+                        if opposing_field_is_nullable == true {
+                            opposing_field_value_store.insert(
+                                String::from(opposing_field_name),
+                                FieldValue::RelationOne(None)
+                            );
+                        }
+                        else {
+                            // TODO what should we do here?
+                            // TODO should we simply not allow this, or should it be an error?
+                            return Err("Cannot set a non-nullable relation one to null".into());
+                        }
                     }
                 },
                 None => {
@@ -567,7 +588,9 @@ fn insert_field_value_scalar_option_into_field_value_store(
                                                         FieldValueScalar::Blob(field_value_scalar_blob) => {
                                                             field_value_scalar_blob.append(&mut input_field_value_scalar_blob);
                                                         },
-                                                        _ => panic!("insert_field_value_scalar_option_into_field_value_store wrong 0")
+                                                        _ => {
+                                                            return Err("insert_field_value_scalar_option_into_field_value_store wrong 0".into());
+                                                        }
                                                     };
                                                 },
                                                 None => {
@@ -578,7 +601,9 @@ fn insert_field_value_scalar_option_into_field_value_store(
                                                 }
                                             };
                                         },
-                                        _ => panic!("insert_field_value_scalar_option_into_field_value_store wrong 1")
+                                        _ => {
+                                            return Err("insert_field_value_scalar_option_into_field_value_store wrong 1".into());
+                                        }
                                     };
                                 },
                                 None => {
