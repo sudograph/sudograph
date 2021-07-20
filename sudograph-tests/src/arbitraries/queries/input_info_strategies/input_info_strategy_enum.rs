@@ -1,8 +1,8 @@
 use crate::{
     arbitraries::queries::{
-        input_value_strategies::input_value_strategy_nullable::get_input_value_strategy_nullable,
+        input_info_strategies::input_info_strategy_nullable::get_input_info_strategy_nullable,
         queries::{
-            InputValue,
+            InputInfo,
             MutationType
         }
     },
@@ -23,48 +23,48 @@ use proptest::{
     }
 };
 
-pub fn get_input_value_strategy_enum(
+pub fn get_input_info_strategy_enum(
     graphql_ast: &'static Document<String>,
     field: &'static Field<String>,
     mutation_type: MutationType
-) -> BoxedStrategy<InputValue> {
+) -> Result<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     
     let enum_type = get_enum_type_from_field(
         &graphql_ast,
         &field
-    ).unwrap();
+    ).ok_or("None")?;
 
     let enum_values_len = enum_type.values.len();
 
     let strategy = (0..enum_values_len - 1).prop_map(move |index| {
-        let field_type = get_graphql_type_name(&field.field_type);
+        let input_type = get_graphql_type_name(&field.field_type);
 
-        let input_value = serde_json::json!(enum_type.clone().values.get(index).unwrap().name.clone());
-        let selection_value = input_value.clone();
+        let input_value = serde_json::json!(enum_type.clone().values.get(index).ok_or("None")?.name.clone());
+        let expected_value = input_value.clone();
 
-        return InputValue {
+        return Ok(InputInfo {
             field: Some(field.clone()),
             field_name: field.name.to_string(),
-            field_type,
+            input_type,
             selection: field.name.to_string(),
             nullable,
             input_value,
-            selection_value
-        };
+            expected_value
+        });
     }).boxed();
 
     if nullable == true {
-        return get_input_value_strategy_nullable(
+        return Ok(get_input_info_strategy_nullable(
             field,
             strategy,
             false,
             false,
             mutation_type,
             serde_json::json!(null)
-        );
+        ));
     }
     else {
-        return strategy;
+        return Ok(strategy);
     }
 }

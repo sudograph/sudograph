@@ -1,72 +1,38 @@
-use crate::arbitraries::queries::queries::InputValues;
+use crate::arbitraries::queries::queries::InputInfo;
 
 pub fn assert_correct_result(
     result_json: &serde_json::Value,
     selection_name: &str,
-    input_values: &InputValues
-) -> bool {
-    match result_json {
-        serde_json::Value::Object(object) => {
-            let data_option = object.get("data");
+    input_infos: &Vec<InputInfo>
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let data_option = result_json.as_object().ok_or("None")?.get("data");
+    let errors_option = result_json.as_object().ok_or("None")?.get("errors");
+    
+    match (data_option, errors_option) {
+        (Some(data), None) => {
+            let selection = data.as_object().ok_or("None")?.get(selection_name).ok_or("None")?;
+            let results = selection.as_array().ok_or("None")?;
+        
+            return Ok(results.iter().all(|result| {
+                return input_infos.iter().all(|input_value| {
+                    // TODO figure out how to get rid of the unwrap here...seems using ? in closures isn't really figured out
+                    let result_value = result.as_object().ok_or("None").unwrap().get(&input_value.field_name).unwrap();
+                    let expected_value = &input_value.expected_value;
 
-            let errors_option = object.get("errors");
+                    println!("result_value: {:#?}", result_value);
+                    println!("expected_value: {:#?}", expected_value);
 
-            match (data_option, errors_option) {
-                (Some(_), Some(_)) => {
-                    return false;
-                },
-                (Some(data), None) => {
-                    match data {
-                        serde_json::Value::Object(object) => {
-                            let selection = object.get(selection_name).unwrap();
-
-                            match selection {
-                                serde_json::Value::Array(results) => {
-                                    return results.iter().all(|result| {
-                                        match result {
-                                            serde_json::Value::Object(object) => {
-                                                return input_values.iter().all(|input_value| {
-                                                    let result_value = object.get(&input_value.field_name).unwrap();
-                                                    let selection_value = &input_value.selection_value;
-
-                                                    println!("result_value: {:#?}", result_value);
-                                                    println!("selection_value: {:#?}", selection_value);
-
-                                                    // return result_value == input_value;
-                                                    return serde_json_values_are_equal(
-                                                        result_value,
-                                                        selection_value
-                                                    );
-                                                });
-                                            },
-                                            _ => {
-                                                return false;
-                                            }
-                                        };
-                                    });
-                                },
-                                _ => {
-                                    return false;
-                                }
-                            };
-                        },
-                        _ => {
-                            return false;
-                        }
-                    };
-                },
-                (None, Some(_)) => {
-                    return false;
-                },
-                (None, None) => {
-                    return false;
-                }
-            };
+                    return serde_json_values_are_equal(
+                        result_value,
+                        expected_value
+                    );
+                });
+            }));
         },
         _ => {
-            return false;
+            return Ok(false);
         }
-    };
+    }
 }
 
 // TODO I would love to get rid of this function if possible

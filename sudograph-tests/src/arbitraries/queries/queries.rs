@@ -10,17 +10,15 @@ use graphql_parser::schema::{
 use proptest::strategy::BoxedStrategy;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct InputValue {
+pub struct InputInfo {
     pub field: Option<Field<'static, String>>,
     pub field_name: String,
-    pub field_type: String,
+    pub input_type: String,
     pub selection: String,
     pub nullable: bool,
     pub input_value: serde_json::Value,
-    pub selection_value: serde_json::Value
+    pub expected_value: serde_json::Value
 }
-
-pub type InputValues = Vec<InputValue>;
 
 #[derive(Clone, Debug)]
 pub struct ArbitraryResult {
@@ -28,7 +26,7 @@ pub struct ArbitraryResult {
     pub query: String,
     pub variables: String,
     pub selection_name: String,
-    pub input_values: InputValues
+    pub input_infos: Vec<InputInfo>
 }
 
 #[derive(Clone, Copy)]
@@ -44,14 +42,14 @@ pub trait QueriesArbitrary {
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>,
         relation_test: bool // TODO change this to something like include_nullable_relations
-    ) -> BoxedStrategy<ArbitraryResult>;
+    ) -> Result<BoxedStrategy<ArbitraryResult>, Box<dyn std::error::Error>>;
 
     fn mutation_update_arbitrary(
         &self,
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>
-    ) -> BoxedStrategy<(ArbitraryResult, Vec<ArbitraryResult>)>;
+    ) -> Result<BoxedStrategy<Result<(ArbitraryResult, Vec<ArbitraryResult>), Box<dyn std::error::Error>>>, Box<dyn std::error::Error>>;
 }
 
 impl QueriesArbitrary for ObjectType<'_, String> {
@@ -61,7 +59,7 @@ impl QueriesArbitrary for ObjectType<'_, String> {
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>,
         relation_test: bool // TODO change this to something like include_nullable_relations
-    ) -> BoxedStrategy<ArbitraryResult> {
+    ) -> Result<BoxedStrategy<ArbitraryResult>, Box<dyn std::error::Error>> {
         return mutation_create_arbitrary(
             graphql_ast,
             object_types,
@@ -75,7 +73,7 @@ impl QueriesArbitrary for ObjectType<'_, String> {
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>
-    ) -> BoxedStrategy<(ArbitraryResult, Vec<ArbitraryResult>)> {
+    ) -> Result<BoxedStrategy<Result<(ArbitraryResult, Vec<ArbitraryResult>), Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
         return mutation_update_arbitrary(
             graphql_ast,
             object_types,
@@ -88,7 +86,7 @@ impl QueriesArbitrary for ObjectType<'_, String> {
 pub fn generate_arbitrary_result(
     object_type: &ObjectType<String>,
     mutation_name: &str,
-    input_values: InputValues
+    input_infos: Vec<InputInfo>
 ) -> ArbitraryResult {
     let object_type_name = &object_type.name;
 
@@ -108,30 +106,30 @@ pub fn generate_arbitrary_result(
                 }}
             }}
         ",
-        variable_declarations = input_values.iter().map(|input_value| {
+        variable_declarations = input_infos.iter().map(|input_value| {
             return format!(
                 "${field_name}: {field_type}!",
                 field_name = &input_value.field_name,
-                field_type = input_value.field_type
+                field_type = input_value.input_type
             );
         }).collect::<Vec<String>>().join("\n                        "),
         mutation_name = mutation_name,
         object_type_name = object_type_name,
-        input = if input_values.len() == 0 { "".to_string() } else { format!("(input: {{ {fields} }})", fields = input_values.iter().map(|input_value| {
+        input = if input_infos.len() == 0 { "".to_string() } else { format!("(input: {{ {fields} }})", fields = input_infos.iter().map(|input_value| {
             return format!(
                 "{field_name}: ${field_name}",
                 field_name = &input_value.field_name
             );
         }).collect::<Vec<String>>().join("\n                        ")) },
-        selections = get_selections(&input_values).join("\n                        ")
+        selections = get_selections(&input_infos).join("\n                        ")
     );
 
     let mut hash_map = std::collections::HashMap::<String, serde_json::Value>::new();
 
-    for input_value in input_values.iter() {
+    for input_info in input_infos.iter() {
         hash_map.insert(
-            input_value.field_name.to_string(),
-            input_value.input_value.clone()
+            input_info.field_name.to_string(),
+            input_info.input_value.clone()
         );
     }
 
@@ -142,12 +140,12 @@ pub fn generate_arbitrary_result(
         query,
         variables,
         selection_name,
-        input_values
+        input_infos
     };
 }
 
-fn get_selections(input_values: &InputValues) -> Vec<String> {
-    let input_value_strings_possible_id = input_values.iter().map(|input_value| {
+fn get_selections(input_infos: &Vec<InputInfo>) -> Vec<String> {
+    let input_value_strings_possible_id = input_infos.iter().map(|input_value| {
         return input_value.selection.to_string();
     }).collect::<Vec<String>>();
 

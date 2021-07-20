@@ -1,14 +1,13 @@
 use crate::{
     arbitraries::queries::{
-        input_value_strategies::input_value_strategies::{
-            create_and_retrieve,
-            get_input_value_strategies
+        input_info_strategies::input_info_strategies::{
+            create_and_retrieve_object,
+            get_input_info_strategies
         },
         queries::{
             ArbitraryResult,
             generate_arbitrary_result,
-            InputValue,
-            InputValues,
+            InputInfo,
             MutationType,
             QueriesArbitrary
         }
@@ -34,52 +33,56 @@ pub fn mutation_update_arbitrary(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>
-) -> BoxedStrategy<(ArbitraryResult, Vec<ArbitraryResult>)> {
+) -> Result<BoxedStrategy<Result<(ArbitraryResult, Vec<ArbitraryResult>), Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
     let mutation_create_arbitrary = object_type.mutation_create_arbitrary(
         graphql_ast,
         object_types,
         object_type,
         false
-    );
+    )?;
 
-    return mutation_create_arbitrary.prop_flat_map(move |mutation_create| {
-        let original_update_object = create_and_retrieve(mutation_create.clone());
+    return Ok(mutation_create_arbitrary.prop_flat_map(move |mutation_create| {
+        let original_update_object = create_and_retrieve_object(mutation_create.clone()).unwrap();
 
-        let input_value_strategies = get_input_value_strategies(
+        let input_value_strategies = get_input_info_strategies(
             graphql_ast,
             object_types,
             object_type,
             MutationType::Update,
             false,
             Some(original_update_object.clone())
-        );
+        ).unwrap();
         
-        return input_value_strategies.prop_shuffle().prop_flat_map(move |input_values| {
+        return input_value_strategies.prop_shuffle().prop_flat_map(move |input_value_results| {
+            let input_values: Vec<InputInfo> = input_value_results.into_iter().map(|input_value_result| {
+                println!("input_value_result {:#?}", input_value_result);
+                return input_value_result.unwrap(); // TODO this is unfortunate but works for now I guess
+            }).collect();
 
             let original_update_object_two = original_update_object.clone();
 
             let id = original_update_object.get("id").unwrap().to_string().replace("\\", "").replace("\"", "");
 
-            let non_nullable_input_values: Vec<InputValue> = input_values.clone().into_iter().filter(|input_value| {
+            let non_nullable_input_values: Vec<InputInfo> = input_values.clone().into_iter().filter(|input_value| {
                 return input_value.nullable == false && input_value.field_name != "id";
             }).collect();
     
-            let nullable_input_values: Vec<InputValue> = input_values.into_iter().filter(|input_value| {
+            let nullable_input_values: Vec<InputInfo> = input_values.into_iter().filter(|input_value| {
                 return input_value.nullable == true && input_value.field_name != "id";
             }).collect();
 
             let mutation_create_two = mutation_create.clone();
 
             return (0..nullable_input_values.len() + 1).prop_map(move |index| {
-                let input_values: Vec<InputValue> = vec![
-                    vec![InputValue {
+                let input_values: Vec<InputInfo> = vec![
+                    vec![InputInfo {
                         field: None,
                         field_name: "id".to_string(),
-                        field_type: "ID".to_string(),
+                        input_type: "ID".to_string(),
                         selection: "id".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(id),
-                        selection_value: serde_json::json!(id)
+                        expected_value: serde_json::json!(id)
                     }].iter().cloned(),
                     non_nullable_input_values.iter().cloned(),
                     nullable_input_values[0..index].iter().cloned()
@@ -88,7 +91,7 @@ pub fn mutation_update_arbitrary(
                 .flatten()
                 .collect();
     
-                return (generate_arbitrary_result(
+                return Ok((generate_arbitrary_result(
                     object_type,
                     "update",
                     input_values.clone()
@@ -98,10 +101,10 @@ pub fn mutation_update_arbitrary(
                     &mutation_create_two,
                     &original_update_object_two,
                     &input_values
-                ));
+                )?));
             });
         }).boxed();
-    }).boxed();
+    }).boxed());
 }
 
 fn test_removed_relation_arbitrary_results(
@@ -109,15 +112,17 @@ fn test_removed_relation_arbitrary_results(
     object_types: &'static Vec<ObjectType<String>>,
     mutation_create_arbitrary_result: &ArbitraryResult,
     original_update_object: &serde_json::Map<String, serde_json::Value>,
-    update_input_values: &InputValues
-) -> Vec<ArbitraryResult> {
-    return mutation_create_arbitrary_result
-        .input_values
+    update_input_values: &Vec<InputInfo>
+) -> Result<Vec<ArbitraryResult>, Box<dyn std::error::Error>> {
+    // TODO we really need a try_filter and a try_map to use the ? syntax here
+
+    return Ok(mutation_create_arbitrary_result
+        .input_infos
         .iter()
-        .filter(|input_value| {
+        .filter(|input_info| {
             let opposing_relation_field_option = get_opposing_relation_field(
                 graphql_ast,
-                &input_value.field.clone().unwrap()
+                &input_info.field.clone().unwrap()
             );
 
             return
@@ -130,12 +135,12 @@ fn test_removed_relation_arbitrary_results(
                 // TODO there is something in this filter that needs to change!!!
                 // TODO if we can figure out this filter then I think we can get it
                 update_input_values.iter().find(|update_input_value| {
-                    return update_input_value.field_name == input_value.field_name;
+                    return update_input_value.field_name == input_info.field_name;
                 }).is_some() &&
-                input_value.input_value.as_null().is_none() &&
-                input_value.field_type == "CreateRelationOneInput" &&
+                input_info.input_value.as_null().is_none() &&
+                input_info.input_type == "CreateRelationOneInput" &&
                 opposing_relation_field_option != None &&
-                original_update_object.get(&input_value.field_name).unwrap().as_null().is_none();
+                original_update_object.get(&input_info.field_name).unwrap().as_null().is_none();
         })
         .map(|input_value| {
             let field = input_value.field.clone().unwrap();
@@ -177,18 +182,18 @@ fn test_removed_relation_arbitrary_results(
                     "read{object_type_name}",
                     object_type_name = relation_object_type.name
                 ),
-                input_values: vec![
+                input_infos: vec![
                     // TODO many of these values do not matter in this case
-                    InputValue {
+                    InputInfo {
                         field: None,
                         field_name: opposing_relation_field.name,
-                        field_type: "".to_string(),
+                        input_type: "".to_string(),
                         selection: "".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(null),
-                        selection_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) }
+                        expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) }
                     }
                 ]
             };
-        }).collect();
+        }).collect());
 }

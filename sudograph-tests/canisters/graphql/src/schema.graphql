@@ -30,16 +30,16 @@ type User {
     # horse: Horse! @relation(name: "User:horse::Horse:primary_rider") # TODO this is broken until we handle one-to-one nullables correctly
     # second_horse: Horse @relation(name: "User:second_horse::Horse:secondary_rider")
     # third_horse: Horse @relation(name: "User:third_horse::Horse:tertiary_rider")
-    # ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
-    # ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
-    # bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
-    # good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+    ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
+    ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
+    bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 
     # TODO there are a few more many-to-many combinations to try, non-nullable to nullable and nullable to non-nullable
 
-    # best_friend: User
-    # best_friends: [User!]!
-    # bestest_friends: [User!]
+    best_friend: User
+    best_friends: [User!]!
+    bestest_friends: [User!]
 }
 
 # TODO add to the tests, if you set one side of a relation to null, the other side should be checked to see
@@ -51,17 +51,17 @@ type User {
 #     # tertiary_rider: User! @relation(name: "User:third_horse::Horse:tertiary_rider")
 # }
 
-# type Duck {
-#     id: ID!
-#     hunter: User! @relation(name: "User:ducks::Duck:hunter")
-#     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
-# }
+type Duck {
+    id: ID!
+    hunter: User! @relation(name: "User:ducks::Duck:hunter")
+    foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
+}
 
-# type Bacterium {
-#     id: ID!
-#     hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
-#     good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
-# }
+type Bacterium {
+    id: ID!
+    hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+}
 
 type Identity {
     id: ID!
@@ -71,10 +71,10 @@ type Vote {
     id: ID!
 }
 
-enum Color {
-    RED
-    WHITE
-    BLUE
-    GREEN
-    YELLOW
-}
+# enum Color {
+#     RED
+#     WHITE
+#     BLUE
+#     GREEN
+#     YELLOW
+# }

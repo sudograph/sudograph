@@ -1,8 +1,8 @@
 use crate::{
     arbitraries::queries::{
-        input_value_strategies::input_value_strategy_nullable::get_input_value_strategy_nullable,
+        input_info_strategies::input_info_strategy_nullable::get_input_info_strategy_nullable,
         queries::{
-            InputValue,
+            InputInfo,
             MutationType
         }
     },
@@ -62,10 +62,10 @@ pub enum Json {
     Map(std::collections::HashMap<String, Json>),
 }
 
-pub fn get_input_value_strategy_json(
+pub fn get_input_info_strategy_json(
     field: &'static Field<String>,
     mutation_type: MutationType
-) -> BoxedStrategy<InputValue> {
+) -> BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>> {
     let nullable = is_graphql_type_nullable(&field.field_type);
     let leaf = prop_oneof![
         Just(Json::Null),
@@ -82,24 +82,24 @@ pub fn get_input_value_strategy_json(
             proptest::collection::hash_map(".*", inner, 0..10).prop_map(Json::Map)
         ]
     ).prop_map(move |json| {
-        let field_type = get_graphql_type_name(&field.field_type);
+        let input_type = get_graphql_type_name(&field.field_type);
 
         let input_value = serde_json::json!(json);
-        let selection_value = input_value.clone();
+        let expected_value = input_value.clone();
 
-        return InputValue {
+        return Ok(InputInfo {
             field: Some(field.clone()),
             field_name: field.name.to_string(),
-            field_type,
+            input_type,
             selection: field.name.to_string(),
             nullable,
             input_value,
-            selection_value
-        };
+            expected_value
+        });
     }).boxed();
 
     if nullable == true {
-        return get_input_value_strategy_nullable(
+        return get_input_info_strategy_nullable(
             field,
             strategy,
             false,
