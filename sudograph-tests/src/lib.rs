@@ -6,12 +6,10 @@ pub mod arbitraries {
         pub mod mutation_update_disconnect {
             pub mod mutation_update_disconnect;
             pub mod strategies {
-                pub mod relation_one_nullable {
-                    pub mod relation_one_nullable;
-                    pub mod connect;
-                    pub mod disconnect;
-                    pub mod check_disconnected_relation;
-                }
+                pub mod strategies;
+                pub mod connect;
+                pub mod disconnect;
+                pub mod check_disconnected_relation;
             }
         }
         pub mod input_info_strategies {

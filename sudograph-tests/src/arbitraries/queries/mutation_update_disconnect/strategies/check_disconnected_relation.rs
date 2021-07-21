@@ -1,5 +1,8 @@
 use crate::{
-    arbitraries::queries::queries::ArbitraryQueryInfo,
+    arbitraries::queries::{
+        mutation_update_disconnect::mutation_update_disconnect::MutationUpdateDisconnectRelationType,
+        queries::ArbitraryQueryInfo
+    },
     utilities::graphql::{
         is_graphql_type_a_relation_one,
         is_graphql_type_nullable
@@ -15,7 +18,8 @@ pub fn get_check_disconnected_relation_arbitrary_query_info(
     graphql_ast: &'static Document<String>,
     relation_object_type: &'static ObjectType<String>,
     relation_object: &serde_json::value::Map<String, serde_json::Value>,
-    opposing_field_option: &Option<Field<String>>
+    opposing_field_option: &Option<Field<String>>,
+    mutation_update_disconnect_relation_type: MutationUpdateDisconnectRelationType
 ) -> Option<ArbitraryQueryInfo> {
     match opposing_field_option {
         Some(opposing_field) => {

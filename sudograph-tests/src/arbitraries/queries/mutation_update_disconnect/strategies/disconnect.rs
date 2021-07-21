@@ -1,5 +1,8 @@
 use crate::{
-    arbitraries::queries::queries::ArbitraryMutationInfo,
+    arbitraries::queries::{
+        mutation_update_disconnect::mutation_update_disconnect::MutationUpdateDisconnectRelationType,
+        queries::ArbitraryMutationInfo
+    },
     utilities::graphql::{
         is_graphql_type_a_relation_one,
         is_graphql_type_nullable
@@ -15,8 +18,10 @@ pub fn get_disconnect_arbitrary_mutation_info(
     graphql_ast: &'static Document<String>,
     object_type: &'static ObjectType<String>,
     object: &serde_json::value::Map<String, serde_json::Value>,
+    relation_object: &serde_json::value::Map<String, serde_json::Value>,
     field: &'static Field<String>,
-    opposing_field_option: &Option<Field<String>>
+    opposing_field_option: &Option<Field<String>>,
+    mutation_update_disconnect_relation_type: MutationUpdateDisconnectRelationType
 ) -> ArbitraryMutationInfo {
     let field_name = &field.name;
 
@@ -30,12 +35,14 @@ pub fn get_disconnect_arbitrary_mutation_info(
         object_type_name = object_type.name
     );
 
-    let input_value = serde_json::json!({
-        "id": object.get("id").unwrap(),
-        field_name: {
-            "disconnect": true
-        }
-    });
+    let object_id = object.get("id").unwrap();
+    let relation_object_id = relation_object.get("id").unwrap();
+    let input_value = get_input_value(
+        field_name,
+        object_id,
+        relation_object_id,
+        mutation_update_disconnect_relation_type
+    );
 
     let selection = format!(
         "{{
@@ -61,6 +68,32 @@ pub fn get_disconnect_arbitrary_mutation_info(
         input_value,
         selection,
         expected_value
+    };
+}
+
+fn get_input_value(
+    field_name: &str,
+    object_id: &serde_json::value::Value,
+    relation_object_id: &serde_json::value::Value,
+    mutation_update_disconnect_relation_type: MutationUpdateDisconnectRelationType
+) -> serde_json::value::Value {
+    match mutation_update_disconnect_relation_type {
+        MutationUpdateDisconnectRelationType::RelationOneNullable => {
+            return serde_json::json!({
+                "id": object_id,
+                field_name: {
+                    "disconnect": true
+                }
+            });
+        },
+        MutationUpdateDisconnectRelationType::RelationMany => {
+            return serde_json::json!({
+                "id": object_id,
+                field_name: {
+                    "disconnect": [relation_object_id]
+                }
+            });
+        }
     };
 }
 
