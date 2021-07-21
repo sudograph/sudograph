@@ -3,6 +3,17 @@ pub mod arbitraries {
         pub mod queries;
         pub mod mutation_create;
         pub mod mutation_update;
+        pub mod mutation_update_disconnect {
+            pub mod mutation_update_disconnect;
+            pub mod strategies {
+                pub mod relation_one_nullable {
+                    pub mod relation_one_nullable;
+                    pub mod connect;
+                    pub mod disconnect;
+                    pub mod check_disconnected;
+                }
+            }
+        }
         pub mod input_info_strategies {
             pub mod input_info_strategies;
             pub mod input_info_strategy_blob;

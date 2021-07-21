@@ -1,6 +1,7 @@
 use crate::arbitraries::queries::{
     mutation_create::mutation_create_arbitrary,
-    mutation_update::mutation_update_arbitrary
+    mutation_update::mutation_update_arbitrary,
+    mutation_update_disconnect::mutation_update_disconnect::mutation_update_disconnect_arbitrary
 };
 use graphql_parser::schema::{
     Document,
@@ -20,6 +21,24 @@ pub struct InputInfo {
     pub input_value: serde_json::Value,
     pub expected_value: serde_json::Value,
     pub error: bool // TODO really improve the way errors are detected
+}
+
+#[derive(Clone, Debug)]
+pub struct ArbitraryQueryInfo {
+    pub query_name: String,
+    pub search_variable_type: String,
+    pub search_value: serde_json::Value,
+    pub selection: String,
+    pub expected_value: serde_json::Value,
+}
+
+#[derive(Clone, Debug)]
+pub struct ArbitraryMutationInfo {
+    pub mutation_name: String,
+    pub input_variable_type: String,
+    pub input_value: serde_json::Value,
+    pub selection: String,
+    pub expected_value: serde_json::Value,
 }
 
 #[derive(Clone, Debug)]
@@ -46,15 +65,22 @@ pub trait QueriesArbitrary {
         relation_test: bool // TODO change this to something like include_nullable_relations
     ) -> Result<BoxedStrategy<ArbitraryResult>, Box<dyn std::error::Error>>;
 
+    // TODO use 'static self instead of passing the object_type explicitly
     fn mutation_update_arbitrary(
         &self,
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>
     ) -> Result<BoxedStrategy<Result<(ArbitraryResult, Vec<ArbitraryResult>), Box<dyn std::error::Error>>>, Box<dyn std::error::Error>>;
+
+    fn mutation_update_disconnect_arbitrary(
+        &'static self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>
+    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>>;
 }
 
-impl QueriesArbitrary for ObjectType<'_, String> {
+impl QueriesArbitrary for ObjectType<'static, String> {
     fn mutation_create_arbitrary(
         &self,
         graphql_ast: &'static Document<String>,
@@ -82,9 +108,22 @@ impl QueriesArbitrary for ObjectType<'_, String> {
             object_type
         );
     }
+
+    fn mutation_update_disconnect_arbitrary(
+        &'static self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>
+    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>> {
+        return mutation_update_disconnect_arbitrary(
+            graphql_ast,
+            object_types,
+            self
+        );
+    }
 }
 
 // TODO perhaps this should be made specific to each mutation/query type?
+// TODO we should probably have one of these for testing queries as well?
 pub fn generate_arbitrary_result(
     object_type: &ObjectType<String>,
     mutation_name: &str,

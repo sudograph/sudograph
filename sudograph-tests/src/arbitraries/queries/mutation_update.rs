@@ -44,7 +44,7 @@ pub fn mutation_update_arbitrary(
     return Ok(mutation_create_arbitrary.prop_flat_map(move |mutation_create| {
         let original_update_object = create_and_retrieve_object(mutation_create.clone()).unwrap();
 
-        let input_value_strategies = get_input_info_strategies(
+        let input_info_strategies = get_input_info_strategies(
             graphql_ast,
             object_types,
             object_type,
@@ -53,27 +53,27 @@ pub fn mutation_update_arbitrary(
             Some(original_update_object.clone())
         ).unwrap();
         
-        return input_value_strategies.prop_shuffle().prop_flat_map(move |input_value_results| {
-            let input_values: Vec<InputInfo> = input_value_results.into_iter().map(|input_value_result| {
-                return input_value_result.unwrap(); // TODO this is unfortunate but works for now I guess
+        return input_info_strategies.prop_shuffle().prop_flat_map(move |input_info_results| {
+            let input_infos: Vec<InputInfo> = input_info_results.into_iter().map(|input_info_result| {
+                return input_info_result.unwrap(); // TODO this is unfortunate but works for now I guess
             }).collect();
 
             let original_update_object_two = original_update_object.clone();
 
             let id = original_update_object.get("id").unwrap().to_string().replace("\\", "").replace("\"", "");
 
-            let non_nullable_input_values: Vec<InputInfo> = input_values.clone().into_iter().filter(|input_value| {
+            let non_nullable_input_infos: Vec<InputInfo> = input_infos.clone().into_iter().filter(|input_value| {
                 return input_value.nullable == false && input_value.field_name != "id";
             }).collect();
     
-            let nullable_input_values: Vec<InputInfo> = input_values.into_iter().filter(|input_value| {
+            let nullable_input_infos: Vec<InputInfo> = input_infos.into_iter().filter(|input_value| {
                 return input_value.nullable == true && input_value.field_name != "id";
             }).collect();
 
             let mutation_create_two = mutation_create.clone();
 
-            return (0..nullable_input_values.len() + 1).prop_map(move |index| {
-                let input_values: Vec<InputInfo> = vec![
+            return (0..nullable_input_infos.len() + 1).prop_map(move |index| {
+                let input_infos: Vec<InputInfo> = vec![
                     vec![InputInfo {
                         field: None,
                         field_name: "id".to_string(),
@@ -84,8 +84,8 @@ pub fn mutation_update_arbitrary(
                         expected_value: serde_json::json!(id),
                         error: false
                     }].iter().cloned(),
-                    non_nullable_input_values.iter().cloned(),
-                    nullable_input_values[0..index].iter().cloned()
+                    non_nullable_input_infos.iter().cloned(),
+                    nullable_input_infos[0..index].iter().cloned()
                 ]
                 .into_iter()
                 .flatten()
@@ -94,13 +94,13 @@ pub fn mutation_update_arbitrary(
                 return Ok((generate_arbitrary_result(
                     object_type,
                     "update",
-                    input_values.clone()
+                    input_infos.clone()
                 ), test_removed_relation_arbitrary_results(
                     graphql_ast,
                     object_types,
                     &mutation_create_two,
                     &original_update_object_two,
-                    &input_values
+                    &input_infos
                 )?));
             });
         }).boxed();
