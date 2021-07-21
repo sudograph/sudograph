@@ -1,28 +1,20 @@
 use crate::{
     arbitraries::queries::{
-        input_info_strategies::input_info_strategies::{
-            create_and_retrieve_object
-        },
+        input_info_strategies::input_info_strategies::create_and_retrieve_object,
         mutation_update_disconnect::{
             strategies::relation_one_nullable::connect::get_connect_arbitrary_mutation_info,
-            strategies::relation_one_nullable::disconnect::get_disconnect_arbitrary_mutation_info
+            strategies::relation_one_nullable::disconnect::get_disconnect_arbitrary_mutation_info,
+            strategies::relation_one_nullable::check_disconnected_relation::get_check_disconnected_relation_arbitrary_query_info
         },
         queries::{
-            ArbitraryResult,
-            generate_arbitrary_result,
-            InputInfo,
             ArbitraryQueryInfo,
             ArbitraryMutationInfo,
-            MutationType,
             QueriesArbitrary
         }
     },
     utilities::graphql::{
         get_object_type_from_field,
-        get_opposing_relation_field,
-        is_graphql_type_a_relation_many,
-        is_graphql_type_a_relation_one,
-        is_graphql_type_nullable
+        get_opposing_relation_field
     }
 };
 use graphql_parser::schema::{
@@ -30,12 +22,9 @@ use graphql_parser::schema::{
     Field,
     ObjectType
 };
-use proptest::{
-    prelude::any,
-    strategy::{
-        BoxedStrategy,
-        Strategy
-    }
+use proptest::strategy::{
+    BoxedStrategy,
+    Strategy
 };
 
 pub fn get_arbitrary_result_tuples_for_relation_one_nullable(
@@ -43,7 +32,7 @@ pub fn get_arbitrary_result_tuples_for_relation_one_nullable(
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>,
     field: &'static Field<String>
-) -> BoxedStrategy<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)> {
+) -> BoxedStrategy<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)> {
     let mutation_create_arbitrary = object_type.mutation_create_arbitrary(
         graphql_ast,
         object_types,
@@ -92,23 +81,12 @@ pub fn get_arbitrary_result_tuples_for_relation_one_nullable(
             &opposing_field_option
         );
 
-        let check_disconnected_relation_arbitrary_query_info = ArbitraryQueryInfo {
-            query_name: format!(
-                "read{relation_object_type_name}",
-                relation_object_type_name = relation_object_type.name
-            ),
-            search_variable_type: format!(
-                "Read{object_type_name}Input!",
-                object_type_name = object_type.name
-            ),
-            search_value: serde_json::json!({
-                "id": {
-                    "eq": relation_object.get("id").unwrap()
-                }
-            }),
-            selection: "{ id }".to_string(), // TODO this should use the opposing field name
-            expected_value: serde_json::json!(null)
-        };
+        let check_disconnected_relation_arbitrary_query_info = get_check_disconnected_relation_arbitrary_query_info(
+            graphql_ast,
+            relation_object_type,
+            &relation_object,
+            &opposing_field_option
+        );
 
         return (
             connect_arbitrary_mutation_info,

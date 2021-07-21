@@ -70,6 +70,7 @@ fn get_connect_arbitrary_mutation_info_selection(
         Some(opposing_field) => {
             return format!(
                 "{{
+                    id
                     {field_name} {{
                         id
                         {opposing_field_name} {{
@@ -84,6 +85,7 @@ fn get_connect_arbitrary_mutation_info_selection(
         None => {
             return format!(
                 "{{
+                    id
                     {field_name} {{
                         id
                     }}
@@ -115,6 +117,7 @@ fn get_connect_arbitrary_mutation_info_expected_value(
                 return serde_json::json!({
                     "data": {
                         mutation_name: [{
+                            "id": object_id,
                             field_name: {
                                 "id": relation_object_id,
                                 opposing_field_name: {
@@ -129,6 +132,7 @@ fn get_connect_arbitrary_mutation_info_expected_value(
                 return serde_json::json!({
                     "data": {
                         mutation_name: [{
+                            "id": object_id,
                             field_name: {
                                 "id": relation_object_id,
                                 opposing_field_name: [{
@@ -144,6 +148,7 @@ fn get_connect_arbitrary_mutation_info_expected_value(
             return serde_json::json!({
                 "data": {
                     mutation_name: [{
+                        "id": object_id,
                         field_name: {
                             "id": relation_object_id
                         }

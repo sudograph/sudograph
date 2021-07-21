@@ -39,6 +39,7 @@ pub fn get_disconnect_arbitrary_mutation_info(
 
     let selection = format!(
         "{{
+            id
             {field_name} {{
                 id
             }}
@@ -50,6 +51,7 @@ pub fn get_disconnect_arbitrary_mutation_info(
         graphql_ast,
         field,
         opposing_field_option,
+        object.get("id").unwrap(),
         &mutation_name
     );
 
@@ -66,6 +68,7 @@ fn get_disconnect_arbitrary_mutation_info_expected_value(
     graphql_ast: &'static Document<String>,
     field: &'static Field<String>,
     opposing_field_option: &Option<Field<String>>,
+    object_id: &serde_json::value::Value,
     mutation_name: &str
 ) -> serde_json::value::Value {
     let field_name = &field.name;
@@ -92,6 +95,7 @@ fn get_disconnect_arbitrary_mutation_info_expected_value(
                 return serde_json::json!({
                     "data": {
                         mutation_name: [{
+                            "id": object_id,
                             field_name: null
                         }]
                     }
@@ -102,6 +106,7 @@ fn get_disconnect_arbitrary_mutation_info_expected_value(
             return serde_json::json!({
                 "data": {
                     mutation_name: [{
+                        "id": object_id,
                         field_name: null
                     }]
                 }

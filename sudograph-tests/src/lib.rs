@@ -10,7 +10,7 @@ pub mod arbitraries {
                     pub mod relation_one_nullable;
                     pub mod connect;
                     pub mod disconnect;
-                    pub mod check_disconnected;
+                    pub mod check_disconnected_relation;
                 }
             }
         }

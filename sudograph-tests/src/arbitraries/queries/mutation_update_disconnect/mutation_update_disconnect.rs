@@ -39,28 +39,13 @@ use proptest::{
     }
 };
 
-// TODO add the results back in
 pub fn mutation_update_disconnect_arbitrary(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>
-) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>> {
-    // let mutation_create_arbitrary = object_type.mutation_create_arbitrary(
-    //     graphql_ast,
-    //     object_types,
-    //     object_type,
-    //     false
-    // )?;
-
-    // TODO test disconnecting relation one nullable -> nothing, relation one non-nullable, relation one nullable, relation many non-nullable, relation many nullable
+) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>> {
     // TODO test disconnecting relation many non-nullable -> nothing, relation one non-nullable, relation one nullable, relation many non-nullable, relation many nullable
     // TODO test disconnecting relation many nullable -> nothing, relation one non-nullable, relation one nullable, relation many non-nullable, relation many nullable
-
-    // let input_info_strategies = get_input_info_strategies(
-    //     graphql_ast,
-    //     object_types,
-    //     object_type
-    // );
 
     let relation_fields = object_type.fields.iter().filter(|field| {
         if
@@ -83,7 +68,7 @@ pub fn mutation_update_disconnect_arbitrary(
         return false;
     });
 
-    let arbitrary_result_tuples_strategies: Vec<BoxedStrategy<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>> = relation_fields.map(|relation_field| {
+    let arbitrary_result_tuples_strategies: Vec<BoxedStrategy<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>> = relation_fields.map(|relation_field| {
         if is_graphql_type_a_relation_one(
             graphql_ast,
             &relation_field.field_type

@@ -135,23 +135,23 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                 for arbitrary_result_tuple in arbitrary_result_tuples {
                     let connect_arbitrary_mutation_info = arbitrary_result_tuple.0;
                     let disconnect_arbitrary_mutation_info = arbitrary_result_tuple.1;
-                    let check_disconnected_relation_arbitrary_query_info = arbitrary_result_tuple.2;
+                    let check_disconnected_relation_arbitrary_query_info_option = arbitrary_result_tuple.2;
                 
                     let (
                         mutation,
                         variables
                     ) = convert_arbitrary_mutation_info_into_mutation(&connect_arbitrary_mutation_info);
 
-                    // println!("mutation {}", mutation);
-                    // println!("variables {}", variables);
+                    println!("mutation {}", mutation);
+                    println!("variables {}", variables);
 
                     let result_json = graphql_mutation(
                         &mutation,
                         &variables
                     ).await.unwrap();
 
-                    // println!("connect_arbitrary_mutation_info result_json {:#?}", result_json);
-                    // println!("connect_arbitrary_mutation_info expected_value {:#?}", connect_arbitrary_mutation_info.expected_value);
+                    println!("connect_arbitrary_mutation_info result_json {:#?}", result_json);
+                    println!("connect_arbitrary_mutation_info expected_value {:#?}", connect_arbitrary_mutation_info.expected_value);
 
                     assert_equal_disconnect(
                         &result_json,
@@ -179,20 +179,28 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                         &disconnect_arbitrary_mutation_info.expected_value
                     );
 
-                    // let (
-                    //     query,
-                    //     variables
-                    // ) = convert_arbitrary_query_info_into_query(&check_disconnected_relation_arbitrary_query_info);
-
-                    // println!("query {}", query);
-                    // println!("variables {}", variables);
-
-                    // let result_json = graphql_query(
-                    //     &query,
-                    //     &variables
-                    // ).await.unwrap();
-
-                    // println!("check_disconnected_relation_arbitrary_query_info result_json {:#?}", result_json);
+                    if let Some(check_disconnected_relation_arbitrary_query_info) = check_disconnected_relation_arbitrary_query_info_option {
+                        let (
+                            query,
+                            variables
+                        ) = convert_arbitrary_query_info_into_query(&check_disconnected_relation_arbitrary_query_info);
+    
+                        println!("query {}", query);
+                        println!("variables {}", variables);
+    
+                        let result_json = graphql_query(
+                            &query,
+                            &variables
+                        ).await.unwrap();
+    
+                        println!("check_disconnected_relation_arbitrary_query_info result_json {:#?}", result_json);
+                        println!("check_disconnected_relation_arbitrary_query_info expected_value {:#?}", check_disconnected_relation_arbitrary_query_info.expected_value);
+                    
+                        assert_eq!(
+                            result_json,
+                            check_disconnected_relation_arbitrary_query_info.expected_value
+                        );
+                    }
                 }
 
                 println!("Test complete");

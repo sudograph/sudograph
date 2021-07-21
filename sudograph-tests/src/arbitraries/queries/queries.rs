@@ -77,7 +77,7 @@ pub trait QueriesArbitrary {
         &'static self,
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>
-    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>>;
+    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>>;
 }
 
 impl QueriesArbitrary for ObjectType<'static, String> {
@@ -113,7 +113,7 @@ impl QueriesArbitrary for ObjectType<'static, String> {
         &'static self,
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>
-    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, ArbitraryQueryInfo)>> {
+    ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>> {
         return mutation_update_disconnect_arbitrary(
             graphql_ast,
             object_types,
