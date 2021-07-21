@@ -61,7 +61,7 @@ pub fn get_input_info_strategy_nullable(
                     nullable: true,
                     input_value,
                     expected_value: expected_value.clone(),
-                    error: false
+                    error
                 });
             }).boxed();
         }

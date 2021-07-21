@@ -55,7 +55,6 @@ pub fn mutation_update_arbitrary(
         
         return input_value_strategies.prop_shuffle().prop_flat_map(move |input_value_results| {
             let input_values: Vec<InputInfo> = input_value_results.into_iter().map(|input_value_result| {
-                println!("input_value_result {:#?}", input_value_result);
                 return input_value_result.unwrap(); // TODO this is unfortunate but works for now I guess
             }).collect();
 
@@ -163,9 +162,6 @@ fn test_removed_relation_arbitrary_results(
                 graphql_ast,
                 &field
             ).unwrap();
-
-            println!("original_update_object {:#?}", original_update_object);
-            println!("&input_value.field_name {}", &input_value.field_name);
 
             // TODO it would probably be nice to wrap this up into a trait method
             return ArbitraryResult {

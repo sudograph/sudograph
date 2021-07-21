@@ -89,6 +89,9 @@ fn test_update() -> Result<(), Box<dyn std::error::Error>> {
                     );
                 }
 
+                println!("Test complete");
+                println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+
                 // let result_json = graphql_mutation(
                 //     "
                 //         mutation {
