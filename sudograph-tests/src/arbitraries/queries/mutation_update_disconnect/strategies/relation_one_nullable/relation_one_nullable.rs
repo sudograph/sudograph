@@ -4,7 +4,8 @@ use crate::{
             create_and_retrieve_object
         },
         mutation_update_disconnect::{
-            strategies::relation_one_nullable::connect::get_connect_arbitrary_mutation_info
+            strategies::relation_one_nullable::connect::get_connect_arbitrary_mutation_info,
+            strategies::relation_one_nullable::disconnect::get_disconnect_arbitrary_mutation_info
         },
         queries::{
             ArbitraryResult,
@@ -68,8 +69,6 @@ pub fn get_arbitrary_result_tuples_for_relation_one_nullable(
     ).prop_map(move |(arbitrary_result, relation_arbitrary_result)| {
         let object = create_and_retrieve_object(arbitrary_result).unwrap();
         let relation_object = create_and_retrieve_object(relation_arbitrary_result).unwrap();
-
-        let field_name = &field.name;
         
         let opposing_field_option = get_opposing_relation_field(
             graphql_ast,
@@ -85,31 +84,13 @@ pub fn get_arbitrary_result_tuples_for_relation_one_nullable(
             &opposing_field_option
         );
 
-        let disconnect_arbitrary_mutation_info = ArbitraryMutationInfo {
-            mutation_name: format!(
-                "update{object_type_name}",
-                object_type_name = object_type.name
-            ),
-            input_variable_type: format!(
-                "Update{object_type_name}Input!",
-                object_type_name = object_type.name
-            ),
-            input_value: serde_json::json!({
-                "id": object.get("id").unwrap(),
-                field_name: {
-                    "disconnect": true
-                }
-            }),
-            selection: format!(
-                "{{
-                    {field_name} {{
-                        id
-                    }}
-                }}",
-                field_name = field_name
-            ),
-            expected_value: serde_json::json!(null)
-        };
+        let disconnect_arbitrary_mutation_info = get_disconnect_arbitrary_mutation_info(
+            graphql_ast,
+            object_type,
+            &object,
+            field,
+            &opposing_field_option
+        );
 
         let check_disconnected_relation_arbitrary_query_info = ArbitraryQueryInfo {
             query_name: format!(

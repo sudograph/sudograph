@@ -142,6 +142,27 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                         variables
                     ) = convert_arbitrary_mutation_info_into_mutation(&connect_arbitrary_mutation_info);
 
+                    // println!("mutation {}", mutation);
+                    // println!("variables {}", variables);
+
+                    let result_json = graphql_mutation(
+                        &mutation,
+                        &variables
+                    ).await.unwrap();
+
+                    // println!("connect_arbitrary_mutation_info result_json {:#?}", result_json);
+                    // println!("connect_arbitrary_mutation_info expected_value {:#?}", connect_arbitrary_mutation_info.expected_value);
+
+                    assert_equal_disconnect(
+                        &result_json,
+                        &connect_arbitrary_mutation_info.expected_value
+                    );
+
+                    let (
+                        mutation,
+                        variables
+                    ) = convert_arbitrary_mutation_info_into_mutation(&disconnect_arbitrary_mutation_info);
+
                     println!("mutation {}", mutation);
                     println!("variables {}", variables);
 
@@ -150,28 +171,13 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                         &variables
                     ).await.unwrap();
 
-                    println!("connect_arbitrary_mutation_info result_json {:#?}", result_json);
-                    println!("connect_arbitrary_mutation_info expected_value {:#?}", connect_arbitrary_mutation_info.expected_value);
+                    println!("disconnect_arbitrary_mutation_info result_json {:#?}", result_json);
+                    println!("disconnect_arbitrary_mutation_info expected_value {:#?}", disconnect_arbitrary_mutation_info.expected_value);
 
-                    assert_eq!(
-                        result_json,
-                        connect_arbitrary_mutation_info.expected_value
+                    assert_equal_disconnect(
+                        &result_json,
+                        &disconnect_arbitrary_mutation_info.expected_value
                     );
-
-                    // let (
-                    //     mutation,
-                    //     variables
-                    // ) = convert_arbitrary_mutation_info_into_mutation(&disconnect_arbitrary_mutation_info);
-
-                    // println!("mutation {}", mutation);
-                    // println!("variables {}", variables);
-
-                    // let result_json = graphql_mutation(
-                    //     &mutation,
-                    //     &variables
-                    // ).await.unwrap();
-
-                    // println!("disconnect_arbitrary_mutation_info result_json {:#?}", result_json);
 
                     // let (
                     //     query,
@@ -232,4 +238,28 @@ fn convert_arbitrary_query_info_into_query(arbitrary_query_info: &ArbitraryQuery
     }).to_string();
 
     return (mutation, variables);
+}
+
+// TODO maybe we should check if errors.is_some instead of checking if data is null
+fn assert_equal_disconnect(
+    result: &serde_json::value::Value,
+    expected: &serde_json::value::Value
+) -> bool {
+    if result.get("data").is_some() && result.get("data").unwrap().is_null() {
+        let result_errors: Vec<String> = result.get("errors").unwrap().as_array().unwrap().iter().map(|error| {
+            return error.get("message").unwrap().to_string();
+        }).collect();
+
+        let expected_errors: Vec<String> = expected.get("errors").unwrap().as_array().unwrap().iter().map(|error| {
+            return error.get("message").unwrap().to_string();
+        }).collect();
+
+        println!("result_errors {:#?}", result_errors);
+        println!("expected_errors {:#?}", expected_errors);
+
+        return result_errors == expected_errors;
+    }
+    else {
+        return result == expected;
+    }
 }

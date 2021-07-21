@@ -39,19 +39,19 @@ type User {
     # best_friends: [User!]!
     # bestest_friends: [User!]
 
-    plant: Plant
-    plant_0: Plant @relation(name: "User:plant_0::Plant::user_0")
+    plant_0: Plant
     plant_1: Plant @relation(name: "User:plant_1::Plant::user_1")
     plant_2: Plant @relation(name: "User:plant_2::Plant::user_2")
     plant_3: Plant @relation(name: "User:plant_3::Plant::user_3")
+    plant_4: Plant @relation(name: "User:plant_4::Plant::user_4")
 }
 
 type Plant {
     id: ID!
-    user_0: User! @relation(name: "User:plant_0::Plant::user_0")
-    user_1: User @relation(name: "User:plant_1::Plant::user_1")
-    user_2: [User!]! @relation(name: "User:plant_2::Plant::user_2")
-    user_3: [User!] @relation(name: "User:plant_3::Plant::user_3")
+    user_1: User! @relation(name: "User:plant_1::Plant::user_1")
+    user_2: User @relation(name: "User:plant_2::Plant::user_2")
+    user_3: [User!]! @relation(name: "User:plant_3::Plant::user_3")
+    user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
 }
 
 # type Identity {
