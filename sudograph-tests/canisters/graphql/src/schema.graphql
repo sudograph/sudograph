@@ -40,11 +40,11 @@ type User {
     # bestest_friends: [User!]
 
     # these are for disconnect tests
-    # plant_0: Plant
+    plant_0: Plant
     # plant_1: Plant @relation(name: "User:plant_1::Plant::user_1")
-    # plant_2: Plant @relation(name: "User:plant_2::Plant::user_2")
-    # plant_3: Plant @relation(name: "User:plant_3::Plant::user_3")
-    # plant_4: Plant @relation(name: "User:plant_4::Plant::user_4")
+    plant_2: Plant @relation(name: "User:plant_2::Plant::user_2")
+    plant_3: Plant @relation(name: "User:plant_3::Plant::user_3")
+    plant_4: Plant @relation(name: "User:plant_4::Plant::user_4")
 
     # flowers_0: [Flower!]!
     # flowers_1: [Flower!]! @relation(name: "User:flowers_1::Flower:user_1")
@@ -52,6 +52,20 @@ type User {
     # flowers_3: [Flower!]! @relation(name: "User:flowers_3::Flower:user_3")
     # flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
 }
+
+# type Duck {
+#     id: ID!
+#     hunter: User! @relation(name: "User:ducks::Duck:hunter")
+#     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
+# }
+
+# TODO add to the tests, if you set one side of a relation to null, the other side should be checked to see
+# TODO that the appropriate thing happened
+# type Horse {
+#     id: ID!
+#     primary_rider: User @relation(name: "User:horse::Horse:primary_rider")
+#     secondary_rider: User @relation(name: "User:second_horse::Horse:secondary_rider")
+# }
 
 # type Flower {
 #     id: ID!
@@ -61,13 +75,13 @@ type User {
 #     user_4: [User!] @relation(name: "User:flowers_4::Flower:user_4")
 # }
 
-# type Plant {
-#     id: ID!
-#     user_1: User! @relation(name: "User:plant_1::Plant::user_1")
-#     user_2: User @relation(name: "User:plant_2::Plant::user_2")
-#     user_3: [User!]! @relation(name: "User:plant_3::Plant::user_3")
-#     user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
-# }
+type Plant {
+    id: ID!
+    # user_1: User! @relation(name: "User:plant_1::Plant::user_1")
+    user_2: User @relation(name: "User:plant_2::Plant::user_2")
+    user_3: [User!]! @relation(name: "User:plant_3::Plant::user_3")
+    user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
+}
 
 # type Identity {
 #     id: ID!
@@ -77,25 +91,12 @@ type User {
 #     id: ID!
 # }
 
-# TODO add to the tests, if you set one side of a relation to null, the other side should be checked to see
-# TODO that the appropriate thing happened
-# type Horse {
-#     id: ID!
-#     # primary_rider: User @relation(name: "User:horse::Horse:primary_rider")
-#     secondary_rider: User @relation(name: "User:second_horse::Horse:secondary_rider")
-# }
-
-# type Duck {
-#     id: ID!
-#     hunter: User! @relation(name: "User:ducks::Duck:hunter")
-#     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
-# }
-
 # type Bacterium {
 #     id: ID!
 #     hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
 #     good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 # }
+
 # enum Color {
 #     RED
 #     WHITE
