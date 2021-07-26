@@ -38,7 +38,7 @@ fn test_create() -> Result<(), Box<dyn std::error::Error>> {
             graphql_ast,
             object_types,
             object_type,
-            false
+            1
         )?;
 
         runner.run(&mutation_create_arbitrary, |mutation_create| {

@@ -35,12 +35,16 @@ pub fn mutation_delete_arbitrary(
         graphql_ast,
         object_types,
         object_type,
-        false
+        1
     ).unwrap();
 
     return proptest::collection::vec(mutation_create_arbitrary, 1..5).prop_map(move |mutation_create_arbitrary_results| {
         let objects = mutation_create_arbitrary_results.iter().map(|mutation_create_arbitrary_result| {
-            let object = create_and_retrieve_object(mutation_create_arbitrary_result.clone()).unwrap();
+            let object = create_and_retrieve_object(
+                graphql_ast,
+                mutation_create_arbitrary_result.clone(),
+                1
+            ).unwrap();
             return object;
         }).collect();
 

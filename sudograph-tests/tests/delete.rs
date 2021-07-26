@@ -76,7 +76,7 @@ fn test_delete() -> Result<(), Box<dyn std::error::Error>> {
                     println!("query {}", query);
                     println!("variables {}", variables);
     
-                    let result_json = graphql_mutation(
+                    let result_json = graphql_query(
                         &query,
                         &variables
                     ).await.unwrap();

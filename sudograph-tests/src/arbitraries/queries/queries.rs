@@ -4,6 +4,12 @@ use crate::arbitraries::queries::{
     mutation_update_disconnect::mutation_update_disconnect::mutation_update_disconnect_arbitrary,
     mutation_delete::mutation_delete::mutation_delete_arbitrary
 };
+use crate::utilities::graphql::{
+    is_graphql_type_nullable,
+    get_opposing_relation_field,
+    is_graphql_type_a_relation_many,
+    is_graphql_type_a_relation_one
+};
 use graphql_parser::schema::{
     Document,
     Field,
@@ -11,8 +17,23 @@ use graphql_parser::schema::{
 };
 use proptest::strategy::BoxedStrategy;
 
+#[derive(Clone, Debug)]
+pub enum InputInfoMapValue {
+    InputInfo(InputInfo),
+    InputInfoMap(Option<(
+        serde_json::value::Value,
+        Vec<serde_json::value::Value>,
+        InputInfoRelationType,
+        InputInfoMap
+    )>),
+    ParentReference(InputInfoRelationType, Vec<serde_json::value::Value>)
+}
+
+pub type InputInfoMap = std::collections::BTreeMap<String, InputInfoMapValue>;
+
+// TODO we got rid of partialeq because of the input_info_map unfortunately
 // TODO we should really split up the create and update strategies
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct InputInfo {
     pub field: Option<Field<'static, String>>,
     pub field_name: String,
@@ -21,7 +42,30 @@ pub struct InputInfo {
     pub nullable: bool,
     pub input_value: serde_json::Value,
     pub expected_value: serde_json::Value,
-    pub error: bool // TODO really improve the way errors are detected
+    pub error: bool, // TODO really improve the way errors are detected
+    pub input_infos: Vec<InputInfo>,
+
+    // TODO the object_id is not working exactly as I had thought it would
+    // TODO the object_id at the point of recording it may not (is not for sure?) be the object once the final
+    // TODO create mutation is excuted, since we connect new records and the relationships are changed
+    // TODO we need to somehow keep track of that but I am not sure how
+    pub object_id: Option<serde_json::value::Value>,
+    pub relation_type: InputInfoRelationType,
+    pub input_info_map: Option<( // TODO obviously this should be its own type with a name
+        serde_json::value::Value,
+        Vec<serde_json::value::Value>,
+        InputInfoRelationType,
+        InputInfoMap
+    )>
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum InputInfoRelationType {
+    OneNullable,
+    OneNonNullable,
+    ManyNullable,
+    ManyNonNullable,
+    None
 }
 
 #[derive(Clone, Debug)]
@@ -30,7 +74,7 @@ pub struct ArbitraryQueryInfo {
     pub search_variable_type: String,
     pub search_value: serde_json::Value,
     pub selection: String,
-    pub expected_value: serde_json::Value,
+    pub expected_value: serde_json::Value
 }
 
 #[derive(Clone, Debug)]
@@ -39,7 +83,7 @@ pub struct ArbitraryMutationInfo {
     pub input_variable_type: String,
     pub input_value: serde_json::Value,
     pub selection: String,
-    pub expected_value: serde_json::Value,
+    pub expected_value: serde_json::Value
 }
 
 #[derive(Clone, Debug)]
@@ -63,7 +107,7 @@ pub trait QueriesArbitrary {
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>,
-        relation_test: bool // TODO change this to something like include_nullable_relations
+        relation_level: u32
     ) -> Result<BoxedStrategy<ArbitraryResult>, Box<dyn std::error::Error>>;
 
     // TODO use 'static self instead of passing the object_type explicitly
@@ -85,6 +129,12 @@ pub trait QueriesArbitrary {
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>
     ) -> BoxedStrategy<(ArbitraryMutationInfo, Vec<ArbitraryQueryInfo>)>;
+
+    // fn query_read_arbitrary(
+    //     &'static self,
+    //     graphql_ast: &'static Document<String>,
+    //     object_types: &'static Vec<ObjectType<String>>
+    // ) -> BoxedStrategy<(QueryReadMutationArbitrary, QueryReadQueryArbitrary)>;
 }
 
 impl QueriesArbitrary for ObjectType<'static, String> {
@@ -93,13 +143,13 @@ impl QueriesArbitrary for ObjectType<'static, String> {
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>,
         object_type: &'static ObjectType<String>,
-        relation_test: bool // TODO change this to something like include_nullable_relations
+        relation_level: u32
     ) -> Result<BoxedStrategy<ArbitraryResult>, Box<dyn std::error::Error>> {
         return mutation_create_arbitrary(
             graphql_ast,
             object_types,
             object_type,
-            relation_test
+            relation_level
         );
     }
 
@@ -220,5 +270,122 @@ fn get_selections(input_infos: &Vec<InputInfo>) -> Vec<String> {
     }
     else {
         return input_value_strings_possible_id;
+    }
+}
+
+pub fn get_input_info_map(
+    graphql_ast: &'static Document<String>,
+    object_id: &serde_json::value::Value,
+    opposing_relation_object_ids: Vec<serde_json::value::Value>,
+    field_option: Option<&'static Field<String>>,
+    input_infos: &Vec<InputInfo>,
+    input_info_relation_type: InputInfoRelationType
+) -> (
+    serde_json::value::Value,
+    Vec<serde_json::value::Value>,
+    InputInfoRelationType,
+    InputInfoMap
+) {
+    let mut input_info_map = std::collections::BTreeMap::new();
+
+    for input_info in input_infos {
+        match input_info.relation_type {
+            InputInfoRelationType::None => {
+                input_info_map.insert(
+                    input_info.field_name.clone(),
+                    InputInfoMapValue::InputInfo(input_info.clone())
+                );
+            },
+            _ => {
+                if let Some(field) = field_option {
+                    let opposing_relation_field = get_opposing_relation_field(
+                        graphql_ast,
+                        field
+                    );
+
+                    if
+                        input_info.field == opposing_relation_field
+                    {
+                        let parent_reference_input_info_relation_type = get_input_info_relation_type_for_field(
+                            graphql_ast,
+                            opposing_relation_field
+                        );
+
+                        let parent_reference_opposing_relation_object_ids = match &input_info.input_info_map {
+                            Some(input_info_map) => {
+                                input_info_map.1.clone()
+                            },
+                            None => {
+                                vec![]
+                            }
+                        };
+
+                        input_info_map.insert(
+                            input_info.field_name.clone(),
+                            InputInfoMapValue::ParentReference(parent_reference_input_info_relation_type, parent_reference_opposing_relation_object_ids)
+                        );
+                    }
+                    else {
+                        input_info_map.insert(
+                            input_info.field_name.clone(),
+                            InputInfoMapValue::InputInfoMap(input_info.input_info_map.clone())
+                        );
+                    }
+                }
+                else {
+                    input_info_map.insert(
+                        input_info.field_name.clone(),
+                        InputInfoMapValue::InputInfoMap(input_info.input_info_map.clone())
+                    );
+                }
+            }
+        };
+    }
+
+    return (
+        object_id.clone(),
+        opposing_relation_object_ids,
+        input_info_relation_type,
+        input_info_map
+    );
+}
+
+fn get_input_info_relation_type_for_field(
+    graphql_ast: &'static Document<String>,
+    field_option: Option<Field<String>>
+) -> InputInfoRelationType {
+    if let Some(field) = field_option {
+        if
+            is_graphql_type_a_relation_many(
+                graphql_ast,
+                &field.field_type
+            ) == true
+        {
+            if is_graphql_type_nullable(&field.field_type) == true {
+                return InputInfoRelationType::ManyNullable;
+            }
+            else {
+                return InputInfoRelationType::ManyNonNullable;
+            }
+        }
+
+        if
+            is_graphql_type_a_relation_one(
+                graphql_ast,
+                &field.field_type
+            ) == true
+        {
+            if is_graphql_type_nullable(&field.field_type) == true {
+                return InputInfoRelationType::OneNullable;
+            }
+            else {
+                return InputInfoRelationType::OneNonNullable;
+            }
+        }
+
+        return InputInfoRelationType::None;
+    }
+    else {
+        return InputInfoRelationType::None;
     }
 }

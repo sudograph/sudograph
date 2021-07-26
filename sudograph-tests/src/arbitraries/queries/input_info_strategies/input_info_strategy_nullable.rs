@@ -2,6 +2,7 @@ use crate::{
     arbitraries::queries::{
         queries::{
             InputInfo,
+            InputInfoRelationType,
             MutationType
         }
     },
@@ -61,7 +62,11 @@ pub fn get_input_info_strategy_nullable(
                     nullable: true,
                     input_value,
                     expected_value: expected_value.clone(),
-                    error
+                    error,
+                    input_infos: vec![],
+                    relation_type: if relation_many == true { InputInfoRelationType::ManyNullable } else if relation_one == true { InputInfoRelationType::OneNullable } else { InputInfoRelationType::None },
+                    object_id: None,
+                    input_info_map: None
                 });
             }).boxed();
         }

@@ -3,6 +3,7 @@ use crate::{
         input_info_strategies::input_info_strategy_nullable::get_input_info_strategy_nullable,
         queries::{
             InputInfo,
+            InputInfoRelationType,
             MutationType
         }
     },
@@ -106,7 +107,11 @@ pub fn get_input_info_strategy_blob_string(
                 nullable,
                 input_value,
                 expected_value,
-                error: false
+                error: false,
+                input_infos: vec![],
+                relation_type: InputInfoRelationType::None,
+                object_id: None,
+                input_info_map: None
             }
         );
     }).boxed();
@@ -277,7 +282,11 @@ pub fn get_input_info_strategy_blob_vector(
                 nullable,
                 input_value,
                 expected_value,
-                error: false
+                error: false,
+                input_infos: vec![],
+                relation_type: InputInfoRelationType::None,
+                object_id: None,
+                input_info_map: None
             }
         );
     }).boxed();
