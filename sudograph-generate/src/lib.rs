@@ -558,13 +558,13 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             // TODO obviously this is an extremely horrible and dangerous thing
             // TODO perhaps only enable it in testing, or at least
             // TODO create a Sudograph setting that you must explicitly enable to allow this
-            // async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
-            //     let object_store = storage::get_mut::<ObjectTypeStore>();
+            async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
+                let object_store = storage::get_mut::<ObjectTypeStore>();
 
-            //     sudograph::sudodb::clear(object_store);
+                sudograph::sudodb::clear(object_store);
 
-            //     return Ok(true);
-            // }
+                return Ok(true);
+            }
         }
 
         #generated_custom_mutation_struct
