@@ -158,7 +158,7 @@ fn get_create_input_rust_struct_field_rust_type(
             return quote! { #create_input_rust_struct_field_rust_type };
         },
         Type::ListType(_) => {
-            return quote! { MaybeUndefined<CreateRelationManyInput> };
+                return quote! { MaybeUndefined<CreateRelationManyInput> };
         }
     };
 }
@@ -203,30 +203,62 @@ fn generate_create_field_input_pusher_for_relation_many(field: &Field<String>) -
     );
     let relation_object_type_name = get_graphql_type_name(&field.field_type);
 
-    return quote! {
-        match &self.#field_name_ident {
-            MaybeUndefined::Value(value) => {
-                create_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
-                        relation_object_type_name: String::from(#relation_object_type_name),
-                        relation_primary_keys: value.connect.iter().map(|id| {
-                            return String::from(id.to_string());
-                        }).collect(),
-                        relation_primary_keys_to_remove: vec![]
-                    })),
-                    update_operation: UpdateOperation::Replace
-                });
-            },
-            _ => {
-                create_field_inputs.push(FieldInput {
-                    field_name: String::from(#field_name_string),
-                    field_value: FieldValue::RelationMany(None),
-                    update_operation: UpdateOperation::Replace
-                });
-            }
+    if is_graphql_type_nullable(&field.field_type) == true {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_keys: value.connect.iter().map(|id| {
+                                return String::from(id.to_string());
+                            }).collect(),
+                            relation_primary_keys_to_remove: vec![]
+                        })),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                _ => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(None),
+                        update_operation: UpdateOperation::Replace
+                    });
+                }
+            };
         };
-    };
+    }
+    else {
+        return quote! {
+            match &self.#field_name_ident {
+                MaybeUndefined::Value(value) => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_keys: value.connect.iter().map(|id| {
+                                return String::from(id.to_string());
+                            }).collect(),
+                            relation_primary_keys_to_remove: vec![]
+                        })),
+                        update_operation: UpdateOperation::Replace
+                    });
+                },
+                _ => {
+                    create_field_inputs.push(FieldInput {
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::RelationMany(Some(FieldValueRelationMany {
+                            relation_object_type_name: String::from(#relation_object_type_name),
+                            relation_primary_keys: vec![],
+                            relation_primary_keys_to_remove: vec![]
+                        })),
+                        update_operation: UpdateOperation::Replace
+                    });
+                }
+            };
+        };
+    }
 }
 
 fn generate_create_field_input_pusher_for_relation_one(

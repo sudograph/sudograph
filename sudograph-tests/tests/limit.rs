@@ -22,6 +22,17 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
+    tokio::runtime::Runtime::new()?.block_on(async {
+        graphql_mutation(
+            "
+                mutation {
+                    clear
+                }
+            ",
+            "{}"
+        ).await.unwrap();
+    });
+
     for object_type in object_types.iter() {
         let mut runner = TestRunner::new(Config {
             cases: 10,
@@ -29,38 +40,22 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
             .. Config::default()
         });
 
-        let limit_create_arbitrary = get_limit_create_arbitrary(object_type);
+        let limit_create_arbitrary = get_limit_create_arbitrary(
+            graphql_ast,
+            object_types,
+            object_type,
+            None,
+            2
+        );
 
         runner.run(&limit_create_arbitrary, |limit_create_concrete| {
-            let result_json = tokio::runtime::Runtime::new()?.block_on(async {
-                graphql_mutation(
-                    "
-                        mutation {
-                            clear
-                        }
-                    ",
-                    "{}"
-                ).await.unwrap();
-
-                graphql_mutation(
-                    &limit_create_concrete.mutation,
-                    "{}"
-                ).await.unwrap();
-
-                return graphql_query(
-                    &limit_create_concrete.query,
-                    "{}"
-                ).await.unwrap();
-            });
-
-            let objects = get_objects(
-                &object_type.name,
-                result_json
-            );
-
             let limit_read_arbitrary = get_limit_read_arbitrary(
-                object_type.name.clone(),
-                objects
+                true,
+                Some(object_type.name.clone()),
+                None,
+                limit_create_concrete.objects,
+                limit_create_concrete.max as usize,
+                limit_create_concrete.limit_info_map
             );
 
             let mut runner = TestRunner::new(Config {
@@ -70,29 +65,50 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
             });
 
             runner.run(&limit_read_arbitrary, |limit_read_concrete| {
-                println!("limit_read_concrete.query\n");
-                println!("{:#?}", limit_read_concrete.query);
+                println!("limit_read_concrete.selection\n");
+                println!("{:#?}", limit_read_concrete.selection);
 
                 let result_json = tokio::runtime::Runtime::new()?.block_on(async {
                     return graphql_query(
-                        &limit_read_concrete.query,
+                        &format!(
+                            "query {{
+                                {selection}
+                            }}",
+                            selection = limit_read_concrete.selection
+                        ),
                         "{}"
                     ).await;
                 }).unwrap();
 
-                println!("result_json\n");
-                println!("{:#?}", result_json);
+                let query_name = format!(
+                    "read{object_type_name}",
+                    object_type_name = object_type.name
+                );
 
-                println!("expected_value\n");
-                println!("{:#?}", limit_read_concrete.expected_value);
+                let expected_value = serde_json::json!({
+                    "data": {
+                        query_name: limit_read_concrete.expected_value
+                    }
+                });
 
                 assert_eq!(
                     result_json,
-                    limit_read_concrete.expected_value
+                    expected_value
                 );
 
                 return Ok(());
             }).unwrap();
+
+            tokio::runtime::Runtime::new()?.block_on(async {
+                graphql_mutation(
+                    "
+                        mutation {
+                            clear
+                        }
+                    ",
+                    "{}"
+                ).await.unwrap();
+            });
 
             println!("Test complete");
             println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
@@ -102,21 +118,4 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     return Ok(());
-}
-
-fn get_objects(
-    object_type_name: &str,
-    result_json: serde_json::value::Value
-) -> Vec<serde_json::value::Value> {
-    return result_json
-        .get("data")
-        .unwrap()
-        .get(&format!(
-            "read{object_type_name}",
-            object_type_name = object_type_name
-        ))
-        .unwrap()
-        .as_array()
-        .unwrap()
-        .clone();
 }

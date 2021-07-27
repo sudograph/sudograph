@@ -1,3 +1,22 @@
+# TODO we might want to set up individual canisters with individual schemas to test per test
+
+# TODO this schema was designed for limits and offsets
+type User {
+    id: ID!
+    ducks: [Duck!]!
+}
+
+type Duck {
+    id: ID!
+    # hunters: [User!]! @relation(name: "User:ducks::Duck::hunters")
+    ponds: [Pond!]!
+}
+
+type Pond {
+    id: ID!
+}
+# TODO this schema was designed for limits and offsets
+
 # TODO we want to generate this file automatically using arbitraries somehow
 # TODO we will want to configure its complexity...it would be nice to vary
 # TODO the number of object types, fields per object type, etc
@@ -70,11 +89,11 @@
     # flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
 # }
 
-type Duck {
-    id: ID!
-#     hunter: User! @relation(name: "User:ducks::Duck:hunter")
-#     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
-}
+# type Duck {
+#     id: ID!
+# #     hunter: User! @relation(name: "User:ducks::Duck:hunter")
+# #     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
+# }
 
 # TODO add to the tests, if you set one side of a relation to null, the other side should be checked to see
 # TODO that the appropriate thing happened
