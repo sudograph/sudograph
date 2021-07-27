@@ -1,20 +1,27 @@
 # TODO we might want to set up individual canisters with individual schemas to test per test
 
-# TODO this schema was designed for limits and offsets
+# TODO this schema was designed for order
 type User {
     id: ID!
-    ducks: [Duck!]!
+    # TODO add other scalar types in here
 }
+# TODO this schema was designed for order
 
-type Duck {
-    id: ID!
-    # hunters: [User!]! @relation(name: "User:ducks::Duck::hunters")
-    ponds: [Pond!]!
-}
+# TODO this schema was designed for limits and offsets
+# type User {
+    # id: ID!
+    # ducks: [Duck!]!
+# }
 
-type Pond {
-    id: ID!
-}
+# type Duck {
+#     id: ID!
+#     hunters: [User!]!
+#     # ponds: [Pond!]!
+# }
+
+# type Pond {
+#     id: ID!
+# }
 # TODO this schema was designed for limits and offsets
 
 # TODO we want to generate this file automatically using arbitraries somehow
