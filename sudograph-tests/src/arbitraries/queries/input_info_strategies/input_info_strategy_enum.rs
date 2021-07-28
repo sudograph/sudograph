@@ -38,6 +38,7 @@ pub fn get_input_info_strategy_enum(
 
     let enum_values_len = enum_type.values.len();
 
+    // TODO we might want to get rid of the enum_values_len - 1...I do not think the last number is inclusive
     let strategy = (0..enum_values_len - 1).prop_map(move |index| {
         let input_type = get_graphql_type_name(&field.field_type);
 
