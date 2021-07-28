@@ -42,7 +42,7 @@ pub mod arbitraries {
     pub mod order {
         pub mod order_create;
         pub mod order_read;
-        pub mod order_map;
+        pub mod order_input;
     }
 }
 pub mod utilities {

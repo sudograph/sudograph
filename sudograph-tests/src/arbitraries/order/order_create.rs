@@ -1,16 +1,9 @@
 use crate::{
-    arbitraries::{
+    arbitraries::queries::{
+        input_info_strategies::input_info_strategies::get_input_info_strategies,
         queries::{
-            input_info_strategies::input_info_strategies::get_input_info_strategies,
-            queries::{
-                InputInfo,
-                MutationType
-            }
-        },
-        order::order_map::{
-            get_order_map_arbitrary,
-            OrderMap,
-            OrderMapFieldInfo
+            InputInfo,
+            MutationType
         }
     },
     utilities::graphql::{
@@ -24,28 +17,17 @@ use graphql_parser::schema::{
     Document,
     ObjectType
 };
-use proptest::{
-    prelude::Just,
-    strategy::{
-        BoxedStrategy,
-        Strategy
-    }
+use proptest::strategy::{
+    BoxedStrategy,
+    Strategy
 };
 
 #[derive(Clone, Debug)]
-pub enum OrderDirection {
-    Asc,
-    Desc
-}
-
-#[derive(Clone, Debug)]
 pub struct OrderInfo {
-    // pub order_map: OrderMap,
     pub order_info_map: OrderInfoMap,
     pub object_type: ObjectType<'static, String>
 }
 
-// TODO I could probably simplify this
 pub type OrderInfoMap = std::collections::BTreeMap<String, OrderInfo>;
 
 #[derive(Clone, Debug)]
@@ -55,11 +37,7 @@ pub struct OrderCreateConcrete {
     pub relation_field_name_option: Option<String>,
     pub order_info_map: OrderInfoMap,
     pub object_type: ObjectType<'static, String>
-    // pub order_map: OrderMap
 }
-
-// TODO rip the order_map_arbitrary out of here, also change order_map to order_map_concrete
-// TODO I think it should be simple to take it out of here and move it to order_read
 
 // TODO consider whether this should be a trait method
 pub fn get_order_create_arbitrary(
@@ -70,11 +48,6 @@ pub fn get_order_create_arbitrary(
     level: i32
 ) -> BoxedStrategy<OrderCreateConcrete> {
     let object_type_name = &object_type.name;
-
-    // let order_map_arbitrary = get_order_map_arbitrary(
-    //     graphql_ast,
-    //     object_type
-    // );
 
     let input_info_arbitraries = get_input_info_strategies(
         graphql_ast,
@@ -95,8 +68,6 @@ pub fn get_order_create_arbitrary(
             })
             .collect::<Vec<Vec<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>>>>()
             .prop_flat_map(move |input_infos_results| {
-                // let order_map = order_map.clone();
-
                 let input_infoses: Vec<Vec<InputInfo>> = input_infos_results
                     .into_iter()
                     .map(|input_infos_result| {
@@ -111,10 +82,7 @@ pub fn get_order_create_arbitrary(
                             .collect();
                     })
                     .collect();
-        
-                // println!("input_infos\n");
-                // println!("{:#?}", input_infos);
-                
+                        
                 let relation_many_order_create_arbitraries = if level == 0 { vec![] } else { get_relation_many_order_create_arbitraries(
                     graphql_ast,
                     object_types,
@@ -131,10 +99,7 @@ pub fn get_order_create_arbitrary(
                         num_objects,
                         &relation_many_order_create_concretes
                     );
-        
-                    // println!("mutation_option\n");
-                    // println!("{:#?}", mutation_option);
-        
+                
                     let query_name = format!(
                         "read{object_type_name}",
                         object_type_name = object_type_name
@@ -156,8 +121,6 @@ pub fn get_order_create_arbitrary(
                         &query
                     );
 
-                    // println!("objects\n");
-                    // println!("{:#?}", objects);
         
                     let mut order_info_map = std::collections::BTreeMap::new();
         
@@ -165,7 +128,6 @@ pub fn get_order_create_arbitrary(
                         order_info_map.insert(
                             relation_many_order_create_concrete.relation_field_name_option.unwrap().clone(),
                             OrderInfo {
-                                // order_map: relation_many_order_create_concrete.order_map,
                                 order_info_map: relation_many_order_create_concrete.order_info_map,
                                 object_type: relation_many_order_create_concrete.object_type
                             }
@@ -178,7 +140,6 @@ pub fn get_order_create_arbitrary(
                         relation_field_name_option: relation_field_name_option.clone(),
                         order_info_map,
                         object_type: object_type.clone()
-                        // order_map: order_map.clone()
                     };
                 });
             });
@@ -195,11 +156,11 @@ fn get_mutation_option(
         return None;
     }
     
-    let mut hash_map = std::collections::HashMap::<String, serde_json::Value>::new();
+    let mut variables_map = std::collections::HashMap::<String, serde_json::Value>::new();
 
     for (index, input_infos) in input_infoses.iter().enumerate() {
         for input_info in input_infos.iter() {
-            hash_map.insert(
+            variables_map.insert(
                 format!(
                     "{field_name}{index}",
                     field_name = input_info.field_name.to_string(),
@@ -210,44 +171,47 @@ fn get_mutation_option(
         }
     }
 
-    let variables = serde_json::json!(hash_map).to_string();
+    let variables = serde_json::json!(variables_map).to_string();
 
     return Some(
-        (format!(
-            "
-                mutation ({variable_declarations}) {{
-                    {mutations}
-                }}
-            ",
-            variable_declarations = input_infoses.iter().enumerate().map(|(index, input_infos)| {
-                return input_infos
+        (
+            format!(
+                "
+                    mutation ({variable_declarations}) {{
+                        {mutations}
+                    }}
+                ",
+                variable_declarations = input_infoses.iter().enumerate().map(|(index, input_infos)| {
+                    return input_infos
+                        .iter()
+                        .map(|input_info| {
+                            return format!(
+                                "${field_name}{index}: {field_type}!",
+                                field_name = &input_info.field_name,
+                                index = index,
+                                field_type = input_info.input_type
+                            );
+                        })
+                        .collect::<Vec<String>>().join(",")
+                }).collect::<Vec<String>>().join(","),
+                mutations = vec![0; num_objects as usize]
                     .iter()
-                    .map(|input_info| {
+                    .enumerate()
+                    .map(|(index, _)| {
                         return format!(
-                            "${field_name}{index}: {field_type}!",
-                            field_name = &input_info.field_name,
+                            "create{object_type_name}{index}: create{object_type_name}{mutation_input} {{ id }}",
+                            object_type_name = object_type_name,
                             index = index,
-                            field_type = input_info.input_type
+                            mutation_input = get_mutation_input(
+                                relation_many_order_create_concretes,
+                                input_infoses.get(index).unwrap(),
+                                index
+                            )
                         );
-                    })
-                    .collect::<Vec<String>>().join(",")
-            }).collect::<Vec<String>>().join(","),
-            mutations = vec![0; num_objects as usize]
-                .iter()
-                .enumerate()
-                .map(|(index, _)| {
-                    return format!(
-                        "create{object_type_name}{index}: create{object_type_name}{mutation_input} {{ id }}",
-                        object_type_name = object_type_name,
-                        index = index,
-                        mutation_input = get_mutation_input(
-                            relation_many_order_create_concretes,
-                            input_infoses.get(index).unwrap(),
-                            index
-                        )
-                    );
-                }).collect::<Vec<String>>().join("\n")
-        ), variables)
+                    }).collect::<Vec<String>>().join("\n")
+            ),
+            variables
+        )
     );
 }
 
@@ -367,9 +331,6 @@ fn get_objects(
                 &mutation.0,
                 &mutation.1
             ).await.unwrap();
-
-            // println!("graphql_mutation result_json\n");
-            // println!("{:#?}", result_json);
         }
 
         return graphql_query(

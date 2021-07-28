@@ -5,14 +5,11 @@ use chrono::prelude::{
     Utc
 };
 use crate::arbitraries::order::{
-    order_create::{
+    order_create::OrderInfoMap,
+    order_input::{
+        get_order_input_arbitrary,
         OrderDirection,
-        OrderInfoMap
-    },
-    order_map::{
-        get_order_map_arbitrary,
-        OrderMap,
-        OrderMapFieldInfo
+        OrderInputConcrete
     }
 };
 use graphql_parser::schema::{
@@ -28,7 +25,7 @@ use proptest::{
 
 #[derive(Clone, Debug)]
 pub struct OrderReadConcrete {
-    pub order_map: OrderMap,
+    pub order_input_concrete: OrderInputConcrete,
     pub selection: String,
     pub expected_value: serde_json::value::Value,
     pub relation_field_name_option: Option<String>,
@@ -45,7 +42,7 @@ pub fn get_order_read_arbitrary(
     objects: Vec<serde_json::value::Value>,
     order_info_map: OrderInfoMap
 ) -> BoxedStrategy<OrderReadConcrete> {
-    let order_map_arbitrary = get_order_map_arbitrary(
+    let order_input_arbitrary = get_order_input_arbitrary(
         graphql_ast,
         object_type
     );
@@ -59,17 +56,17 @@ pub fn get_order_read_arbitrary(
     let relation_field_name_option = relation_field_name_option.clone();
     let objects = objects.clone();
 
-    return (order_map_arbitrary, relation_many_order_read_arbitraries).prop_map(move |(order_map, relation_many_order_read_concretes)| {
+    return (order_input_arbitrary, relation_many_order_read_arbitraries).prop_map(move |(order_input_concrete, relation_many_order_read_concretes)| {
         return OrderReadConcrete {
-            order_map: order_map.clone(),
+            order_input_concrete: order_input_concrete.clone(),
             selection: get_selection(
                 object_type_name_option.clone(),
                 relation_field_name_option.clone(),
-                &order_map,
+                &order_input_concrete,
                 &relation_many_order_read_concretes
             ),
             expected_value: if top_level == true { get_expected_value(
-                &order_map,
+                &order_input_concrete,
                 &objects,
                 &relation_many_order_read_concretes
             ) } else { serde_json::json!(null) },
@@ -82,7 +79,7 @@ pub fn get_order_read_arbitrary(
 fn get_selection(
     object_type_name_option: Option<String>,
     relation_field_name_option: Option<String>,
-    order_map: &OrderMap,
+    order_input_concrete: &OrderInputConcrete,
     relation_many_order_read_concretes: &Vec<OrderReadConcrete>
 ) -> String {
     return format!(
@@ -93,16 +90,16 @@ fn get_selection(
             }}
         ",
         relation_field_name = if let Some(relation_field_name) = relation_field_name_option { relation_field_name } else { format!("read{object_type_name}", object_type_name = object_type_name_option.unwrap()) },
-        order = order_map_to_graphql_string(order_map),
+        order = order_input_concrete_to_graphql_string(order_input_concrete),
         relation_many_selections = relation_many_order_read_concretes.iter().map(|relation_many_order_read_concrete| {
             return relation_many_order_read_concrete.selection.clone();
         }).collect::<Vec<String>>().join("\n")
     );
 }
 
-fn order_map_to_graphql_string(order_map: &OrderMap) -> String {
-    let order_field_name = order_map.values().collect::<Vec<&OrderMapFieldInfo>>().get(0).unwrap().field_name.clone();
-    let order_direction = order_map.values().collect::<Vec<&OrderMapFieldInfo>>().get(0).unwrap().order_direction.clone();
+fn order_input_concrete_to_graphql_string(order_input_concrete: &OrderInputConcrete) -> String {
+    let order_field_name = order_input_concrete.field_name.clone();
+    let order_direction = order_input_concrete.order_direction.clone();
 
     return format!(
         "{{ {order_field_name}: {order_direction} }}",
@@ -128,15 +125,14 @@ fn get_relation_many_order_read_arbitraries(
                 None,
                 Some(key.to_string()),
                 vec![],
-                order_info_map.get(key).unwrap().order_info_map.clone(),
-                // order_info_map.get(key).unwrap().order_map.clone()
+                order_info_map.get(key).unwrap().order_info_map.clone()
             );
         })
         .collect();
 }
 
 fn get_expected_value(
-    order_map: &OrderMap,
+    order_input_concrete: &OrderInputConcrete,
     objects: &Vec<serde_json::value::Value>,
     relation_many_order_read_concretes: &Vec<OrderReadConcrete>
 ) -> serde_json::value::Value {
@@ -146,7 +142,7 @@ fn get_expected_value(
 
     let ordered_objects = order_objects(
         objects,
-        order_map
+        order_input_concrete
     );
 
     let all_ordered_objects: Vec<serde_json::value::Value> = ordered_objects.iter().map(|ordered_object| {
@@ -165,7 +161,7 @@ fn get_expected_value(
                 .unwrap();
 
             let ordered_relation_objects = get_expected_value(
-                &relation_many_order_read_concrete.order_map,
+                &relation_many_order_read_concrete.order_input_concrete,
                 relation_objects,
                 &relation_many_order_read_concrete.relation_many_order_read_concretes
             );
@@ -184,7 +180,7 @@ fn get_expected_value(
 
 fn order_objects(
     objects: &Vec<serde_json::value::Value>,
-    order_map: &OrderMap
+    order_input_concrete: &OrderInputConcrete
 ) -> Vec<serde_json::value::Value> {
     let mut mutable_objects = objects.clone();
     
@@ -192,18 +188,18 @@ fn order_objects(
         let object_a = a.as_object().unwrap();
         let object_b = b.as_object().unwrap();
 
-        println!("object_a\n");
-        println!("{:#?}", object_a);
+        // println!("object_a\n");
+        // println!("{:#?}", object_a);
 
-        println!("object_b\n");
-        println!("{:#?}", object_b);
+        // println!("object_b\n");
+        // println!("{:#?}", object_b);
 
-        let order_field_name = order_map.values().collect::<Vec<&OrderMapFieldInfo>>().get(0).unwrap().field_name.clone();
-        let order_direction = order_map.values().collect::<Vec<&OrderMapFieldInfo>>().get(0).unwrap().order_direction.clone();
-        let order_field_type = order_map.values().collect::<Vec<&OrderMapFieldInfo>>().get(0).unwrap().field_type.clone();
+        let order_field_name = order_input_concrete.field_name.clone();
+        let order_direction = order_input_concrete.order_direction.clone();
+        let order_field_type = order_input_concrete.field_type.clone();
 
-        println!("order_field_name\n");
-        println!("{}", order_field_name);
+        // println!("order_field_name\n");
+        // println!("{}", order_field_name);
 
         if
             object_a.get(&order_field_name).unwrap().is_null() == true &&
