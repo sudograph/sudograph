@@ -44,6 +44,11 @@ pub mod arbitraries {
         pub mod order_read;
         pub mod order_input;
     }
+    pub mod search {
+        pub mod search_create;
+        pub mod search_read;
+        pub mod search_input;
+    }
 }
 pub mod utilities {
     pub mod assert;

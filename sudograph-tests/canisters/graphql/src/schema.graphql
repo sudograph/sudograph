@@ -1,6 +1,9 @@
 # TODO we might want to set up individual canisters with individual schemas to test per test
 
 # TODO this schema was designed for order
+
+# TODO add in startsWith and endsWith in appropriate places
+# TODO make sure to test relation one and relation many, searching by id
 type User {
     id: ID!
     blob: Blob!
@@ -11,57 +14,121 @@ type User {
     json: JSON!
     string: String!
 
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
+    # blob_nullable: Blob
+    # bool_nullable: Boolean
+    # date_nullable: Date
+    # float_nullable: Float
+    # int_nullable: Int
+    # json_nullable: JSON
+    # string_nullable: String
 
-    hobbies: [Hobby!]!
+    # hobbies: [Hobby!]!
 }
 
-type Hobby {
-    id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
+# type Hobby {
+#     id: ID!
+#     blob: Blob!
+#     bool: Boolean!
+#     date: Date!
+#     float: Float!
+#     int: Int!
+#     json: JSON!
+#     string: String!
 
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
+#     blob_nullable: Blob
+#     bool_nullable: Boolean
+#     date_nullable: Date
+#     float_nullable: Float
+#     int_nullable: Int
+#     json_nullable: JSON
+#     string_nullable: String
 
-    users: [User!]!
-    lobbies: [Lobby!]!
-}
+#     users: [User!]!
+#     lobbies: [Lobby!]!
+# }
 
-type Lobby {
-    id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
+# type Lobby {
+#     id: ID!
+#     blob: Blob!
+#     bool: Boolean!
+#     date: Date!
+#     float: Float!
+#     int: Int!
+#     json: JSON!
+#     string: String!
 
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
-}
+#     blob_nullable: Blob
+#     bool_nullable: Boolean
+#     date_nullable: Date
+#     float_nullable: Float
+#     int_nullable: Int
+#     json_nullable: JSON
+#     string_nullable: String
+# }
+# TODO this schema was designed for order
+
+# TODO this schema was designed for order
+# type User {
+#     id: ID!
+#     blob: Blob!
+#     bool: Boolean!
+#     date: Date!
+#     float: Float!
+#     int: Int!
+#     json: JSON!
+#     string: String!
+
+#     blob_nullable: Blob
+#     bool_nullable: Boolean
+#     date_nullable: Date
+#     float_nullable: Float
+#     int_nullable: Int
+#     json_nullable: JSON
+#     string_nullable: String
+
+#     hobbies: [Hobby!]!
+# }
+
+# type Hobby {
+#     id: ID!
+#     blob: Blob!
+#     bool: Boolean!
+#     date: Date!
+#     float: Float!
+#     int: Int!
+#     json: JSON!
+#     string: String!
+
+#     blob_nullable: Blob
+#     bool_nullable: Boolean
+#     date_nullable: Date
+#     float_nullable: Float
+#     int_nullable: Int
+#     json_nullable: JSON
+#     string_nullable: String
+
+#     users: [User!]!
+#     lobbies: [Lobby!]!
+# }
+
+# type Lobby {
+#     id: ID!
+#     blob: Blob!
+#     bool: Boolean!
+#     date: Date!
+#     float: Float!
+#     int: Int!
+#     json: JSON!
+#     string: String!
+
+#     blob_nullable: Blob
+#     bool_nullable: Boolean
+#     date_nullable: Date
+#     float_nullable: Float
+#     int_nullable: Int
+#     json_nullable: JSON
+#     string_nullable: String
+# }
 # TODO this schema was designed for order
 
 # TODO this schema was designed for limits and offsets

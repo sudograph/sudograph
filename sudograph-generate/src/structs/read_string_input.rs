@@ -10,7 +10,9 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
             gte: MaybeUndefined<String>,
             lt: MaybeUndefined<String>,
             lte: MaybeUndefined<String>,
-            contains: MaybeUndefined<String>
+            contains: MaybeUndefined<String>,
+            startsWith: MaybeUndefined<String>,
+            endsWith: MaybeUndefined<String>
         }
 
         impl ReadStringInput {
@@ -42,6 +44,14 @@ pub fn get_read_string_input_rust_struct() -> TokenStream {
                     (
                         &self.contains,
                         ReadInputOperation::Contains
+                    ),
+                    (
+                        &self.startsWith,
+                        ReadInputOperation::StartsWith
+                    ),
+                    (
+                        &self.endsWith,
+                        ReadInputOperation::EndsWith
                     )
                 ];
 
