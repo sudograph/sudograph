@@ -125,7 +125,6 @@ pub fn get_search_create_arbitrary(
                         &query
                     );
 
-        
                     let mut search_info_map = std::collections::BTreeMap::new();
         
                     for relation_many_search_create_concrete in relation_many_search_create_concretes {

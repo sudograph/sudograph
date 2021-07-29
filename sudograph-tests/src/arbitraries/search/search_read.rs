@@ -45,9 +45,10 @@ pub fn get_search_read_arbitrary(
     // TODO we might need to pass in the objects here
     // TODO It might be very important to know what they are to generate good search values
     let search_inputs_arbitrary = get_search_inputs_arbitrary(
-        graphql_ast,
-        object_type,
-        objects.clone()
+        graphql_ast.clone(),
+        object_type.clone(),
+        objects.clone(),
+        2
     );
 
     let relation_many_search_read_arbitraries = get_relation_many_search_read_arbitraries(
@@ -108,8 +109,32 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
         field_searches = search_inputs_concrete
             .iter()
             .map(|search_input_concrete| {
+                let and = if search_input_concrete.and.is_some() {
+                    format!(
+                        "and: {and}",
+                        and = search_inputs_concrete_to_graphql_string(search_input_concrete.and.as_ref().unwrap())
+                    )
+                }
+                else {
+                    "".to_string()
+                };
+
+                let or = if search_input_concrete.or.is_some() {
+                    format!(
+                        "or: {or}",
+                        or = search_inputs_concrete_to_graphql_string(search_input_concrete.or.as_ref().unwrap())
+                    )
+                }
+                else {
+                    "".to_string()
+                };
+
                 return format!(
-                    "{field_name}: {{ {search_operations} }}",
+                    "
+                        {field_name}: {{ {search_operations} }}
+                        {and}
+                        {or}
+                    ",
                     field_name = search_input_concrete.field_name,
                     search_operations = search_input_concrete
                         .search_operation_infos
@@ -122,7 +147,9 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
                             );
                         })
                         .collect::<Vec<String>>()
-                        .join("\n")
+                        .join("\n"),
+                    and = and,
+                    or = or
                 );
             })
             .collect::<Vec<String>>()
