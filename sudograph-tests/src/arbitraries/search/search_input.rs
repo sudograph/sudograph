@@ -23,16 +23,25 @@ use proptest::{
 #[derive(Clone, Debug)]
 pub struct SearchInputConcrete {
     pub field_name: String,
-    pub field_type: String,
+    pub field_type_name: String,
+    pub field_type: SearchInputConcreteFieldType,
     pub search_operation_infos: Vec<SearchOperationInfo>,
     pub and: Option<Vec<SearchInputConcrete>>,
     pub or: Option<Vec<SearchInputConcrete>>
 }
 
 #[derive(Clone, Debug)]
+pub enum SearchInputConcreteFieldType {
+    Scalar,
+    Enum,
+    RelationOne,
+    RelationMany
+}
+
+#[derive(Clone, Debug)]
 pub struct SearchOperationInfo {
     pub search_operation: String,
-    pub search_value: Option<serde_json::value::Value>
+    pub search_value: serde_json::value::Value
 }
 
 pub fn get_search_inputs_arbitrary(
@@ -78,16 +87,21 @@ pub fn get_search_inputs_arbitrary(
             .iter()
             .map(|field| {
                 let field_name = &field.name;
-                let field_type = get_graphql_type_name(&field.field_type);
+                let field_type_name = get_graphql_type_name(&field.field_type);
+                let field_type = get_search_input_concrete_field_type(
+                    graphql_ast.clone(),
+                    field
+                );
 
                 return (
                     Just(field_name.to_string()).boxed(),
-                    Just(field_type.to_string()).boxed(),
+                    Just(field_type_name.to_string()).boxed(),
+                    Just(field_type).boxed(),
                     get_search_operation_infos_arbitrary(
                         graphql_ast.clone(),
                         field,
                         field_name.to_string(),
-                        &field_type,
+                        &field_type_name,
                         objects.clone()
                     )
                 );
@@ -95,6 +109,7 @@ pub fn get_search_inputs_arbitrary(
             .collect::<Vec<(
                 BoxedStrategy<String>,
                 BoxedStrategy<String>,
+                BoxedStrategy<SearchInputConcreteFieldType>,
                 BoxedStrategy<Vec<SearchOperationInfo>>
             )>>();
 
@@ -121,9 +136,10 @@ pub fn get_search_inputs_arbitrary(
                 
                 return search_operation_infos_tuple
                     .into_iter()
-                    .map(|(field_name, field_type, search_operation_infos)| {
+                    .map(|(field_name, field_type_name, field_type, search_operation_infos)| {
                         return SearchInputConcrete {
                             field_name,
+                            field_type_name,
                             field_type,
                             search_operation_infos,
                             and: if and_or_search_inputs_concretes.0.len() == 0 { None } else { Some(and_or_search_inputs_concretes.0.clone()) },
@@ -143,14 +159,14 @@ fn get_search_operation_infos_arbitrary(
     graphql_ast: Document<String>,
     field: &Field<String>,
     field_name: String,
-    field_type: &str,
+    field_type_name: &str,
     objects: Vec<serde_json::value::Value>
 ) -> BoxedStrategy<Vec<SearchOperationInfo>> {
     if objects.len() == 0 {
         return Just(vec![]).boxed(); // TODO consider if we should test no objects better, we could just create some random values
     }
 
-    match field_type {
+    match field_type_name {
         "Blob" => {
             return (
                 proptest::collection::hash_set("contains|endsWith|eq|startsWith", 0..3),
@@ -172,7 +188,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -200,7 +216,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -228,7 +244,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -256,7 +272,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -264,7 +280,7 @@ fn get_search_operation_infos_arbitrary(
         },
         "ID" => {
             return (
-                proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..3),
+                proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..=2),
                 0..objects.len()
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
@@ -283,7 +299,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -311,7 +327,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -339,7 +355,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -367,7 +383,7 @@ fn get_search_operation_infos_arbitrary(
 
                         return SearchOperationInfo {
                             search_operation: search_operation.to_string(),
-                            search_value: Some(search_value.clone())
+                            search_value: search_value.clone()
                         };
                     })
                     .collect();
@@ -399,7 +415,7 @@ fn get_search_operation_infos_arbitrary(
     
                             return SearchOperationInfo {
                                 search_operation: search_operation.to_string(),
-                                search_value: Some(search_value.clone())
+                                search_value: search_value.clone()
                             };
                         })
                         .collect();
@@ -622,4 +638,32 @@ fn get_search_value_for_string(
         },
         _ => panic!("search_operation {} not supported", search_operation)
     };
+}
+
+fn get_search_input_concrete_field_type(
+    graphql_ast: Document<'static, String>,
+    field: &Field<String>
+) -> SearchInputConcreteFieldType {
+    if is_graphql_type_an_enum(
+        &graphql_ast,
+        &field.field_type
+    ) == true {
+        return SearchInputConcreteFieldType::Enum;
+    }
+
+    if is_graphql_type_a_relation_one(
+        &graphql_ast,
+        &field.field_type
+    ) == true {
+        return SearchInputConcreteFieldType::RelationOne;
+    }
+
+    if is_graphql_type_a_relation_many(
+        &graphql_ast,
+        &field.field_type
+    ) == true {
+        return SearchInputConcreteFieldType::RelationMany;
+    }
+
+    return SearchInputConcreteFieldType::Scalar;
 }

@@ -2,7 +2,6 @@
 
 # TODO this schema was designed for order
 
-# TODO add in startsWith and endsWith in appropriate places
 # TODO make sure to test relation one and relation many, searching by id
 type User {
     id: ID!
@@ -28,7 +27,7 @@ type User {
 }
 
 # type Hobby {
-#     id: ID!
+    # id: ID!
 #     blob: Blob!
 #     bool: Boolean!
 #     date: Date!

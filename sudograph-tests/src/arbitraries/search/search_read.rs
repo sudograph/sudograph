@@ -8,7 +8,8 @@ use crate::arbitraries::search::{
     search_create::SearchInfoMap,
     search_input::{
         get_search_inputs_arbitrary,
-        SearchInputConcrete
+        SearchInputConcrete,
+        SearchInputConcreteFieldType
     }
 };
 use graphql_parser::schema::{
@@ -101,6 +102,9 @@ fn get_selection(
     );
 }
 
+// TODO I am not representing the and/or correctly here
+// TODO they should really be arrays with objects inside, and they can repeat fields unlike the others
+// TODO we might want to add an option to search_input that allows fields to be repeated if and/or
 fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchInputConcrete>) -> String {
     return format!(
         "{{
@@ -143,7 +147,7 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
                             return format!(
                                 "{search_operation}: {search_value}",
                                 search_operation = search_operation_info.search_operation,
-                                search_value = if let Some(search_value) = &search_operation_info.search_value { search_value } else { &serde_json::json!(null) }
+                                search_value = search_operation_info.search_value
                             );
                         })
                         .collect::<Vec<String>>()
@@ -188,7 +192,8 @@ fn get_expected_value(
 
     let searched_objects = search_objects(
         objects,
-        search_inputs_concrete
+        search_inputs_concrete,
+        false
     );
 
     let all_searched_objects: Vec<serde_json::value::Value> = searched_objects.iter().map(|searched_object| {
@@ -226,11 +231,564 @@ fn get_expected_value(
 
 fn search_objects(
     objects: &Vec<serde_json::value::Value>,
-    search_inputs_concrete: &Vec<SearchInputConcrete>
+    search_inputs_concrete: &Vec<SearchInputConcrete>,
+    or: bool
 ) -> Vec<serde_json::value::Value> {
     return objects.iter().filter(|object| {
-        return true;
+        return object_passes_search(
+            object,
+            search_inputs_concrete,
+            or
+        );     
     })
     .cloned()
     .collect();
+}
+
+fn object_passes_search(
+    object: &serde_json::value::Value,
+    search_inputs_concrete: &Vec<SearchInputConcrete>,
+    parent_or: bool
+) -> bool {
+    if search_inputs_concrete.len() == 0 {
+        return true;
+    }
+
+    return search_inputs_concrete
+        .iter()
+        .fold(if parent_or == true { false } else { true }, |result, search_input_concrete| {
+            if
+                result == false &&
+                parent_or == false
+            {
+                return false;
+            }
+
+            if
+                result == true &&
+                parent_or == true
+            {
+                return true;
+            }
+
+            if let Some(and) = &search_input_concrete.and {
+                let and_result = object_passes_search(
+                    object,
+                    and,
+                    false    
+                );
+
+                if and_result == false {
+                    return false;
+                }
+
+                // println!("parent_or: {}", parent_or);
+                // println!("and_result: {}", and_result);
+            
+                // if
+                //     parent_or == true &&
+                //     and_result == true
+                // {
+                //     return true;
+                // }
+
+                // if
+                //     parent_or == false &&
+                //     and_result == false
+                // {
+                //     return false;
+                // }
+            }
+
+            if let Some(or) = &search_input_concrete.or {
+                let or_result = object_passes_search(
+                    object,
+                    or,
+                    true    
+                );
+
+                if or_result == false {
+                    return false;
+                }
+
+                // println!("parent_or: {}", parent_or);
+                // println!("or_result: {}", or_result);
+
+                // if
+                //     parent_or == true &&
+                //     or_result == true
+                // {
+                //     return true;
+                // }
+
+                // if
+                //     parent_or == false &&
+                //     or_result == false
+                // {
+                //     return false;
+                // }
+            }
+
+            match &search_input_concrete.field_type_name[..] {
+                "Blob" => {
+                    return object_blob_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "Boolean" => {
+                    return object_bool_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "Date" => {
+                    return object_date_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "Float" => {
+                    return object_float_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "ID" => {
+                    return object_id_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "Int" => {
+                    return object_int_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "JSON" => {
+                    return object_json_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                "String" => {
+                    return object_string_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                _ => {
+                    match search_input_concrete.field_type {
+                        SearchInputConcreteFieldType::Enum => {
+                            return object_enum_passes_search(
+                                object,
+                                search_input_concrete
+                            );
+                        },
+                        _ => panic!()
+                    };
+                }
+            };
+        });
+}
+
+fn object_blob_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_blob = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|value| {
+                    return value.as_f64().unwrap() as u8;
+                }).collect::<Vec<u8>>();
+
+            let search_value_blob = search_operation_info.search_value
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|value| {
+                    return value.as_f64().unwrap() as u8;
+                }).collect::<Vec<u8>>();
+
+            match &search_operation_info.search_operation[..] {
+                "contains" => {
+                    return slice2_is_subset_of_slice1(
+                        &object_value_blob,
+                        &search_value_blob
+                    );
+                },
+                "endsWith" => {
+                    return object_value_blob.ends_with(&search_value_blob);
+                },
+                "eq" => {
+                    return object_value_blob == search_value_blob;
+                },
+                "startsWith" => {
+                    return object_value_blob.starts_with(&search_value_blob);
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_bool_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_bool = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_bool()
+                .unwrap();
+
+            let search_value_bool = search_operation_info.search_value
+                .as_bool()
+                .unwrap();
+
+            match &search_operation_info.search_operation[..] {
+                "eq" => {
+                    return object_value_bool == search_value_bool;
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_date_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_date = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .parse::<DateTime<Utc>>()
+                .unwrap();
+
+            let search_value_date = search_operation_info.search_value
+                .as_str()
+                .unwrap()
+                .parse::<DateTime<Utc>>()
+                .unwrap();
+
+            match &search_operation_info.search_operation[..] {
+                "eq" => {
+                    return object_value_date == search_value_date;
+                },
+                "gt" => {
+                    return object_value_date > search_value_date;
+                },
+                "gte" => {
+                    return object_value_date >= search_value_date;
+                },
+                "lt" => {
+                    return object_value_date < search_value_date;
+                },
+                "lte" => {
+                    return object_value_date <= search_value_date;
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_float_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_float = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_f64()
+                .unwrap() as f32;
+
+            let search_value_float = search_operation_info.search_value
+                .as_f64()
+                .unwrap() as f32;
+
+            match &search_operation_info.search_operation[..] {
+                "eq" => {
+                    return object_value_float == search_value_float;
+                },
+                "gt" => {
+                    return object_value_float > search_value_float;
+                },
+                "gte" => {
+                    return object_value_float >= search_value_float;
+                },
+                "lt" => {
+                    return object_value_float < search_value_float;
+                },
+                "lte" => {
+                    return object_value_float <= search_value_float;
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_id_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return object_string_passes_search(
+        object,
+        search_input_concrete
+    );
+}
+
+fn object_int_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_int = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_i64()
+                .unwrap() as i32;
+
+            let search_value_int = search_operation_info.search_value
+                .as_i64()
+                .unwrap() as i32;
+
+            match &search_operation_info.search_operation[..] {
+                "eq" => {
+                    return object_value_int == search_value_int;
+                },
+                "gt" => {
+                    return object_value_int > search_value_int;
+                },
+                "gte" => {
+                    return object_value_int >= search_value_int;
+                },
+                "lt" => {
+                    return object_value_int < search_value_int;
+                },
+                "lte" => {
+                    return object_value_int <= search_value_int;
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_json_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_string = &object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .to_string()[..];
+
+            let search_value_string = search_operation_info.search_value
+                .as_str()
+                .unwrap();
+
+            match &search_operation_info.search_operation[..] {
+                "contains" => {
+                    return object_value_string.contains(search_value_string);
+                },
+                "endsWith" => {
+                    return object_value_string.ends_with(search_value_string);
+                },
+                "eq" => {
+                    return object_value_string == search_value_string;
+                },
+                "gt" => {
+                    return object_value_string > search_value_string;
+                },
+                "gte" => {
+                    return object_value_string >= search_value_string;
+                },
+                "lt" => {
+                    return object_value_string < search_value_string;
+                },
+                "lte" => {
+                    return object_value_string <= search_value_string;
+                },
+                "startsWith" => {
+                    return object_value_string.starts_with(search_value_string);
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_string_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return search_input_concrete
+        .search_operation_infos
+        .iter()
+        .all(|search_operation_info| {
+            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+
+            // TODO working on null here
+            if object_value.is_null() == true {
+                return search_operation_info.search_value.is_null();
+            }
+
+            if search_operation_info.search_value.is_null() {
+                return object_value.is_null();
+            }
+
+            let object_value_string = object
+                .get(&search_input_concrete.field_name)
+                .unwrap()
+                .as_str()
+                .unwrap();
+
+            let search_value_string = search_operation_info.search_value
+                .as_str()
+                .unwrap();
+
+            match &search_operation_info.search_operation[..] {
+                "contains" => {
+                    return object_value_string.contains(search_value_string);
+                },
+                "endsWith" => {
+                    return object_value_string.ends_with(search_value_string);
+                },
+                "eq" => {
+                    return object_value_string == search_value_string;
+                },
+                "gt" => {
+                    return object_value_string > search_value_string;
+                },
+                "gte" => {
+                    return object_value_string >= search_value_string;
+                },
+                "lt" => {
+                    return object_value_string < search_value_string;
+                },
+                "lte" => {
+                    return object_value_string <= search_value_string;
+                },
+                "startsWith" => {
+                    return object_value_string.starts_with(search_value_string);
+                },
+                _ => panic!()
+            };
+        });
+}
+
+fn object_enum_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    return object_string_passes_search(
+        object,
+        search_input_concrete
+    );
+}
+
+// TODO this was copied directly from sudodb...are we really testing anything then?
+fn slice2_is_subset_of_slice1<T: Eq>(
+    slice1: &[T],
+    slice2: &[T]
+) -> bool {
+    if slice1.starts_with(slice2) == true {
+        return true;
+    }
+
+    if slice1.len() == 0 {
+        return false;
+    }
+
+    return slice2_is_subset_of_slice1(
+        &slice1[1..],
+        slice2
+    );
 }

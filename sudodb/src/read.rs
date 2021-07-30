@@ -379,6 +379,10 @@ fn field_value_store_matches_inputs(
     inputs: &Vec<ReadInput>,
     or: bool
 ) -> Result<bool, Box<dyn Error>> {
+    if inputs.len() == 0 {
+        return Ok(true);
+    }
+
     return inputs.iter().try_fold(if or == true { false } else { true }, |result, input| {
         if
             result == false &&

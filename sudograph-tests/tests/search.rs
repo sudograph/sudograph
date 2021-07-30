@@ -63,7 +63,7 @@ fn test_search() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut runner = TestRunner::new(Config {
                 cases: 100,
-                max_shrink_iters: 100,
+                max_shrink_iters: 0, // TODO shrinking does not seem to be working at all
                 .. Config::default()
             });
 
@@ -97,13 +97,13 @@ fn test_search() -> Result<(), Box<dyn std::error::Error>> {
                 println!("result_json\n");
                 println!("{:#?}", result_json);
 
-                // println!("expected_value\n");
-                // println!("{:#?}", expected_value);
+                println!("expected_value\n");
+                println!("{:#?}", expected_value);
 
-                // assert_eq!(
-                //     result_json,
-                //     expected_value
-                // );
+                assert_eq!(
+                    result_json,
+                    expected_value
+                );
 
                 return Ok(());
             }).unwrap();
