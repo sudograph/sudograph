@@ -846,7 +846,42 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
                         if object_key == "or" {
                             match object_value {
-                                // TODO deal with list as well
+                                sudograph::async_graphql::Value::List(list) => {
+                                    for value in list {
+                                        result.push(
+                                            vec![
+                                                ReadInput {
+                                                    input_type: ReadInputType::Scalar,
+                                                    input_operation: ReadInputOperation::Equals,
+                                                    field_name: String::from("or"),
+                                                    field_value: FieldValue::Scalar(None),
+                                                    relation_object_type_name: String::from(""),
+                                                    relation_read_inputs: vec![],
+                                                    and: vec![],
+                                                    or: get_search_inputs_from_value(
+                                                            graphql_ast,
+                                                            object_type_name,
+                                                            value
+                                                        )
+                                                        .into_iter()
+                                                        .map(|read_inputs| {
+                                                            return ReadInput {
+                                                                input_type: ReadInputType::Scalar,
+                                                                input_operation: ReadInputOperation::Equals,
+                                                                field_name: String::from("and"),
+                                                                field_value: FieldValue::Scalar(None),
+                                                                relation_object_type_name: String::from(""),
+                                                                relation_read_inputs: vec![],
+                                                                and: read_inputs,
+                                                                or: vec![]
+                                                            };
+                                                        })
+                                                        .collect()
+                                                }
+                                            ]
+                                        );
+                                    }
+                                },
                                 sudograph::async_graphql::Value::Object(_) => {
                                     result.push(
                                         vec![
@@ -884,89 +919,6 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                 _ => panic!()
                             };
 
-                            // return result;
-                            // match object_value {
-                            //     sudograph::async_graphql::Value::Object(_) => {
-                                    // for read_inputs in get_search_inputs_from_value(
-                                    //     graphql_ast,
-                                    //     object_type_name,
-                                    //     object_value
-                                    // ) {
-                            //             result.push(
-                            //                 vec![
-                                                // ReadInput {
-                                                //     input_type: ReadInputType::Scalar,
-                                                //     input_operation: ReadInputOperation::Equals,
-                                                //     field_name: String::from("or"),
-                                                //     field_value: FieldValue::Scalar(None),
-                                                //     relation_object_type_name: String::from(""),
-                                                //     relation_read_inputs: vec![],
-                                                //     and: read_inputs,
-                                                //     or: vec![]
-                                                // }
-                            //                 ]
-                            //             );
-                            //         }
-
-                            //         return result;
-                            //     },
-                            //     _ => panic!()
-                            // }
-
-                            // result.push(vec![ReadInput {
-                            //     input_type: ReadInputType::Scalar,
-                            //     input_operation: ReadInputOperation::Equals,
-                            //     field_name: String::from("or"),
-                            //     field_value: FieldValue::Scalar(None),
-                            //     relation_object_type_name: String::from(""),
-                            //     relation_read_inputs: vec![],
-                            //     and: vec![],
-                            //     or: match object_value {
-                            //         sudograph::async_graphql::Value::Object(_) => {
-                                        // get_search_inputs_from_value(
-                                        //     graphql_ast,
-                                        //     object_type_name,
-                                        //     object_value
-                                        // )
-                            //             .iter()
-                            //             .map(|read_inputs| {
-                            //                 return ReadInput {
-                            //                     input_type: ReadInputType::Scalar,
-                            //                     input_operation
-                            //                 };
-                            //             })
-                            //         }
-                            //     }
-                                // or: vec![
-                                //     // TODO I have my suspicions that this is slightly incorrect
-                                //     // ReadInput {
-                                        // input_type: ReadInputType::Scalar,
-                                        // input_operation: ReadInputOperation::Equals,
-                                        // field_name: String::from("and"),
-                                        // field_value: FieldValue::Scalar(None),
-                                        // relation_object_type_name: String::from(""),
-                                        // relation_read_inputs: vec![],
-                                //     //     and: match object_value {
-                                //     //         // TODO I think the array is broken here, we would want each member of the array to be in the or,
-                                //     //         // TODO and then each of the arrays of those arrays in the ands inside the ors
-                                //     //         sudograph::async_graphql::Value::List(list) => list.iter().flat_map(|value| { get_search_inputs_from_value(
-                                //     //             graphql_ast,
-                                //     //             object_type_name,
-                                //     //             value
-                                //     //         ) }).collect(),
-                                //     //         sudograph::async_graphql::Value::Object(_) => {
-                                //     //             get_search_inputs_from_value(
-                                //     //                 graphql_ast,
-                                //     //                 object_type_name,
-                                //     //                 object_value
-                                //     //             )
-                                //     //         },
-                                //     //         _ => panic!("panic for or")
-                                //     //     },
-                                //     //     or: vec![]
-                                //     // }
-                                // ]
-                            // }]);
 
                             return result;
                         }
