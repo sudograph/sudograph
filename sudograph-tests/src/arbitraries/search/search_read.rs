@@ -133,25 +133,55 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
                     "".to_string()
                 };
 
+                let search_operations = match &search_input_concrete.search_operation_infos {
+                    Some(search_operation_infos) => {
+                        search_operation_infos
+                            .iter()
+                            .map(|search_operation_info| {
+                                return format!(
+                                    "{search_operation}: {search_value}",
+                                    search_operation = search_operation_info.search_operation,
+                                    search_value = search_operation_info.search_value
+                                );
+                            })
+                            .collect::<Vec<String>>()
+                            .join("\n")
+                    },
+                    None => {
+                        "null".to_string()
+                    }
+                };
+
                 return format!(
                     "
-                        {field_name}: {{ {search_operations} }}
+                        {field_name}: {search_operations_with_possible_relation}
                         {and}
                         {or}
                     ",
                     field_name = search_input_concrete.field_name,
-                    search_operations = search_input_concrete
-                        .search_operation_infos
-                        .iter()
-                        .map(|search_operation_info| {
-                            return format!(
-                                "{search_operation}: {search_value}",
-                                search_operation = search_operation_info.search_operation,
-                                search_value = search_operation_info.search_value
-                            );
-                        })
-                        .collect::<Vec<String>>()
-                        .join("\n"),
+                    search_operations_with_possible_relation = match search_input_concrete.field_type {
+                        SearchInputConcreteFieldType::Scalar | SearchInputConcreteFieldType::Enum => {
+                            format!(
+                                "{{ {search_operations} }}",
+                                search_operations = search_operations
+                            )
+                        },
+                        SearchInputConcreteFieldType::RelationOne => {
+                            if search_input_concrete.search_operation_infos.is_none() {
+                                format!(
+                                    "{search_operations}",
+                                    search_operations = search_operations
+                                )
+                            }
+                            else {
+                                format!(
+                                    "{{ id: {{ {search_operations} }} }}",
+                                    search_operations = search_operations
+                                )
+                            }
+                        },
+                        _ => panic!()
+                    },
                     and = and,
                     or = or
                 );
@@ -250,9 +280,16 @@ fn object_passes_search(
     search_inputs_concrete: &Vec<SearchInputConcrete>,
     parent_or: bool
 ) -> bool {
-    if search_inputs_concrete.len() == 0 {
-        return true;
-    }
+    let all_search_operation_infos_empty = search_inputs_concrete.iter().all(|search_input_concrete| {
+        match &search_input_concrete.search_operation_infos {
+            Some(search_operation_infos) => {
+                return search_operation_infos.len() == 0;
+            },
+            None => {
+                return true;
+            }
+        };
+    });
 
     return search_inputs_concrete
         .iter()
@@ -271,126 +308,163 @@ fn object_passes_search(
                 return true;
             }
 
-            if let Some(and) = &search_input_concrete.and {
-                let and_result = object_passes_search(
-                    object,
-                    and,
-                    false    
-                );
-
-                if and_result == false {
+            if
+                parent_or == true &&
+                search_input_concrete.search_operation_infos.is_some() == true &&
+                search_input_concrete.search_operation_infos.clone().unwrap().len() == 0
+            {
+                if
+                    search_inputs_concrete.len() == 1 ||
+                    all_search_operation_infos_empty == true
+                {
+                    return true;
+                }
+                else {
                     return false;
                 }
-
-                // println!("parent_or: {}", parent_or);
-                // println!("and_result: {}", and_result);
-            
-                // if
-                //     parent_or == true &&
-                //     and_result == true
-                // {
-                //     return true;
-                // }
-
-                // if
-                //     parent_or == false &&
-                //     and_result == false
-                // {
-                //     return false;
-                // }
             }
 
-            if let Some(or) = &search_input_concrete.or {
-                let or_result = object_passes_search(
-                    object,
-                    or,
-                    true    
-                );
 
-                if or_result == false {
-                    return false;
-                }
-
-                // println!("parent_or: {}", parent_or);
-                // println!("or_result: {}", or_result);
-
-                // if
-                //     parent_or == true &&
-                //     or_result == true
-                // {
-                //     return true;
-                // }
-
-                // if
-                //     parent_or == false &&
-                //     or_result == false
-                // {
-                //     return false;
-                // }
-            }
-
-            match &search_input_concrete.field_type_name[..] {
-                "Blob" => {
-                    return object_blob_passes_search(
+            let and_result = match &search_input_concrete.and {
+                Some(and) => {
+                    object_passes_search(
                         object,
-                        search_input_concrete
-                    );
+                        and,
+                        false    
+                    )
                 },
-                "Boolean" => {
-                    return object_bool_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "Date" => {
-                    return object_date_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "Float" => {
-                    return object_float_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "ID" => {
-                    return object_id_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "Int" => {
-                    return object_int_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "JSON" => {
-                    return object_json_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                "String" => {
-                    return object_string_passes_search(
-                        object,
-                        search_input_concrete
-                    );
-                },
-                _ => {
-                    match search_input_concrete.field_type {
-                        SearchInputConcreteFieldType::Enum => {
-                            return object_enum_passes_search(
-                                object,
-                                search_input_concrete
-                            );
-                        },
-                        _ => panic!()
-                    };
+                None => {
+                    if parent_or == true { false } else { true }
                 }
             };
+
+            let or_result = match &search_input_concrete.or {
+                Some(or) => {
+                    object_passes_search(
+                        object,
+                        or,
+                        true    
+                    )
+                },
+                None => {
+                    if parent_or == true { false } else { true }
+                }
+            };
+
+            // if let Some(or) = &search_input_concrete.or {
+            //     let or_result = object_passes_search(
+            //         object,
+            //         or,
+            //         true    
+            //     );
+
+            //     // if or_result == false {
+            //     //     return false;
+            //     // }
+
+            //     // println!("parent_or: {}", parent_or);
+            //     // println!("or_result: {}", or_result);
+
+            //     if
+            //         parent_or == true &&
+            //         or_result == true
+            //     {
+            //         return true;
+            //     }
+
+            //     if
+            //         parent_or == false &&
+            //         or_result == false
+            //     {
+            //         return false;
+            //     }
+            // }
+
+            let field_result = object_field_passes_search(
+                object,
+                &search_input_concrete
+            );
+
+            if parent_or == true {
+                return and_result || or_result || field_result;
+            }
+            else {
+                return and_result && or_result && field_result;
+            }
         });
+}
+
+fn object_field_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    match &search_input_concrete.field_type_name[..] {
+        "Blob" => {
+            return object_blob_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "Boolean" => {
+            return object_bool_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "Date" => {
+            return object_date_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "Float" => {
+            return object_float_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "ID" => {
+            return object_id_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "Int" => {
+            return object_int_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "JSON" => {
+            return object_json_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        "String" => {
+            return object_string_passes_search(
+                object,
+                search_input_concrete
+            );
+        },
+        _ => {
+            match search_input_concrete.field_type {
+                SearchInputConcreteFieldType::Enum => {
+                    return object_enum_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                SearchInputConcreteFieldType::RelationOne => {
+                    return object_relation_one_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                _ => panic!()
+            };
+        }
+    };
 }
 
 fn object_blob_passes_search(
@@ -399,6 +473,8 @@ fn object_blob_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -411,9 +487,7 @@ fn object_blob_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_blob = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_blob = object_value
                 .as_array()
                 .unwrap()
                 .iter()
@@ -456,6 +530,8 @@ fn object_bool_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -468,9 +544,7 @@ fn object_bool_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_bool = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_bool = object_value
                 .as_bool()
                 .unwrap();
 
@@ -493,6 +567,8 @@ fn object_date_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -505,9 +581,7 @@ fn object_date_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_date = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_date = object_value
                 .as_str()
                 .unwrap()
                 .parse::<DateTime<Utc>>()
@@ -546,6 +620,8 @@ fn object_float_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -558,9 +634,7 @@ fn object_float_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_float = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_float = object_value
                 .as_f64()
                 .unwrap() as f32;
 
@@ -605,6 +679,8 @@ fn object_int_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -617,9 +693,7 @@ fn object_int_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_int = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_int = object_value
                 .as_i64()
                 .unwrap() as i32;
 
@@ -654,6 +728,8 @@ fn object_json_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
             let object_value = object.get(&search_input_concrete.field_name).unwrap();
@@ -666,10 +742,7 @@ fn object_json_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_string = &object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
-                .to_string()[..];
+            let object_value_string = &object_value.to_string()[..];
 
             let search_value_string = search_operation_info.search_value
                 .as_str()
@@ -711,11 +784,14 @@ fn object_string_passes_search(
 ) -> bool {
     return search_input_concrete
         .search_operation_infos
+        .clone()
+        .unwrap()
         .iter()
         .all(|search_operation_info| {
-            let object_value = object.get(&search_input_concrete.field_name).unwrap();
+            let object_value = object
+                .get(&search_input_concrete.field_name)
+                .unwrap();
 
-            // TODO working on null here
             if object_value.is_null() == true {
                 return search_operation_info.search_value.is_null();
             }
@@ -724,9 +800,7 @@ fn object_string_passes_search(
                 return object_value.is_null();
             }
 
-            let object_value_string = object
-                .get(&search_input_concrete.field_name)
-                .unwrap()
+            let object_value_string = object_value
                 .as_str()
                 .unwrap();
 
@@ -772,6 +846,81 @@ fn object_enum_passes_search(
         object,
         search_input_concrete
     );
+}
+
+fn object_relation_one_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    if search_input_concrete.search_operation_infos.is_none() {
+        return object.get(&search_input_concrete.field_name).unwrap().is_null();
+    }
+    else {
+        return search_input_concrete
+            .search_operation_infos
+            .clone()
+            .unwrap()
+            .iter()
+            .all(|search_operation_info| {
+                let object_value = object
+                    .get(&search_input_concrete.field_name)
+                    .unwrap();
+    
+                if object_value.is_null() == true {
+                    return false;
+                }
+    
+                let object_value_string_possibly_null = object_value
+                    .as_object()
+                    .unwrap()
+                    .get("id")
+                    .unwrap();
+                
+                if object_value_string_possibly_null.is_null() == true {
+                    return search_operation_info.search_value.is_null();
+                }    
+                
+                if search_operation_info.search_value.is_null() == true {
+                    return object_value_string_possibly_null.is_null();
+                }
+    
+                let object_value_string = object_value_string_possibly_null
+                    .as_str()
+                    .unwrap();
+        
+                let search_value_string = search_operation_info.search_value
+                    .as_str()
+                    .unwrap();
+        
+                match &search_operation_info.search_operation[..] {
+                    "contains" => {
+                        return object_value_string.contains(search_value_string);
+                    },
+                    "endsWith" => {
+                        return object_value_string.ends_with(search_value_string);
+                    },
+                    "eq" => {
+                        return object_value_string == search_value_string;
+                    },
+                    "gt" => {
+                        return object_value_string > search_value_string;
+                    },
+                    "gte" => {
+                        return object_value_string >= search_value_string;
+                    },
+                    "lt" => {
+                        return object_value_string < search_value_string;
+                    },
+                    "lte" => {
+                        return object_value_string <= search_value_string;
+                    },
+                    "startsWith" => {
+                        return object_value_string.starts_with(search_value_string);
+                    },
+                    _ => panic!()
+                };
+            });
+    }
 }
 
 // TODO this was copied directly from sudodb...are we really testing anything then?

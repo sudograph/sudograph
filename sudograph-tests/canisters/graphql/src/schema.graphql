@@ -5,29 +5,32 @@
 # TODO make sure to test relation one and relation many, searching by id
 type User {
     id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
-    food: Food!
+    # blob: Blob!
+    # bool: Boolean!
+    # date: Date!
+    # float: Float!
+    # int: Int!
+    # json: JSON!
+    # string: String!
+    # food: Food!
 
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
-    food_nullable: Food
+    # blob_nullable: Blob
+    # bool_nullable: Boolean
+    # date_nullable: Date
+    # float_nullable: Float
+    # int_nullable: Int
+    # json_nullable: JSON
+    # string_nullable: String
+    # food_nullable: Food
+
+    hobby: Hobby!
+    hobby_nullable: Hobby
 
     # hobbies: [Hobby!]!
 }
 
-# type Hobby {
-    # id: ID!
+type Hobby {
+    id: ID!
 #     blob: Blob!
 #     bool: Boolean!
 #     date: Date!
@@ -46,7 +49,7 @@ type User {
 
 #     users: [User!]!
 #     lobbies: [Lobby!]!
-# }
+}
 
 # type Lobby {
 #     id: ID!
@@ -67,12 +70,12 @@ type User {
 #     string_nullable: String
 # }
 
-enum Food {
-    CARROTS
-    PEANUTS
-    RANCH
-    POTATOES
-}
+# enum Food {
+#     CARROTS
+#     PEANUTS
+#     RANCH
+#     POTATOES
+# }
 # TODO this schema was designed for order
 
 # TODO this schema was designed for order

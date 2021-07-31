@@ -25,7 +25,7 @@ pub struct SearchInputConcrete {
     pub field_name: String,
     pub field_type_name: String,
     pub field_type: SearchInputConcreteFieldType,
-    pub search_operation_infos: Vec<SearchOperationInfo>,
+    pub search_operation_infos: Option<Vec<SearchOperationInfo>>,
     pub and: Option<Vec<SearchInputConcrete>>,
     pub or: Option<Vec<SearchInputConcrete>>
 }
@@ -60,13 +60,8 @@ pub fn get_search_inputs_arbitrary(
         .into_iter()
         .filter(|field| {
             // TODO we can leave relations out for now but we need to test searching by id
-            // TODO we also need to test enums
             return 
                 is_graphql_type_a_relation_many(
-                    &graphql_ast,
-                    &field.field_type
-                ) == false &&
-                is_graphql_type_a_relation_one(
                     &graphql_ast,
                     &field.field_type
                 ) == false;
@@ -96,12 +91,11 @@ pub fn get_search_inputs_arbitrary(
                 return (
                     Just(field_name.to_string()).boxed(),
                     Just(field_type_name.to_string()).boxed(),
-                    Just(field_type).boxed(),
+                    Just(field_type.clone()).boxed(),
                     get_search_operation_infos_arbitrary(
-                        graphql_ast.clone(),
-                        field,
                         field_name.to_string(),
                         &field_type_name,
+                        field_type,
                         objects.clone()
                     )
                 );
@@ -110,7 +104,7 @@ pub fn get_search_inputs_arbitrary(
                 BoxedStrategy<String>,
                 BoxedStrategy<String>,
                 BoxedStrategy<SearchInputConcreteFieldType>,
-                BoxedStrategy<Vec<SearchOperationInfo>>
+                BoxedStrategy<Option<Vec<SearchOperationInfo>>>
             )>>();
 
         let graphql_ast = graphql_ast.clone();
@@ -156,14 +150,13 @@ pub fn get_search_inputs_arbitrary(
 // TODO seems like we might want to test just one field at time, and then test multiple separately?
 // TODO figure out relations
 fn get_search_operation_infos_arbitrary(
-    graphql_ast: Document<String>,
-    field: &Field<String>,
     field_name: String,
     field_type_name: &str,
+    field_type: SearchInputConcreteFieldType,
     objects: Vec<serde_json::value::Value>
-) -> BoxedStrategy<Vec<SearchOperationInfo>> {
+) -> BoxedStrategy<Option<Vec<SearchOperationInfo>>> {
     if objects.len() == 0 {
-        return Just(vec![]).boxed(); // TODO consider if we should test no objects better, we could just create some random values
+        return Just(Some(vec![])).boxed(); // TODO consider if we should test no objects better, we could just create some random values
     }
 
     match field_type_name {
@@ -174,24 +167,26 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_blob(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_blob(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "Boolean" => {
@@ -201,25 +196,27 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
 
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_boolean(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_boolean(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "Date" => {
@@ -229,25 +226,27 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
 
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_date(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_date(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "Float" => {
@@ -257,25 +256,27 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
 
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_float(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_float(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "ID" => {
@@ -285,24 +286,26 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_id(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_id(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "Int" => {
@@ -312,25 +315,27 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
 
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_int(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_int(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "JSON" => {
@@ -340,25 +345,27 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
+                return Some(
+                    search_operations
+                        .iter()
+                        .map(|search_operation| {
 
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
+                            let example_value = example_object
+                                .get(&field_name)
+                                .unwrap();
 
-                        let search_value = get_search_value_for_json(
-                            search_operation,
-                            example_value
-                        );
+                            let search_value = get_search_value_for_json(
+                                search_operation,
+                                example_value
+                            );
 
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
+                            return SearchOperationInfo {
+                                search_operation: search_operation.to_string(),
+                                search_value: search_value.clone()
+                            };
+                        })
+                        .collect()
+                );
             }).boxed();
         },
         "String" => {
@@ -368,62 +375,97 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
-                return search_operations
-                    .iter()
-                    .map(|search_operation| {
-
-                        let example_value = example_object
-                            .get(&field_name)
-                            .unwrap();
-
-                        let search_value = get_search_value_for_string(
-                            search_operation,
-                            example_value
-                        );
-
-                        return SearchOperationInfo {
-                            search_operation: search_operation.to_string(),
-                            search_value: search_value.clone()
-                        };
-                    })
-                    .collect();
-            }).boxed();
-        },
-        _ => {
-            if is_graphql_type_an_enum(
-                &graphql_ast,
-                &field.field_type
-            ) == true {
-                return (
-                    proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..3),
-                    0..objects.len()
-                ).prop_map(move |(search_operations, example_object_index)| {
-                    let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
-                    
-                    return search_operations
+                return Some(
+                    search_operations
                         .iter()
                         .map(|search_operation| {
-    
+
                             let example_value = example_object
                                 .get(&field_name)
                                 .unwrap();
-    
+
                             let search_value = get_search_value_for_string(
                                 search_operation,
                                 example_value
                             );
-    
+
                             return SearchOperationInfo {
                                 search_operation: search_operation.to_string(),
                                 search_value: search_value.clone()
                             };
                         })
-                        .collect();
-                }).boxed();
-            }
-
-            // TODO relations should be done in here
-            panic!("type not yet implemented");
+                        .collect()
+                );
+            }).boxed();
+        },
+        _ => {
+            match field_type {
+                SearchInputConcreteFieldType::Enum => {
+                    return (
+                        proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..3),
+                        0..objects.len()
+                    ).prop_map(move |(search_operations, example_object_index)| {
+                        let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
+                        
+                        return Some(
+                            search_operations
+                                .iter()
+                                .map(|search_operation| {
+            
+                                    let example_value = example_object
+                                        .get(&field_name)
+                                        .unwrap();
+            
+                                    let search_value = get_search_value_for_enum(
+                                        search_operation,
+                                        example_value
+                                    );
+            
+                                    return SearchOperationInfo {
+                                        search_operation: search_operation.to_string(),
+                                        search_value: search_value.clone()
+                                    };
+                                })
+                                .collect()
+                        );
+                    }).boxed();
+                },
+                SearchInputConcreteFieldType::RelationOne => {
+                    return (
+                        proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..=2),
+                        0..objects.len()
+                    ).prop_map(move |(search_operations, example_object_index)| {
+                        let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
+        
+                        if example_object.get(&field_name).unwrap().is_null() == true {
+                            return None;
+                        }
+                        else {
+                            return Some(
+                                search_operations
+                                    .iter()
+                                    .map(|search_operation| {
+                                        let example_value = example_object
+                                            .get(&field_name)
+                                            .unwrap();
+                
+                                        let search_value = get_search_value_for_relation_one(
+                                            search_operation,
+                                            example_value
+                                        );
+                
+                                        return SearchOperationInfo {
+                                            search_operation: search_operation.to_string(),
+                                            search_value: search_value.clone()
+                                        };
+                                    })
+                                    .collect()
+                            );
+                        }
+                    }).boxed();
+                },
+                _ => panic!()
+            };
         }
     };
 }
@@ -638,6 +680,45 @@ fn get_search_value_for_string(
         },
         _ => panic!("search_operation {} not supported", search_operation)
     };
+}
+
+fn get_search_value_for_enum(
+    search_operation: &str,
+    example_value: &serde_json::value::Value
+) -> serde_json::value::Value {
+    if example_value.is_null() {
+        return serde_json::json!(null);
+    }
+
+    return get_search_value_for_string(
+        search_operation,
+        example_value
+    );
+}
+
+// TODO in the future we will want these tests to be recursive
+// TODO we want to search on more than just the id
+// TODO it probably wouldn't be too hard to implement this, but I am runing out of time for now
+fn get_search_value_for_relation_one(
+    search_operation: &str,
+    example_value: &serde_json::value::Value
+) -> serde_json::value::Value {
+    if example_value.is_null() {
+        return serde_json::json!(null);
+    }
+
+    let example_value = &serde_json::json!(
+        example_value
+            .as_object()
+            .unwrap()
+            .get("id")
+            .unwrap()
+    );
+
+    return get_search_value_for_string(
+        search_operation,
+        example_value
+    );
 }
 
 fn get_search_input_concrete_field_type(

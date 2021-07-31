@@ -1,7 +1,3 @@
-// TODO consider creating fields with special abilities so that the searching will be effective
-// TODO for example, I am afraid our searches will usually yield no results, thus they will be ineffective
-// TODO consider how to make them most effective
-
 use crate::{
     arbitraries::queries::{
         input_info_strategies::input_info_strategies::get_input_info_strategies,
@@ -58,7 +54,7 @@ pub fn get_search_create_arbitrary(
         object_types,
         object_type,
         MutationType::Create,
-        0,
+        1,
         None
     ).unwrap();
     
@@ -72,6 +68,8 @@ pub fn get_search_create_arbitrary(
             })
             .collect::<Vec<Vec<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>>>>()
             .prop_flat_map(move |input_infos_results| {
+
+                // TODO I might need to filter out relation many here
                 let input_infoses: Vec<Vec<InputInfo>> = input_infos_results
                     .into_iter()
                     .map(|input_infos_result| {

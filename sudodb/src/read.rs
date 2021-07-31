@@ -379,9 +379,9 @@ fn field_value_store_matches_inputs(
     inputs: &Vec<ReadInput>,
     or: bool
 ) -> Result<bool, Box<dyn Error>> {
-    if inputs.len() == 0 {
-        return Ok(true);
-    }
+    let all_input_ands_empty = inputs.iter().all(|input| {
+        return input.and.len() == 0;
+    });
 
     return inputs.iter().try_fold(if or == true { false } else { true }, |result, input| {
         if
@@ -399,6 +399,18 @@ fn field_value_store_matches_inputs(
         }
 
         if input.field_name == "and" {
+            if
+                or == true &&
+                input.and.len() == 0
+            {
+                if all_input_ands_empty == true {
+                    return Ok(true);
+                }
+                else {
+                    return Ok(false);
+                }
+            }
+
             return field_value_store_matches_inputs(
                 object_type_store,
                 field_value_store,
@@ -409,6 +421,10 @@ fn field_value_store_matches_inputs(
         }
 
         if input.field_name == "or" {
+            if input.or.len() == 0 {
+                return Ok(true);
+            }
+
             return field_value_store_matches_inputs(
                 object_type_store,
                 field_value_store,
@@ -998,6 +1014,12 @@ fn field_value_relation_one_matches_input(
     // TODO we should have an input when the relation is null
     match field_value_relation_one_option {
         Some(field_value_relation_one) => {
+            if let FieldValue::RelationOne(input_field_value_relation_one_option) = &input.field_value {
+                if input_field_value_relation_one_option.is_none() {
+                    return Ok(false);
+                }
+            }
+
             let relation_field_value_store = get_field_value_store(
                 object_type_store,
                 String::from(&field_type_relation_info.opposing_object_name),
@@ -1013,7 +1035,14 @@ fn field_value_relation_one_matches_input(
             );
         },
         None => {
-            return Ok(false);
+            match &input.field_value {
+                FieldValue::RelationOne(field_value_relation_one_option) => {
+                    return Ok(field_value_relation_one_option.is_none());
+                },
+                _ => {
+                    return Ok(false);
+                }
+            };
         }
     };
 }
