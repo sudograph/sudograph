@@ -153,6 +153,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -182,6 +186,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -212,6 +220,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -242,6 +254,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -301,6 +317,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -331,6 +351,10 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
@@ -361,11 +385,14 @@ fn get_search_operation_infos_arbitrary(
             ).prop_map(move |(search_operations, example_object_index)| {
                 let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
                 
+                if example_object.get(&field_name).is_none() {
+                    return Some(vec![]);
+                }
+
                 return Some(
                     search_operations
                         .iter()
                         .map(|search_operation| {
-
                             let example_value = example_object
                                 .get(&field_name)
                                 .unwrap();
@@ -377,7 +404,7 @@ fn get_search_operation_infos_arbitrary(
 
                             return SearchOperationInfo {
                                 search_operation: search_operation.to_string(),
-                                search_value: search_value.clone()
+                                search_value
                             };
                         })
                         .collect()

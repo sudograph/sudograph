@@ -54,7 +54,8 @@ pub fn get_search_read_arbitrary(
 
     let relation_many_search_read_arbitraries = get_relation_many_search_read_arbitraries(
         graphql_ast,
-        search_info_map
+        search_info_map,
+        objects.clone()
     );
 
     let object_type_name_option = object_type_name_option.clone();
@@ -179,8 +180,7 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
                                     search_operations = search_operations
                                 )
                             }
-                        },
-                        _ => panic!()
+                        }
                     },
                     and = and,
                     or = or
@@ -193,7 +193,8 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
 
 fn get_relation_many_search_read_arbitraries(
     graphql_ast: &Document<'static, String>,
-    search_info_map: SearchInfoMap
+    search_info_map: SearchInfoMap,
+    objects: Vec<serde_json::value::Value>
 ) -> Vec<BoxedStrategy<SearchReadConcrete>> {
     return search_info_map
         .keys()
@@ -204,7 +205,28 @@ fn get_relation_many_search_read_arbitraries(
                 false,
                 None,
                 Some(key.to_string()),
-                vec![],
+                match objects.clone().get(0) {
+                    Some(object) => {
+                        let possibly_null_field = object
+                            .as_object()
+                            .unwrap()
+                            .get(key)
+                            .unwrap();
+
+                        if possibly_null_field.is_null() {
+                            vec![]
+                        }
+                        else {
+                            possibly_null_field
+                                .as_array()
+                                .unwrap()
+                                .clone()
+                        }
+                    },
+                    None => {
+                        vec![]
+                    }
+                },
                 search_info_map.get(key).unwrap().search_info_map.clone()
             );
         })
@@ -359,35 +381,6 @@ fn object_passes_search(
                     if parent_or == true { false } else { true }
                 }
             };
-
-            // if let Some(or) = &search_input_concrete.or {
-            //     let or_result = object_passes_search(
-            //         object,
-            //         or,
-            //         true    
-            //     );
-
-            //     // if or_result == false {
-            //     //     return false;
-            //     // }
-
-            //     // println!("parent_or: {}", parent_or);
-            //     // println!("or_result: {}", or_result);
-
-            //     if
-            //         parent_or == true &&
-            //         or_result == true
-            //     {
-            //         return true;
-            //     }
-
-            //     if
-            //         parent_or == false &&
-            //         or_result == false
-            //     {
-            //         return false;
-            //     }
-            // }
 
             let field_result = object_field_passes_search(
                 object,
