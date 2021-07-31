@@ -202,8 +202,6 @@ fn search_field_value_stores(
     // ic_cdk::println!("{:?}", offset_option);
 
     let matching_field_value_stores = field_value_stores.into_iter().enumerate().try_fold(vec![], |mut result, (index, field_value_store)| {
-
-
         let inputs_match: bool = field_value_store_matches_inputs(
             object_type_store,
             field_value_store,
@@ -968,6 +966,13 @@ fn field_value_relation_many_matches_input(
     // TODO we should have an input when the relation is null
     match field_value_relation_many_option {
         Some(field_value_relation_many) => {
+            // TODO really we should be checking for a FieldValue::RelationMany, that will require Sudograph changes to read_input.rs
+            if let FieldValue::RelationOne(input_field_value_relation_many_option) = &input.field_value {
+                if input_field_value_relation_many_option.is_none() {
+                    return Ok(false);
+                }
+            }
+
             // TODO does this make sense for filtering with many relationships? It's just an any?
             return field_value_relation_many.relation_primary_keys.iter().try_fold(false, |result, relation_primary_key| {
                 if result == true {
@@ -990,7 +995,15 @@ fn field_value_relation_many_matches_input(
             });
         },
         None => {
-            return Ok(false);
+            match &input.field_value {
+                // TODO really we should be checking for a FieldValue::RelationMany, that will require Sudograph changes to read_input.rs
+                FieldValue::RelationOne(field_value_relation_many_option) => {
+                    return Ok(field_value_relation_many_option.is_none());
+                },
+                _ => {
+                    return Ok(false);
+                }
+            };
         }
     };
 }

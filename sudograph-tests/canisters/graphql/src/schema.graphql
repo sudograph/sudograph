@@ -26,7 +26,8 @@ type User {
     hobby: Hobby!
     hobby_nullable: Hobby
 
-    # hobbies: [Hobby!]!
+    hobbies: [Hobby!]!
+    hobbies_nullable: [Hobby!]
 }
 
 type Hobby {

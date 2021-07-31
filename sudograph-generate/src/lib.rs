@@ -821,7 +821,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                         object_type_name,
                                         value
                                     ) }).collect(),
-                                    _ => panic!()
+                                    sudograph::async_graphql::Value::Object(_) => {
+                                        get_search_inputs_from_value(
+                                            graphql_ast,
+                                            object_type_name,
+                                            object_value
+                                        )
+                                    },
+                                    _ => panic!("panic for and")
                                 },
                                 or: vec![]
                             }]).collect();
@@ -842,7 +849,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                         object_type_name,
                                         value
                                     ) }).collect(),
-                                    _ => panic!()
+                                    sudograph::async_graphql::Value::Object(_) => {
+                                        get_search_inputs_from_value(
+                                            graphql_ast,
+                                            object_type_name,
+                                            object_value
+                                        )
+                                    },
+                                    _ => panic!("panic for or")
                                 }
                             }]).collect();
                         }

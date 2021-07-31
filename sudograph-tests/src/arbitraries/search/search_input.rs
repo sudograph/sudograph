@@ -54,27 +54,13 @@ pub fn get_search_inputs_arbitrary(
         return Just(vec![]).boxed();
     }
 
-    let scalar_fields = object_type
-        .fields
-        .clone()
-        .into_iter()
-        .filter(|field| {
-            // TODO we can leave relations out for now but we need to test searching by id
-            return 
-                is_graphql_type_a_relation_many(
-                    &graphql_ast,
-                    &field.field_type
-                ) == false;
-        })
-        .collect::<Vec<Field<String>>>();
-
     // TODO we actually want to do more than just scalar fields
     // TODO in here we need to generate any number of the search things
-    return proptest::collection::hash_set(0..scalar_fields.len(), 0..=scalar_fields.len()).prop_flat_map(move |indexes| {
+    return proptest::collection::hash_set(0..object_type.fields.len(), 0..=object_type.fields.len()).prop_flat_map(move |indexes| {
         let fields = indexes
             .iter()
             .map(|index| {
-                return scalar_fields.get(*index).unwrap().clone();
+                return object_type.fields.get(*index).unwrap().clone();
             })
             .collect::<Vec<Field<String>>>();
 
@@ -449,6 +435,46 @@ fn get_search_operation_infos_arbitrary(
                                             .get(&field_name)
                                             .unwrap();
                 
+                                        let search_value = get_search_value_for_relation_one(
+                                            search_operation,
+                                            example_value
+                                        );
+                
+                                        return SearchOperationInfo {
+                                            search_operation: search_operation.to_string(),
+                                            search_value: search_value.clone()
+                                        };
+                                    })
+                                    .collect()
+                            );
+                        }
+                    }).boxed();
+                },
+                SearchInputConcreteFieldType::RelationMany => {
+                    return (
+                        proptest::collection::hash_set("contains|endsWith|eq|gt|gte|lt|lte|startsWith", 0..=2),
+                        0..objects.len()
+                    ).prop_map(move |(search_operations, example_object_index)| {
+                        let example_object = objects.get(example_object_index).unwrap().as_object().unwrap();
+        
+                        if example_object.get(&field_name).unwrap().is_null() == true {
+                            return None;
+                        }
+                        else {
+                            return Some(
+                                search_operations
+                                    .iter()
+                                    .map(|search_operation| {
+                                        let example_value = example_object
+                                            .get(&field_name)
+                                            .unwrap()
+                                            .as_array()
+                                            .unwrap()
+                                            .get(0)
+                                            .unwrap();
+                                            // TODO what if the array is empty? Will it ever be empty?
+                
+                                        // TODO perhaps rename the function called here to get_search_value_for_relation
                                         let search_value = get_search_value_for_relation_one(
                                             search_operation,
                                             example_value

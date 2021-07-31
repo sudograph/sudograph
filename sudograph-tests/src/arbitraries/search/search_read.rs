@@ -166,7 +166,7 @@ fn search_inputs_concrete_to_graphql_string(search_inputs_concrete: &Vec<SearchI
                                 search_operations = search_operations
                             )
                         },
-                        SearchInputConcreteFieldType::RelationOne => {
+                        SearchInputConcreteFieldType::RelationOne | SearchInputConcreteFieldType::RelationMany => {
                             if search_input_concrete.search_operation_infos.is_none() {
                                 format!(
                                     "{search_operations}",
@@ -235,22 +235,31 @@ fn get_expected_value(
         );
 
         for relation_many_search_read_concrete in relation_many_search_read_concretes {
-            let relation_objects = searched_object
+            let relation_objects_option = searched_object
                 .get(relation_many_search_read_concrete.relation_field_name_option.as_ref().unwrap())
                 .unwrap()
-                .as_array()
-                .unwrap();
+                .as_array();
 
-            let searched_relation_objects = get_expected_value(
-                &relation_many_search_read_concrete.search_inputs_concrete,
-                relation_objects,
-                &relation_many_search_read_concrete.relation_many_search_read_concretes
-            );
-
-            new_searched_object.insert(
-                relation_many_search_read_concrete.relation_field_name_option.as_ref().unwrap().to_string(),
-                searched_relation_objects
-            );
+            match relation_objects_option {
+                Some(relation_objects) => {
+                    let searched_relation_objects = get_expected_value(
+                        &relation_many_search_read_concrete.search_inputs_concrete,
+                        &relation_objects,
+                        &relation_many_search_read_concrete.relation_many_search_read_concretes
+                    );
+        
+                    new_searched_object.insert(
+                        relation_many_search_read_concrete.relation_field_name_option.as_ref().unwrap().to_string(),
+                        searched_relation_objects
+                    );
+                },
+                None => {
+                    new_searched_object.insert(
+                        relation_many_search_read_concrete.relation_field_name_option.as_ref().unwrap().to_string(),
+                        serde_json::json!(null)
+                    );
+                }
+            };
         }
 
         return serde_json::json!(new_searched_object);
@@ -457,6 +466,12 @@ fn object_field_passes_search(
                 },
                 SearchInputConcreteFieldType::RelationOne => {
                     return object_relation_one_passes_search(
+                        object,
+                        search_input_concrete
+                    );
+                },
+                SearchInputConcreteFieldType::RelationMany => {
+                    return object_relation_many_passes_search(
                         object,
                         search_input_concrete
                     );
@@ -871,6 +886,85 @@ fn object_relation_one_passes_search(
                 }
     
                 let object_value_string_possibly_null = object_value
+                    .as_object()
+                    .unwrap()
+                    .get("id")
+                    .unwrap();
+                
+                if object_value_string_possibly_null.is_null() == true {
+                    return search_operation_info.search_value.is_null();
+                }    
+                
+                if search_operation_info.search_value.is_null() == true {
+                    return object_value_string_possibly_null.is_null();
+                }
+    
+                let object_value_string = object_value_string_possibly_null
+                    .as_str()
+                    .unwrap();
+        
+                let search_value_string = search_operation_info.search_value
+                    .as_str()
+                    .unwrap();
+        
+                match &search_operation_info.search_operation[..] {
+                    "contains" => {
+                        return object_value_string.contains(search_value_string);
+                    },
+                    "endsWith" => {
+                        return object_value_string.ends_with(search_value_string);
+                    },
+                    "eq" => {
+                        return object_value_string == search_value_string;
+                    },
+                    "gt" => {
+                        return object_value_string > search_value_string;
+                    },
+                    "gte" => {
+                        return object_value_string >= search_value_string;
+                    },
+                    "lt" => {
+                        return object_value_string < search_value_string;
+                    },
+                    "lte" => {
+                        return object_value_string <= search_value_string;
+                    },
+                    "startsWith" => {
+                        return object_value_string.starts_with(search_value_string);
+                    },
+                    _ => panic!()
+                };
+            });
+    }
+}
+
+fn object_relation_many_passes_search(
+    object: &serde_json::value::Value,
+    search_input_concrete: &SearchInputConcrete
+) -> bool {
+    if search_input_concrete.search_operation_infos.is_none() {
+        return object.get(&search_input_concrete.field_name).unwrap().is_null();
+    }
+    else {
+        return search_input_concrete
+            .search_operation_infos
+            .clone()
+            .unwrap()
+            .iter()
+            .all(|search_operation_info| {
+                let object_value = object
+                    .get(&search_input_concrete.field_name)
+                    .unwrap();
+    
+                if object_value.is_null() == true {
+                    return false;
+                }
+    
+                let object_value_string_possibly_null = object_value
+                    .as_array()
+                    .unwrap()
+                    .get(0)
+                    .unwrap()
                     .as_object()
                     .unwrap()
                     .get("id")
