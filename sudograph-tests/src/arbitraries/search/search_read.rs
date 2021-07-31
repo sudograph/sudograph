@@ -286,7 +286,7 @@ fn object_passes_search(
                 return search_operation_infos.len() == 0;
             },
             None => {
-                return true;
+                return false;
             }
         };
     });
