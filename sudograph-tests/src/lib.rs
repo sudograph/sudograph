@@ -12,6 +12,9 @@ pub mod arbitraries {
                 pub mod check_disconnected_relation;
             }
         }
+        pub mod mutation_delete {
+            pub mod mutation_delete;
+        }
         pub mod input_info_strategies {
             pub mod input_info_strategies;
             pub mod input_info_strategy_blob;

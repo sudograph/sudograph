@@ -153,10 +153,10 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                     println!("connect_arbitrary_mutation_info result_json {:#?}", result_json);
                     println!("connect_arbitrary_mutation_info expected_value {:#?}", connect_arbitrary_mutation_info.expected_value);
 
-                    assert_equal_disconnect(
+                    assert!(assert_equal_disconnect(
                         &result_json,
                         &connect_arbitrary_mutation_info.expected_value
-                    );
+                    ));
 
                     let (
                         mutation,
@@ -174,10 +174,10 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                     println!("disconnect_arbitrary_mutation_info result_json {:#?}", result_json);
                     println!("disconnect_arbitrary_mutation_info expected_value {:#?}", disconnect_arbitrary_mutation_info.expected_value);
 
-                    assert_equal_disconnect(
+                    assert!(assert_equal_disconnect(
                         &result_json,
                         &disconnect_arbitrary_mutation_info.expected_value
-                    );
+                    ));
 
                     if let Some(check_disconnected_relation_arbitrary_query_info) = check_disconnected_relation_arbitrary_query_info_option {
                         let (

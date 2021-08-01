@@ -1,7 +1,8 @@
 use crate::arbitraries::queries::{
     mutation_create::mutation_create_arbitrary,
     mutation_update::mutation_update_arbitrary,
-    mutation_update_disconnect::mutation_update_disconnect::mutation_update_disconnect_arbitrary
+    mutation_update_disconnect::mutation_update_disconnect::mutation_update_disconnect_arbitrary,
+    mutation_delete::mutation_delete::mutation_delete_arbitrary
 };
 use graphql_parser::schema::{
     Document,
@@ -78,6 +79,12 @@ pub trait QueriesArbitrary {
         graphql_ast: &'static Document<String>,
         object_types: &'static Vec<ObjectType<String>>
     ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>>;
+
+    fn mutation_delete_arbitrary(
+        &'static self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>
+    ) -> BoxedStrategy<(ArbitraryMutationInfo, Vec<ArbitraryQueryInfo>)>;
 }
 
 impl QueriesArbitrary for ObjectType<'static, String> {
@@ -115,6 +122,18 @@ impl QueriesArbitrary for ObjectType<'static, String> {
         object_types: &'static Vec<ObjectType<String>>
     ) -> BoxedStrategy<Vec<(ArbitraryMutationInfo, ArbitraryMutationInfo, Option<ArbitraryQueryInfo>)>> {
         return mutation_update_disconnect_arbitrary(
+            graphql_ast,
+            object_types,
+            self
+        );
+    }
+
+    fn mutation_delete_arbitrary(
+        &'static self,
+        graphql_ast: &'static Document<String>,
+        object_types: &'static Vec<ObjectType<String>>
+    ) -> BoxedStrategy<(ArbitraryMutationInfo, Vec<ArbitraryQueryInfo>)> {
+        return mutation_delete_arbitrary(
             graphql_ast,
             object_types,
             self

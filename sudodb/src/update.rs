@@ -437,7 +437,7 @@ fn insert_field_value_opposing_relation_one_all_into_field_value_store(
     return Ok(());
 }
 
-fn insert_field_value_relation_opposing_into_field_value_store(
+pub fn insert_field_value_relation_opposing_into_field_value_store(
     object_type_store: &mut ObjectTypeStore,
     object_type_name: &str,
     field_type_relation_info: &FieldTypeRelationInfo,

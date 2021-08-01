@@ -77,7 +77,7 @@ pub fn get_check_disconnected_relation_arbitrary_query_info(
                 search_value,
                 selection,
                 expected_value
-            });        
+            });
         },
         None => {
             return None;

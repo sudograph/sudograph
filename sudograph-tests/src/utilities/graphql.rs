@@ -345,3 +345,12 @@ pub fn get_object_type_from_field<'a>(
         return object_type.name == object_type_name;
     }).clone();
 }
+
+pub fn get_field_by_field_name<'a>(
+    object_type: &'a ObjectType<'a, String>,
+    field_name: &str
+) -> Option<&'a Field<'a, String>> {
+    return object_type.fields.iter().find(|field| {
+        return field.name == field_name;
+    });
+}
