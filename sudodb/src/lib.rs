@@ -59,15 +59,15 @@ pub type FieldName = String;
     Deserialize
 )]
 pub enum FieldType {
-    Blob,
-    Boolean,
-    Date,
-    Float, // TODO do we need to split this into sizes? What should the default be?
-    Int, // TODO do we need to split this into sizes? What should the default be?
-    JSON,
-    RelationMany(FieldTypeRelationInfo),
-    RelationOne(FieldTypeRelationInfo),
-    String
+    Blob(bool),
+    Boolean(bool),
+    Date(bool),
+    Float(bool), // TODO do we need to split this into sizes? What should the default be?
+    Int(bool), // TODO do we need to split this into sizes? What should the default be?
+    JSON(bool),
+    RelationMany((bool, FieldTypeRelationInfo)),
+    RelationOne((bool, FieldTypeRelationInfo)),
+    String(bool)
 }
 
 #[derive(
@@ -270,9 +270,6 @@ pub fn init_object_type(
     object_type_name: &str,
     field_type_inputs: Vec<FieldTypeInput>
 ) -> Result<(), Box<dyn Error>> {
-    // ic_cdk::println!("{:?}", object_type_name);
-    // ic_cdk::println!("{:?}", field_type_inputs);
-
     let mut field_types_store = BTreeMap::new();
 
     for field_type_input in field_type_inputs {
@@ -294,6 +291,10 @@ pub fn init_object_type(
     return Ok(());
 }
 
+// TODO this function should return a result, and should never panic
+// TODO once we return a Result from this function, I believe sudodb will be ready for transactions
+// TODO we'll just need to panic at the highest level of the graphql mutation resolvers
+// TODO because we want to ensure that each mutation corresponds to at least one transaction
 pub fn convert_field_value_store_to_json_string(
     object_type_store: &ObjectTypeStore,
     field_value_store: &FieldValueStore,

@@ -1,7 +1,8 @@
 use crate::{
     get_graphql_type_name,
     get_opposing_relation_field,
-    is_graphql_type_an_enum
+    is_graphql_type_an_enum,
+    is_graphql_type_nullable
 };
 use graphql_parser::schema::{
     Document,
@@ -81,6 +82,8 @@ fn get_rust_type_for_sudodb_field_type<'a>(
     field: &Field<String>,
     graphql_type: &Type<String>
 ) -> TokenStream {
+    let nullable = is_graphql_type_nullable(graphql_type);
+
     match graphql_type {
         Type::NamedType(named_type) => {
             let rust_type_for_named_type = get_rust_type_for_sudodb_field_type_named_type(
@@ -116,20 +119,20 @@ fn get_rust_type_for_sudodb_field_type<'a>(
                     let opposing_relation_field_name = opposing_relation_field.name;
 
                     return quote! {
-                        FieldType::RelationMany(FieldTypeRelationInfo {
+                        FieldType::RelationMany((#nullable, FieldTypeRelationInfo {
                             object_name: String::from(#object_type_name),
                             opposing_object_name: String::from(#named_type),
                             opposing_field_name: Some(String::from(#opposing_relation_field_name))
-                        })
+                        }))
                     };
                 },
                 None => {
                     return quote! {
-                        FieldType::RelationMany(FieldTypeRelationInfo {
+                        FieldType::RelationMany((#nullable, FieldTypeRelationInfo {
                             object_name: String::from(#object_type_name),
                             opposing_object_name: String::from(#named_type),
                             opposing_field_name: None
-                        })
+                        }))
                     };
                 }
             };
@@ -144,35 +147,37 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
     object_type_name: String,
     named_type: &str
 ) -> TokenStream {
+    let nullable = is_graphql_type_nullable(&field.field_type);
+
     match named_type {
         "Blob" => {
-            return quote! { FieldType::Blob };
+            return quote! { FieldType::Blob(#nullable) };
         },
         "Boolean" => {
-            return quote! { FieldType::Boolean };
+            return quote! { FieldType::Boolean(#nullable) };
         },
         "Date" => {
             // TODO should we create some kind of custom Rust type for Date?
-            return quote! { FieldType::Date };
+            return quote! { FieldType::Date(#nullable) };
         },
         "Float" => {
-            return quote! { FieldType::Float };
+            return quote! { FieldType::Float(#nullable) };
         },
         "ID" => {
-            return quote! { FieldType::String };
+            return quote! { FieldType::String(#nullable) };
         },
         "Int" => {
-            return quote! { FieldType::Int };
+            return quote! { FieldType::Int(#nullable) };
         },
         "JSON" => {
-            return quote! { FieldType::JSON };
+            return quote! { FieldType::JSON(#nullable) };
         },
         "String" => {
-            return quote! { FieldType::String };
+            return quote! { FieldType::String(#nullable) };
         },
         _ => {
             if is_graphql_type_an_enum(graphql_ast, graphql_type) == true {
-                return quote! { FieldType::String };
+                return quote! { FieldType::String(#nullable) };
             }
 
             let opposing_relation_field_option = get_opposing_relation_field(
@@ -185,20 +190,20 @@ fn get_rust_type_for_sudodb_field_type_named_type<'a>(
                     let opposing_relation_field_name = opposing_relation_field.name;
 
                     return quote! {
-                        FieldType::RelationOne(FieldTypeRelationInfo {
+                        FieldType::RelationOne((#nullable, FieldTypeRelationInfo {
                             object_name: String::from(#object_type_name),
                             opposing_object_name: String::from(#named_type),
                             opposing_field_name: Some(String::from(#opposing_relation_field_name))
-                        })
+                        }))
                     };
                 },
                 None => {
                     return quote! {
-                        FieldType::RelationOne(FieldTypeRelationInfo {
+                        FieldType::RelationOne((#nullable, FieldTypeRelationInfo {
                             object_name: String::from(#object_type_name),
                             opposing_object_name: String::from(#named_type),
                             opposing_field_name: None
-                        })
+                        }))
                     };
                 }
             };

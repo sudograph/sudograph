@@ -25,7 +25,8 @@ pub fn get_input_info_strategy_id(field: &'static Field<String>) -> BoxedStrateg
             selection: field.name.to_string(),
             nullable: false,
             input_value,
-            expected_value
+            expected_value,
+            error: false
         });
     }).boxed();
 }

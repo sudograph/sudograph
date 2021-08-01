@@ -9,6 +9,7 @@ use graphql_parser::schema::{
 };
 use proptest::strategy::BoxedStrategy;
 
+// TODO we should really split up the create and update strategies
 #[derive(Clone, Debug, PartialEq)]
 pub struct InputInfo {
     pub field: Option<Field<'static, String>>,
@@ -17,7 +18,8 @@ pub struct InputInfo {
     pub selection: String,
     pub nullable: bool,
     pub input_value: serde_json::Value,
-    pub expected_value: serde_json::Value
+    pub expected_value: serde_json::Value,
+    pub error: bool // TODO really improve the way errors are detected
 }
 
 #[derive(Clone, Debug)]

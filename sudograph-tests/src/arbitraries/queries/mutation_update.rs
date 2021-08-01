@@ -55,7 +55,6 @@ pub fn mutation_update_arbitrary(
         
         return input_value_strategies.prop_shuffle().prop_flat_map(move |input_value_results| {
             let input_values: Vec<InputInfo> = input_value_results.into_iter().map(|input_value_result| {
-                println!("input_value_result {:#?}", input_value_result);
                 return input_value_result.unwrap(); // TODO this is unfortunate but works for now I guess
             }).collect();
 
@@ -82,7 +81,8 @@ pub fn mutation_update_arbitrary(
                         selection: "id".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(id),
-                        expected_value: serde_json::json!(id)
+                        expected_value: serde_json::json!(id),
+                        error: false
                     }].iter().cloned(),
                     non_nullable_input_values.iter().cloned(),
                     nullable_input_values[0..index].iter().cloned()
@@ -115,6 +115,14 @@ fn test_removed_relation_arbitrary_results(
     update_input_values: &Vec<InputInfo>
 ) -> Result<Vec<ArbitraryResult>, Box<dyn std::error::Error>> {
     // TODO we really need a try_filter and a try_map to use the ? syntax here
+
+    let legitimate_error_exists = update_input_values.iter().any(|update_input_value| {
+        return update_input_value.error == true;
+    });
+
+    if legitimate_error_exists == true {
+        return Ok(vec![]);
+    }
 
     return Ok(mutation_create_arbitrary_result
         .input_infos
@@ -155,9 +163,6 @@ fn test_removed_relation_arbitrary_results(
                 &field
             ).unwrap();
 
-            println!("original_update_object {:#?}", original_update_object);
-            println!("&input_value.field_name {}", &input_value.field_name);
-
             // TODO it would probably be nice to wrap this up into a trait method
             return ArbitraryResult {
                 object_type_name: relation_object_type.name.to_string(),
@@ -191,7 +196,8 @@ fn test_removed_relation_arbitrary_results(
                         selection: "".to_string(),
                         nullable: false,
                         input_value: serde_json::json!(null),
-                        expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) }
+                        expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) },
+                        error: false
                     }
                 ]
             };

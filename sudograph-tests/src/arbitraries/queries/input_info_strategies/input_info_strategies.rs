@@ -173,7 +173,8 @@ fn get_input_info_strategy(
                     graphql_ast,
                     object_types,
                     field,
-                    mutation_type
+                    mutation_type,
+                    root_object_option
                 );
             }
 

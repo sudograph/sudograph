@@ -29,6 +29,22 @@ pub fn assert_correct_result(
                 });
             }));
         },
+        (Some(data), Some(errors)) => {
+            let errors = errors.as_array().ok_or("None")?;
+
+            return Ok(errors.iter().all(|result| {
+                return input_infos.iter().any(|input_value| {
+                    // TODO figure out how to get rid of the unwrap here...seems using ? in closures isn't really figured out
+                    let result_message = result.as_object().ok_or("None").unwrap().get("message").unwrap();
+                    let expected_message = &input_value.expected_value;
+
+                    return result_message == expected_message;
+                });
+            }));
+        },
+        (None, Some(errors)) => {
+            return Ok(false);
+        },
         _ => {
             return Ok(false);
         }
