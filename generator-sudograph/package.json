@@ -1,6 +1,6 @@
 {
   "name": "generator-sudograph",
-  "version": "0.3.0",
+  "version": "0.4.3",
   "description": "",
   "files": [
     "generators"
