@@ -1,11 +1,12 @@
-use crate::{
-    arbitraries::queries::{
+use crate::{arbitraries::queries::{
         input_info_strategies::{
             input_info_strategies::create_and_retrieve_object,
             input_info_strategy_nullable::get_input_info_strategy_nullable
         },
         queries::{
+            get_input_info_map,
             InputInfo,
+            InputInfoRelationType,
             MutationType,
             QueriesArbitrary
         }
@@ -14,6 +15,7 @@ use crate::{
         get_object_type_from_field,
         get_opposing_relation_field,
         is_graphql_type_a_relation_many,
+        is_graphql_type_a_relation_one,
         is_graphql_type_nullable
     }
 };
@@ -33,24 +35,29 @@ pub fn get_input_info_strategy_relation_many(
     object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>,
     original_update_object_option: Option<serde_json::value::Map<String, serde_json::Value>>,
-    mutation_type: MutationType
+    mutation_type: MutationType,
+    relation_level: u32
 ) -> Result<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
     let nullable = is_graphql_type_nullable(&field.field_type);
 
     let relation_object_type = get_object_type_from_field(
         object_types,
         field
-    ).ok_or("None")?;
+    ).ok_or("get_input_info_strategy_relation_many: None 0")?;
 
     let relation_mutation_create_arbitrary = relation_object_type.mutation_create_arbitrary(
         graphql_ast,
         object_types,
         relation_object_type,
-        true
+        relation_level - 1
     )?;
 
     let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create_arbitrary_result| {
-        let relation_object = create_and_retrieve_object(relation_mutation_create_arbitrary_result)?;
+        let relation_object = create_and_retrieve_object(
+            graphql_ast,
+            relation_mutation_create_arbitrary_result.clone(),
+            relation_level - 1
+        )?;
         let relation_object_id = get_relation_object_id(&relation_object)?;
 
         let input_type = get_input_type(mutation_type);
@@ -61,12 +68,19 @@ pub fn get_input_info_strategy_relation_many(
             field
         );
 
+        let opposing_relation_object_ids = get_opposing_relation_object_ids(
+            graphql_ast,
+            relation_object.clone(),
+            &opposing_relation_field_option
+        );
+
         let selection = get_selection(
             field,
             &opposing_relation_field_option
         );
 
         // TODO inside here, we need to add the previous root object value
+        // TODO I think the expected_value is not used on relation many or relation one actually, an Option would be nice
         let expected_value = get_expected_value(
             graphql_ast,
             field,
@@ -83,7 +97,18 @@ pub fn get_input_info_strategy_relation_many(
             nullable,
             input_value,
             expected_value,
-            error: false
+            error: false,
+            input_infos: relation_mutation_create_arbitrary_result.input_infos.clone(),
+            relation_type: if nullable == true { InputInfoRelationType::ManyNullable } else { InputInfoRelationType::ManyNonNullable },
+            object_id: Some(relation_object.get("id").unwrap().clone()),
+            input_info_map: Some(get_input_info_map(
+                graphql_ast,
+                relation_object.get("id").unwrap(),
+                opposing_relation_object_ids,
+                Some(field),
+                &relation_mutation_create_arbitrary_result.input_infos,
+                if nullable == true { InputInfoRelationType::ManyNullable } else { InputInfoRelationType::ManyNonNullable }
+            ))
         });
 
     }).boxed();
@@ -436,8 +461,6 @@ fn get_expected_value_for_opposing_relation_one_with_original_update_object_with
     opposing_relation_field_name: &str,
     relation_object_id: &str
 ) -> Result<serde_json::value::Value, Box<dyn std::error::Error>> {
-    println!("original_update_object {:#?}", original_update_object);
-    println!("relation_field_name {}", relation_field_name);
     let original_relation_object_id = original_update_object
         .get(relation_field_name)
         .ok_or("get_expected_value_for_opposing_relation_one_with_original_update_object_with_field_value::None 0")?
@@ -513,7 +536,7 @@ fn get_expected_value_for_no_opposing_relation_with_original_update_object(
     if
         original_update_object.get(relation_field_name).is_none() ||
         // TODO is this second check doing anything?
-        original_update_object.get(relation_field_name).ok_or("None")?.as_array().is_none()
+        original_update_object.get(relation_field_name).ok_or("get_expected_value_for_no_opposing_relation_with_original_update_object: None 0")?.as_array().is_none()
     {
         return Ok(get_expected_value_for_no_opposing_relation_with_original_update_object_without_field_value(relation_object_id));
     }
@@ -558,4 +581,40 @@ fn get_expected_value_for_no_opposing_relation_without_original_update_object(re
     return Ok(serde_json::json!([{
         "id": relation_object_id
     }]));
+}
+
+// TODO I would think this would break on a many to many relationship...maybe not?
+fn get_opposing_relation_object_ids(
+    graphql_ast: &'static Document<String>,
+    relation_object: serde_json::Map<String, serde_json::value::Value>,
+    opposing_relation_field_option: &Option<Field<String>>
+) -> Vec<serde_json::value::Value> {
+    return vec![relation_object.get("id").unwrap().clone()];
+
+    // match opposing_relation_field_option {
+    //     Some(opposing_relation_field) => {
+    //         if is_graphql_type_a_relation_many(
+    //             graphql_ast,
+    //             &opposing_relation_field.field_type
+    //         ) == true {
+    //             return relation_object.get(&opposing_relation_field.name).unwrap().as_array().unwrap().iter().map(|opposing_relation_object| {
+    //                 return opposing_relation_object.get("id").unwrap().clone();
+    //             }).collect();
+    //         }
+
+    //         if is_graphql_type_a_relation_one(
+    //             graphql_ast,
+    //             &opposing_relation_field.field_type
+    //         ) == true {
+    //             return vec![
+    //                 relation_object.get(&opposing_relation_field.name).unwrap().get("id").unwrap().clone()
+    //             ];
+    //         }
+
+    //         return vec![]; // TODO perhaps this should be an error
+    //     },
+    //     None => {
+    //         return vec![];
+    //     }
+    // };
 }

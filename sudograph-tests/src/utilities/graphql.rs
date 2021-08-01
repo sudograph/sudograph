@@ -319,7 +319,7 @@ pub fn get_opposing_relation_field<'a>(
     });
 }
 
-fn get_directive_argument_value_from_field(
+pub fn get_directive_argument_value_from_field(
     field: &Field<String>,
     directive_name: &str,
     argument_name: &str
@@ -352,5 +352,65 @@ pub fn get_field_by_field_name<'a>(
 ) -> Option<&'a Field<'a, String>> {
     return object_type.fields.iter().find(|field| {
         return field.name == field_name;
+    });
+}
+
+pub fn get_opposing_relation_fields(
+    graphql_ast: &'static Document<String>,
+    object_type: &'static ObjectType<String>
+) -> Vec<Field<'static, String>> {
+    return object_type
+        .fields
+        .iter()
+        .filter(|field| {
+            return get_opposing_relation_field_static(
+                graphql_ast,
+                field
+            ).is_some();
+        })
+        .map(|field| {
+            return get_opposing_relation_field_static(
+                graphql_ast,
+                field
+            ).unwrap();
+        })
+        .collect();
+}
+
+pub fn get_opposing_relation_field_static(
+    graphql_ast: &'static Document<'static, String>,
+    relation_field: &Field<String>
+) -> Option<Field<'static, String>> {
+    let relation_name = get_directive_argument_value_from_field(
+        relation_field,
+        "relation",
+        "name"
+    )?;
+
+    let opposing_object_type_name = get_graphql_type_name(&relation_field.field_type);
+    
+    let object_types = get_object_types(graphql_ast);
+
+    return object_types.iter().filter(|object_type| {
+        return object_type.name == opposing_object_type_name; // TODO a find might make more sense than a filter
+    }).fold(None, |_, object_type| {
+        return object_type.fields.iter().fold(None, |result, field| {
+            if result != None {
+                return result;
+            }
+
+            let opposing_relation_name = get_directive_argument_value_from_field(
+                field,
+                "relation",
+                "name"
+            )?;
+
+            if opposing_relation_name == relation_name {
+                return Some(field.clone());
+            }
+            else {
+                return result;
+            }
+        });
     });
 }

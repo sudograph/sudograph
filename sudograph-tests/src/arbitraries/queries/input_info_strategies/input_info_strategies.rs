@@ -1,8 +1,8 @@
-use crate::{
-    arbitraries::queries::{
+use crate::{arbitraries::queries::{
         queries::{
             ArbitraryResult,
             InputInfo,
+            InputInfoRelationType,
             MutationType
         },
         input_info_strategies::{
@@ -21,11 +21,13 @@ use crate::{
     },
     utilities::graphql::{
         get_graphql_type_name,
+        get_opposing_relation_field,
         graphql_mutation,
         is_graphql_type_a_relation_many,
         is_graphql_type_a_relation_one,
         is_graphql_type_an_enum,
-        is_graphql_type_nullable
+        is_graphql_type_nullable,
+        get_opposing_relation_fields
     }
 };
 use graphql_parser::schema::{
@@ -40,33 +42,52 @@ pub fn get_input_info_strategies(
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>,
     mutation_type: MutationType,
-    relation_test: bool,
+    relation_level: u32,
     root_object_option: Option<serde_json::value::Map<String, serde_json::Value>>
 ) -> Result<Vec<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>>, Box<dyn std::error::Error>> {
     return object_type
         .fields
         .iter()
         .filter(|field| {
-            let field_is_nullable = is_graphql_type_nullable(&field.field_type);
             let field_is_relation_many = is_graphql_type_a_relation_many(
                 graphql_ast,
                 &field.field_type
             );
+            let field_is_relation_one = is_graphql_type_a_relation_one(
+                graphql_ast,
+                &field.field_type
+            );
+            let field_is_nullable = is_graphql_type_nullable(&field.field_type);
 
-            if relation_test == true {
-                return !field_is_nullable && !field_is_relation_many;
+            if relation_level == 0 {
+                if
+                    field_is_relation_one == true &&
+                    field_is_nullable == false
+                {
+                    return true;
+                }
+                else {
+                    return field_is_relation_many == false && field_is_relation_one == false;
+                }
             }
             else {
                 return true;
             }
         })
         .map(|field| {
+            let opposing_relation_fields = get_opposing_relation_fields(
+                graphql_ast,
+                object_type
+            );
+
             return get_input_info_strategy(
                 graphql_ast,
                 object_types,
                 field,
                 mutation_type.clone(),
-                root_object_option.clone()
+                root_object_option.clone(),
+                relation_level,
+                opposing_relation_fields
             ); // TODO a try_map would allow us to get rid of this
         })
         .try_fold(vec![], |result, strategy_result| {
@@ -89,7 +110,9 @@ fn get_input_info_strategy(
     object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>,
     mutation_type: MutationType,
-    root_object_option: Option<serde_json::value::Map<String, serde_json::Value>>
+    root_object_option: Option<serde_json::value::Map<String, serde_json::Value>>,
+    relation_level: u32,
+    opposing_relation_fields: Vec<Field<'static, String>>
 ) -> Result<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
     let type_name = get_graphql_type_name(&field.field_type);
 
@@ -161,7 +184,8 @@ fn get_input_info_strategy(
                     object_types,
                     field,
                     root_object_option,
-                    mutation_type
+                    mutation_type,
+                    relation_level
                 );
             }
 
@@ -174,7 +198,9 @@ fn get_input_info_strategy(
                     object_types,
                     field,
                     mutation_type,
-                    root_object_option
+                    root_object_option,
+                    relation_level,
+                    opposing_relation_fields
                 );
             }
 
@@ -183,7 +209,11 @@ fn get_input_info_strategy(
     };
 }
 
-pub fn create_and_retrieve_object(mutation_create: ArbitraryResult) -> Result<serde_json::value::Map<String, serde_json::Value>, Box<dyn std::error::Error>> {
+pub fn create_and_retrieve_object(
+    graphql_ast: &'static Document<String>,
+    mutation_create: ArbitraryResult,
+    level: u32
+) -> Result<serde_json::value::Map<String, serde_json::Value>, Box<dyn std::error::Error>> {
     let future = async {
         return graphql_mutation(
             &mutation_create.query,
@@ -195,22 +225,22 @@ pub fn create_and_retrieve_object(mutation_create: ArbitraryResult) -> Result<se
 
     let object = result_json
         .as_object()
-        .ok_or("None")?
+        .ok_or("create_and_retrieve_object: None 0")?
         .get("data")
-        .ok_or("None")?
+        .ok_or("create_and_retrieve_object: None 1")?
         .get(
             &format!(
                 "create{object_type_name}",
                 object_type_name = mutation_create.object_type_name
             )
         )
-        .ok_or("None")?
+        .ok_or("create_and_retrieve_object: None 2")?
         .as_array()
-        .ok_or("None")?
+        .ok_or("create_and_retrieve_object: None 3")?
         .get(0)
-        .ok_or("None")?
+        .ok_or("create_and_retrieve_object: None 4")?
         .as_object()
-        .ok_or("None")?;
-
+        .ok_or("create_and_retrieve_object: None 5")?;
+    
     return Ok(object.clone());
 }

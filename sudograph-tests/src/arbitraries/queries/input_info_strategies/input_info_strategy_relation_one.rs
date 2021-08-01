@@ -4,7 +4,11 @@ use crate::{arbitraries::queries::{
             input_info_strategy_nullable::get_input_info_strategy_nullable
         },
         queries::{
+            get_input_info_map,
             InputInfo,
+            InputInfoMap,
+            InputInfoMapValue,
+            InputInfoRelationType,
             MutationType,
             QueriesArbitrary
         }
@@ -24,26 +28,32 @@ pub fn get_input_info_strategy_relation_one(
     object_types: &'static Vec<ObjectType<String>>,
     field: &'static Field<String>,
     mutation_type: MutationType,
-    original_update_object_option: Option<serde_json::value::Map<String, serde_json::Value>>
+    original_update_object_option: Option<serde_json::value::Map<String, serde_json::Value>>,
+    relation_level: u32,
+    opposing_relation_fields: Vec<Field<'static, String>>
 ) -> Result<BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>>, Box<dyn std::error::Error>> {
     let nullable = is_graphql_type_nullable(&field.field_type);
 
     let relation_object_type = get_object_type_from_field(
         object_types,
         field
-    ).ok_or("None")?;
+    ).ok_or("get_input_info_strategy_relation_one: None 0")?;
 
     let relation_mutation_create_arbitrary = relation_object_type.mutation_create_arbitrary(
         graphql_ast,
         object_types,
         relation_object_type,
-        true
+        if relation_level == 0 { 0 } else { relation_level - 1}
     )?;
 
     let original_update_object_option_clone = original_update_object_option.clone();
 
     let strategy = relation_mutation_create_arbitrary.prop_map(move |relation_mutation_create_arbitrary_result| {
-        let relation_object = create_and_retrieve_object(relation_mutation_create_arbitrary_result)?;
+        let relation_object = create_and_retrieve_object(
+            graphql_ast,
+            relation_mutation_create_arbitrary_result.clone(),
+            if relation_level == 0 { 0 } else { relation_level - 1}
+        )?;
         let relation_object_id = get_relation_object_id(&relation_object)?;
 
         let input_type = get_input_type(
@@ -79,7 +89,18 @@ pub fn get_input_info_strategy_relation_one(
                 nullable,
                 input_value,
                 expected_value,
-                error
+                error,
+                input_infos: relation_mutation_create_arbitrary_result.input_infos.clone(),
+                relation_type: if nullable == true { InputInfoRelationType::OneNullable } else { InputInfoRelationType::OneNonNullable },
+                object_id: Some(relation_object.get("id").unwrap().clone()),
+                input_info_map: Some(get_input_info_map(
+                    graphql_ast,
+                    relation_object.get("id").unwrap(),
+                    vec![],
+                    Some(field),
+                    &relation_mutation_create_arbitrary_result.input_infos,
+                    if nullable == true { InputInfoRelationType::OneNullable } else { InputInfoRelationType::OneNonNullable }
+                ))
             }
         );
     }).boxed();
@@ -149,7 +170,7 @@ fn get_relation_object_id(relation_object: &serde_json::value::Map<String, serde
     return Ok(
         relation_object
             .get("id")
-            .ok_or("None")?
+            .ok_or("get_relation_object_id: None 0")?
             .to_string()
             .replace("\\", "")
             .replace("\"", "")

@@ -39,7 +39,7 @@ pub fn get_arbitrary_result_tuples(
         graphql_ast,
         object_types,
         object_type,
-        true
+        1
     ).unwrap();
 
     let relation_object_type = get_object_type_from_field(
@@ -51,15 +51,23 @@ pub fn get_arbitrary_result_tuples(
         graphql_ast,
         object_types,
         relation_object_type,
-        true
+        1
     ).unwrap();
 
     return (
         mutation_create_arbitrary,
         relation_mutation_create_arbitrary
     ).prop_map(move |(arbitrary_result, relation_arbitrary_result)| {
-        let object = create_and_retrieve_object(arbitrary_result).unwrap();
-        let relation_object = create_and_retrieve_object(relation_arbitrary_result).unwrap();
+        let object = create_and_retrieve_object(
+            graphql_ast,
+            arbitrary_result,
+            1
+        ).unwrap();
+        let relation_object = create_and_retrieve_object(
+            graphql_ast,
+            relation_arbitrary_result,
+            1
+        ).unwrap();
         
         let opposing_field_option = get_opposing_relation_field(
             graphql_ast,

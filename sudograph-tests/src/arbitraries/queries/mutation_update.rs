@@ -9,7 +9,8 @@ use crate::{
             generate_arbitrary_result,
             InputInfo,
             MutationType,
-            QueriesArbitrary
+            QueriesArbitrary,
+            InputInfoRelationType
         }
     },
     utilities::graphql::{
@@ -38,18 +39,22 @@ pub fn mutation_update_arbitrary(
         graphql_ast,
         object_types,
         object_type,
-        false
+        1
     )?;
 
     return Ok(mutation_create_arbitrary.prop_flat_map(move |mutation_create| {
-        let original_update_object = create_and_retrieve_object(mutation_create.clone()).unwrap();
+        let original_update_object = create_and_retrieve_object(
+            graphql_ast,
+            mutation_create.clone(),
+            1
+        ).unwrap();
 
         let input_info_strategies = get_input_info_strategies(
             graphql_ast,
             object_types,
             object_type,
             MutationType::Update,
-            false,
+            1,
             Some(original_update_object.clone())
         ).unwrap();
         
@@ -82,7 +87,11 @@ pub fn mutation_update_arbitrary(
                         nullable: false,
                         input_value: serde_json::json!(id),
                         expected_value: serde_json::json!(id),
-                        error: false
+                        error: false,
+                        input_infos: vec![],
+                        relation_type: InputInfoRelationType::None,
+                        object_id: None,
+                        input_info_map: None
                     }].iter().cloned(),
                     non_nullable_input_infos.iter().cloned(),
                     nullable_input_infos[0..index].iter().cloned()
@@ -197,7 +206,11 @@ fn test_removed_relation_arbitrary_results(
                         nullable: false,
                         input_value: serde_json::json!(null),
                         expected_value: if is_graphql_type_a_relation_many(graphql_ast, &opposing_relation_field.field_type) { serde_json::json!([]) } else { serde_json::json!(null) },
-                        error: false
+                        error: false,
+                        input_infos: vec![],
+                        relation_type: InputInfoRelationType::None,
+                        object_id: None,
+                        input_info_map: None
                     }
                 ]
             };
