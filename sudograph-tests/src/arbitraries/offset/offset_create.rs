@@ -83,7 +83,7 @@ pub fn get_offset_create_arbitrary(
                 offset_info_map.insert(
                     relation_many_offset_create_concrete.relation_field_name_option.unwrap().clone(),
                     OffsetInfo {
-                        max: relation_many_offset_create_concrete.max, // TODO I think we might should do this for limit too
+                        max: relation_many_offset_create_concrete.max,
                         offset_info_map: relation_many_offset_create_concrete.offset_info_map
                     }
                 );
@@ -209,7 +209,7 @@ fn get_objects(
 ) -> Vec<serde_json::value::Value> {
     let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
         if let Some(mutation) = mutation_option {
-            let result_json = graphql_mutation(
+            graphql_mutation(
                 &mutation,
                 "{}"
             ).await.unwrap();

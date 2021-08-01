@@ -3,7 +3,64 @@
 # TODO this schema was designed for order
 type User {
     id: ID!
-    # TODO add other scalar types in here
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
+
+    hobbies: [Hobby!]!
+}
+
+type Hobby {
+    id: ID!
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
+
+    users: [User!]!
+    lobbies: [Lobby!]!
+}
+
+type Lobby {
+    id: ID!
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
 }
 # TODO this schema was designed for order
 

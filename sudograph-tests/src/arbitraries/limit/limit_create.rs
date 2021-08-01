@@ -209,7 +209,7 @@ fn get_objects(
 ) -> Vec<serde_json::value::Value> {
     let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
         if let Some(mutation) = mutation_option {
-            let result_json = graphql_mutation(
+            graphql_mutation(
                 &mutation,
                 "{}"
             ).await.unwrap();

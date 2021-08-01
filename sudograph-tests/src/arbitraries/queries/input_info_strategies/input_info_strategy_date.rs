@@ -14,7 +14,7 @@ use crate::{
 };
 use graphql_parser::schema::Field;
 use proptest::{
-    prelude::Just,
+    prelude::any,
     strategy::{
         BoxedStrategy,
         Strategy
@@ -26,7 +26,9 @@ pub fn get_input_info_strategy_date(
     mutation_type: MutationType
 ) -> BoxedStrategy<Result<InputInfo, Box<dyn std::error::Error>>> {
     let nullable = is_graphql_type_nullable(&field.field_type);
-    let strategy = Just(chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)).prop_map(move |datetime| {
+    let strategy = any::<i32>().prop_map(move |milliseconds| {
+        let datetime = (chrono::Utc::now() + chrono::Duration::milliseconds(milliseconds as i64)).to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+
         let input_type = get_graphql_type_name(&field.field_type);
         
         let input_value = serde_json::json!(datetime);
