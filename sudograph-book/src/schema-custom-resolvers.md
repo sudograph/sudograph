@@ -1,5 +1,7 @@
 # Custom resolvers
 
+NOTICE: Custom resolvers are temporarily disabled. See [this issue](https://github.com/sudograph/sudograph/issues/123). Until certain `candid` and `authorization` issues are worked out, you'll want to create custom functions in your Rust or Motoko canisters that provide their own authorization and call into your `graphql canister`. See [here](./local-deployment.md) and [here](./authorization.md) for some information and examples.
+
 DISCLAIMER: Custom resolvers have only been minimally tested. Information presented here may not be entirely accurate. If you find issues please get in contact with [@lastmjs](https://twitter.com/lastmjs) or open issues on the [repository](https://github.com/sudograph/sudograph).
 
 Though Sudograph generates many powerful CRUD operations for you, it will not be able to cover every conceivable requirement of your applications. Custom resolvers provide a way for you to create your own functionality that is accessible through the same GraphQL API as Sudograph's generated functionality. There are two main locations a resolver can be written, within the `graphql canister` or in a separate canister.

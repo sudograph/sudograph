@@ -1,5 +1,7 @@
 # Sudograph Client
 
+NOTICE: Considering that [custom resolvers](./schema-custom-resolvers.md) are temporarily disabled, and that it is not yet possible to provide per-field authorization from your schema, the Sudograph Client probably isn't very useful right now. You will most likely not want to execute GraphQL queries from the frontend until certain `candid` and `authorization` issues are worked out. Instead you'll want to create custom functions in your Rust or Motoko canisters that provide their own authorization and call into your `graphql canister`. See [here](./local-deployment.md) and [here](./authorization.md) for some information and examples.
+
 The Sudograph Client is a frontend JavaScript/TypeScript library that provides a convenient API for interacting with your deployed `graphql canister`. It is an alternative to using [agent-js](./agent-js.md) directly, and currently works only for the frontend (Node.js support will come later).
 
 ## Installation
