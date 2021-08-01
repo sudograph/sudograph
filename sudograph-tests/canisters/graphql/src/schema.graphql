@@ -18,43 +18,43 @@
 #     user_2: User @relation(name: "User:job_2::Job:user_2")
 # }
 
-type User {
-    id: ID!
-    username: String!
-    username_nullable: String
-    age: Int!
-    age_nullable: Int
-    color: Color!
-    color_nullable: Color
-    height: Float!
-    height_nullable: Float
-    citizen: Boolean!
-    citizen_nullable: Boolean
-    birthdate: Date!
-    birthdate_nullable: Date
+# type User {
+    # id: ID!
+    # username: String!
+    # username_nullable: String
+    # age: Int!
+    # age_nullable: Int
+    # color: Color!
+    # color_nullable: Color
+    # height: Float!
+    # height_nullable: Float
+    # citizen: Boolean!
+    # citizen_nullable: Boolean
+    # birthdate: Date!
+    # birthdate_nullable: Date
     # bytes: Blob! # TODO blobs do not work without that special function
     # bytes_nullable: Blob # TODO blobs do not work without that special function
     # meta: JSON!
     # meta_nullable: JSON
 
-    identity: Identity!
-    identity_nullable: Identity
-    votes: [Vote!]!
-    votes_nullable: [Vote!]
+    # identity: Identity!
+    # identity_nullable: Identity
+    # votes: [Vote!]!
+    # votes_nullable: [Vote!]
 
     # TODO just testing different combinations for the read tests, make sure to test identity alone again
-    first_horse: Horse! @relation(name: "User:first_horse::Horse:first_rider")
-    second_horse: Horse @relation(name: "User:second_horse::Horse:second_rider")
-    ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
-    ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
-    bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
-    good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+    # first_horse: Horse! @relation(name: "User:first_horse::Horse:first_rider")
+    # second_horse: Horse @relation(name: "User:second_horse::Horse:second_rider")
+    # ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
+    # ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
+    # bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    # good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
 
     # TODO there are a few more many-to-many combinations to try, non-nullable to nullable and nullable to non-nullable
 
-    best_friend: User
-    best_friends: [User!]!
-    bestest_friends: [User!]
+    # best_friend: User
+    # best_friends: [User!]!
+    # bestest_friends: [User!]
 
     # these are for disconnect tests
     # plant_0: Plant
@@ -68,21 +68,21 @@ type User {
     # flowers_2: [Flower!]! @relation(name: "User:flowers_2::Flower:user_2")
     # flowers_3: [Flower!]! @relation(name: "User:flowers_3::Flower:user_3")
     # flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
-}
+# }
 
 type Duck {
     id: ID!
-    hunter: User! @relation(name: "User:ducks::Duck:hunter")
-    foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
+#     hunter: User! @relation(name: "User:ducks::Duck:hunter")
+#     foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
 }
 
 # TODO add to the tests, if you set one side of a relation to null, the other side should be checked to see
 # TODO that the appropriate thing happened
-type Horse {
-    id: ID!
-    first_rider: User @relation(name: "User:first_horse::Horse:first_rider")
-    second_rider: User @relation(name: "User:second_horse::Horse:second_rider")
-}
+# type Horse {
+#     id: ID!
+#     first_rider: User @relation(name: "User:first_horse::Horse:first_rider")
+#     second_rider: User @relation(name: "User:second_horse::Horse:second_rider")
+# }
 
 # type Flower {
 #     id: ID!
@@ -100,24 +100,24 @@ type Horse {
 #     user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
 # }
 
-type Identity {
-    id: ID!
-}
+# type Identity {
+#     id: ID!
+# }
 
-type Vote {
-    id: ID!
-}
+# type Vote {
+#     id: ID!
+# }
 
-type Bacterium {
-    id: ID!
-    hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
-    good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
-}
+# type Bacterium {
+#     id: ID!
+#     hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
+#     good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+# }
 
-enum Color {
-    RED
-    WHITE
-    BLUE
-    GREEN
-    YELLOW
-}
+# enum Color {
+#     RED
+#     WHITE
+#     BLUE
+#     GREEN
+#     YELLOW
+# }
