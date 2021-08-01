@@ -7,9 +7,9 @@ use proptest::test_runner::{
 };
 use std::fs;
 use sudograph_tests::{
-    arbitraries::limit::{
-        limit_create::get_limit_create_arbitrary,
-        limit_read::get_limit_read_arbitrary
+    arbitraries::offset::{
+        offset_create::get_offset_create_arbitrary,
+        offset_read::get_offset_read_arbitrary
     },
     utilities::graphql::{
         get_object_types,
@@ -19,7 +19,7 @@ use sudograph_tests::{
 };
 
 #[test]
-fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
+fn test_offset() -> Result<(), Box<dyn std::error::Error>> {
     let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql")?.into_boxed_str());
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
@@ -42,7 +42,7 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
             .. Config::default()
         });
 
-        let limit_create_arbitrary = get_limit_create_arbitrary(
+        let offset_create_arbitrary = get_offset_create_arbitrary(
             graphql_ast,
             object_types,
             object_type,
@@ -50,14 +50,14 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
             2
         );
 
-        runner.run(&limit_create_arbitrary, |limit_create_concrete| {
-            let limit_read_arbitrary = get_limit_read_arbitrary(
+        runner.run(&offset_create_arbitrary, |offset_create_concrete| {
+            let offset_read_arbitrary = get_offset_read_arbitrary(
                 true,
                 Some(object_type.name.clone()),
                 None,
-                limit_create_concrete.objects,
-                limit_create_concrete.max as usize,
-                limit_create_concrete.limit_info_map
+                offset_create_concrete.objects,
+                offset_create_concrete.max as usize,
+                offset_create_concrete.offset_info_map
             );
 
             let mut runner = TestRunner::new(Config {
@@ -66,9 +66,9 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
                 .. Config::default()
             });
 
-            runner.run(&limit_read_arbitrary, |limit_read_concrete| {
-                println!("limit_read_concrete.selection\n");
-                println!("{:#?}", limit_read_concrete.selection);
+            runner.run(&offset_read_arbitrary, |offset_read_concrete| {
+                println!("offset_read_concrete.selection\n");
+                println!("{:#?}", offset_read_concrete.selection);
 
                 let result_json = tokio::runtime::Runtime::new()?.block_on(async {
                     return graphql_query(
@@ -76,7 +76,7 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
                             "query {{
                                 {selection}
                             }}",
-                            selection = limit_read_concrete.selection
+                            selection = offset_read_concrete.selection
                         ),
                         "{}"
                     ).await;
@@ -89,7 +89,7 @@ fn test_limit() -> Result<(), Box<dyn std::error::Error>> {
 
                 let expected_value = serde_json::json!({
                     "data": {
-                        query_name: limit_read_concrete.expected_value
+                        query_name: offset_read_concrete.expected_value
                     }
                 });
 

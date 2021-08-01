@@ -14,34 +14,34 @@ use proptest::strategy::{
 };
 
 #[derive(Clone, Debug)]
-pub struct LimitInfo {
+pub struct OffsetInfo {
     pub max: i32,
-    pub limit_info_map: LimitInfoMap
+    pub offset_info_map: OffsetInfoMap
 }
 
-pub type LimitInfoMap = std::collections::BTreeMap<String, LimitInfo>;
+pub type OffsetInfoMap = std::collections::BTreeMap<String, OffsetInfo>;
 
 #[derive(Clone, Debug)]
-pub struct LimitCreateConcrete {
+pub struct OffsetCreateConcrete {
     pub selection: String,
     pub objects: Vec<serde_json::value::Value>,
     pub relation_field_name_option: Option<String>,
-    pub limit_info_map: LimitInfoMap,
+    pub offset_info_map: OffsetInfoMap,
     pub max: i32
 }
 
 // TODO consider whether this should be a trait method
-pub fn get_limit_create_arbitrary(
+pub fn get_offset_create_arbitrary(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>,
     relation_field_name_option: Option<String>,
     level: i32
-) -> BoxedStrategy<LimitCreateConcrete> {
+) -> BoxedStrategy<OffsetCreateConcrete> {
     let object_type_name = &object_type.name;
 
     return (0..20).prop_flat_map(move |max| {
-        let relation_many_limit_create_arbitraries = if level == 0 { vec![] } else { get_relation_many_limit_create_arbitraries(
+        let relation_many_offset_create_arbitraries = if level == 0 { vec![] } else { get_relation_many_offset_create_arbitraries(
             graphql_ast,
             object_types,
             object_type,
@@ -50,11 +50,11 @@ pub fn get_limit_create_arbitrary(
 
         let relation_field_name_option = relation_field_name_option.clone();
 
-        return relation_many_limit_create_arbitraries.prop_map(move |relation_many_limit_create_concretes| {
+        return relation_many_offset_create_arbitraries.prop_map(move |relation_many_offset_create_concretes| {
             let mutation_option = get_mutation_option(
                 object_type_name,
                 max,
-                &relation_many_limit_create_concretes
+                &relation_many_offset_create_concretes
             );
 
             let query_name = format!(
@@ -68,7 +68,7 @@ pub fn get_limit_create_arbitrary(
             ) = get_selection(
                 &query_name,
                 relation_field_name_option.clone(),
-                &relation_many_limit_create_concretes
+                &relation_many_offset_create_concretes
             );
 
             let objects = get_objects(
@@ -77,23 +77,23 @@ pub fn get_limit_create_arbitrary(
                 &query
             );
 
-            let mut limit_info_map = std::collections::BTreeMap::new();
+            let mut offset_info_map = std::collections::BTreeMap::new();
 
-            for relation_many_limit_create_concrete in relation_many_limit_create_concretes {
-                limit_info_map.insert(
-                    relation_many_limit_create_concrete.relation_field_name_option.unwrap().clone(),
-                    LimitInfo {
-                        max: relation_many_limit_create_concrete.max, // TODO test this
-                        limit_info_map: relation_many_limit_create_concrete.limit_info_map
+            for relation_many_offset_create_concrete in relation_many_offset_create_concretes {
+                offset_info_map.insert(
+                    relation_many_offset_create_concrete.relation_field_name_option.unwrap().clone(),
+                    OffsetInfo {
+                        max: relation_many_offset_create_concrete.max, // TODO I think we might should do this for limit too
+                        offset_info_map: relation_many_offset_create_concrete.offset_info_map
                     }
                 );
             }
 
-            return LimitCreateConcrete {
+            return OffsetCreateConcrete {
                 selection,
-                objects,
+                objects: objects.clone(),
                 relation_field_name_option: relation_field_name_option.clone(),
-                limit_info_map,
+                offset_info_map,
                 max
             };
         });
@@ -103,7 +103,7 @@ pub fn get_limit_create_arbitrary(
 fn get_mutation_option(
     object_type_name: &str,
     max: i32,
-    relation_many_limit_create_concretes: &Vec<LimitCreateConcrete>
+    relation_many_offset_create_concretes: &Vec<OffsetCreateConcrete>
 ) -> Option<String> {
     if max == 0 {
         return None;
@@ -124,15 +124,15 @@ fn get_mutation_option(
                         "create{object_type_name}{index}: create{object_type_name}{mutation_input} {{ id }}",
                         object_type_name = object_type_name,
                         index = index,
-                        mutation_input = get_mutation_input(relation_many_limit_create_concretes)
+                        mutation_input = get_mutation_input(relation_many_offset_create_concretes)
                     );
                 }).collect::<Vec<String>>().join("\n")
         )
     );
 }
 
-fn get_mutation_input(relation_many_limit_create_concretes: &Vec<LimitCreateConcrete>) -> String {
-    if relation_many_limit_create_concretes.len() == 0 {
+fn get_mutation_input(relation_many_offset_create_concretes: &Vec<OffsetCreateConcrete>) -> String {
+    if relation_many_offset_create_concretes.len() == 0 {
         return "".to_string();
     }
     else {
@@ -140,13 +140,13 @@ fn get_mutation_input(relation_many_limit_create_concretes: &Vec<LimitCreateConc
             "(input: {{
                 {connections}
             }})",
-            connections = relation_many_limit_create_concretes.iter().map(|relation_many_limit_create_concrete| {
+            connections = relation_many_offset_create_concretes.iter().map(|relation_many_offset_create_concrete| {
                 return format!(
                     "{relation_field_name}: {{
                         connect: [{ids}]
                     }}",
-                    relation_field_name = relation_many_limit_create_concrete.relation_field_name_option.as_ref().unwrap(),
-                    ids = get_object_ids(&relation_many_limit_create_concrete.objects).join(",")
+                    relation_field_name = relation_many_offset_create_concrete.relation_field_name_option.as_ref().unwrap(),
+                    ids = get_object_ids(&relation_many_offset_create_concrete.objects).join(",")
                 );
             }).collect::<Vec<String>>().join("")
         );
@@ -162,12 +162,12 @@ fn get_object_ids(objects: &Vec<serde_json::value::Value>) -> Vec<String> {
 fn get_selection(
     query_name: &str,
     relation_field_name_option: Option<String>,
-    relation_many_limit_create_concretes: &Vec<LimitCreateConcrete>
+    relation_many_offset_create_concretes: &Vec<OffsetCreateConcrete>
 ) -> (String, String) {
     let selection_name = if let Some(relation_field_name) = relation_field_name_option { relation_field_name } else { "".to_string() };
 
-    let relation_selections = relation_many_limit_create_concretes.iter().map(|relation_many_limit_create_concrete| {
-        return relation_many_limit_create_concrete.selection.clone();
+    let relation_selections = relation_many_offset_create_concretes.iter().map(|relation_many_offset_create_concrete| {
+        return relation_many_offset_create_concrete.selection.clone();
     }).collect::<Vec<String>>().join("\n");
 
     let selection_without_name = format!(
@@ -231,12 +231,12 @@ fn get_objects(
         .clone();
 }
 
-fn get_relation_many_limit_create_arbitraries(
+fn get_relation_many_offset_create_arbitraries(
     graphql_ast: &'static Document<String>,
     object_types: &'static Vec<ObjectType<String>>,
     object_type: &'static ObjectType<String>,
     level: i32
-) -> Vec<BoxedStrategy<LimitCreateConcrete>> {
+) -> Vec<BoxedStrategy<OffsetCreateConcrete>> {
     return object_type
         .fields
         .iter()
@@ -252,7 +252,7 @@ fn get_relation_many_limit_create_arbitraries(
                 relation_many_field
             ).unwrap();
 
-            return get_limit_create_arbitrary(
+            return get_offset_create_arbitrary(
                 graphql_ast,
                 object_types,
                 relation_many_object_type,

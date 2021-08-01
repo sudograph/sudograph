@@ -123,14 +123,17 @@ pub fn find_field_value_stores_for_inputs(
     return Ok(limited_field_value_stores);
 }
 
-// TODO figure out what to do when offset goes out of bounds, error or should it just return the last thing?
+// TODO if the offset is beyond the end of the array, I just return an empty array. Is that the correct choice?
 fn offset_field_value_stores(
     field_value_stores: &Vec<FieldValueStore>,
     offset_option: Option<u32>
 ) -> Vec<FieldValueStore> {
     match offset_option {
         Some(offset) => {
-            // TODO try to have more graceful errors for if these go out of bounds
+            if (offset as usize) > field_value_stores.len() {
+                return vec![];
+            }
+
             return field_value_stores[(offset as usize)..].to_vec();
         },
         None => {
