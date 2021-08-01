@@ -144,6 +144,7 @@ fn get_expected_value(
                 graphql_ast,
                 &opposing_field.field_type
             ) == true {
+                // TODO I think here I need to check if an error should be returned for trying to disconnect a non-nullable relation one
                 return get_expected_value_opposing_relation_one(
                     object_id,
                     relation_object_id,

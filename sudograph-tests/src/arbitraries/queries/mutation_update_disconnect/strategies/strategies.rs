@@ -1,5 +1,4 @@
-use crate::{
-    arbitraries::queries::{
+use crate::{arbitraries::queries::{
         input_info_strategies::input_info_strategies::create_and_retrieve_object,
         mutation_update_disconnect::{
             mutation_update_disconnect::MutationUpdateDisconnectRelationType,
@@ -12,12 +11,7 @@ use crate::{
             ArbitraryMutationInfo,
             QueriesArbitrary
         }
-    },
-    utilities::graphql::{
-        get_object_type_from_field,
-        get_opposing_relation_field
-    }
-};
+    }, utilities::graphql::{get_object_type_from_field, get_opposing_relation_field, is_graphql_type_a_relation_many}};
 use graphql_parser::schema::{
     Document,
     Field,
@@ -39,7 +33,7 @@ pub fn get_arbitrary_result_tuples(
         graphql_ast,
         object_types,
         object_type,
-        1
+        if mutation_update_disconnect_relation_type == MutationUpdateDisconnectRelationType::RelationMany { 0 } else { 1 }
     ).unwrap();
 
     let relation_object_type = get_object_type_from_field(
@@ -47,11 +41,28 @@ pub fn get_arbitrary_result_tuples(
         field
     ).unwrap();
 
+    // TODO evil hack
+    let mut relation_level = 1;
+
+    let opposing_relation_field_option = get_opposing_relation_field(
+        graphql_ast,
+        field
+    );
+
+    if let Some(opposing_relation_field) = opposing_relation_field_option {
+        if is_graphql_type_a_relation_many(
+            graphql_ast,
+            &opposing_relation_field.field_type
+        ) == true {
+            relation_level = 0;
+        }
+    }
+
     let relation_mutation_create_arbitrary = relation_object_type.mutation_create_arbitrary(
         graphql_ast,
         object_types,
         relation_object_type,
-        1
+        relation_level // TODO just testing, I think we just need to stop the relation many from getting created, easy
     ).unwrap();
 
     return (

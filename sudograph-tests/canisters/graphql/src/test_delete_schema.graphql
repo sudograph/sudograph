@@ -1,0 +1,73 @@
+# TODO there are a few more many-to-many combinations to try, non-nullable to nullable and nullable to non-nullable
+type User {
+    id: ID!
+    username: String!
+    username_nullable: String
+    age: Int!
+    age_nullable: Int
+    color: Color!
+    color_nullable: Color
+    height: Float!
+    height_nullable: Float
+    citizen: Boolean!
+    citizen_nullable: Boolean
+    birthdate: Date!
+    birthdate_nullable: Date
+    bytes: Blob!
+    bytes_nullable: Blob
+    meta: JSON!
+    meta_nullable: JSON
+
+    identity: Identity!
+    identity_nullable: Identity
+    
+    votes: [Vote!]!
+    votes_nullable: [Vote!]
+
+    first_horse: Horse! @relation(name: "User:first_horse::Horse:first_rider")
+    second_horse: Horse @relation(name: "User:second_horse::Horse:second_rider")
+    
+    ducks: [Duck!]! @relation(name: "User:ducks::Duck:hunter")
+    ducklings: [Duck!] @relation(name: "User:ducklings::Duck:foster_parent")
+    
+    bacteria: [Bacterium!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_bacteria: [Bacterium!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+
+    best_friend: User
+    best_friends: [User!]!
+    bestest_friends: [User!]
+}
+
+type Identity {
+    id: ID!
+}
+
+type Vote {
+    id: ID!
+}
+
+type Horse {
+    id: ID!
+    first_rider: User @relation(name: "User:first_horse::Horse:first_rider")
+    second_rider: User @relation(name: "User:second_horse::Horse:second_rider")
+}
+
+type Duck {
+    id: ID!
+    hunter: User! @relation(name: "User:ducks::Duck:hunter")
+    foster_parent: User @relation(name: "User:ducklings::Duck:foster_parent")
+}
+
+type Bacterium {
+    id: ID!
+    hosts: [User!]! @relation(name: "User:bacteria::Bacterium:hosts")
+    good_hosts: [User!] @relation(name: "User:good_bacteria::Bacterium:good_hosts")
+}
+
+enum Color {
+    RED
+    WHITE
+    BLUE
+    GREEN
+    YELLOW
+}

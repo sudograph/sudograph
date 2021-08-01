@@ -1,0 +1,67 @@
+# TODO order is breaking on nullables somehow...might be only in relations we'll have to see
+
+type SudographSettings {
+    clearMutation: true
+}
+
+type User {
+    id: ID!
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
+
+    hobbies: [Hobby!]!
+}
+
+type Hobby {
+    id: ID!
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
+
+    users: [User!]!
+    lobbies: [Lobby!]!
+}
+
+type Lobby {
+    id: ID!
+    blob: Blob!
+    bool: Boolean!
+    date: Date!
+    float: Float!
+    int: Int!
+    json: JSON!
+    string: String!
+
+    blob_nullable: Blob
+    bool_nullable: Boolean
+    date_nullable: Date
+    float_nullable: Float
+    int_nullable: Int
+    json_nullable: JSON
+    string_nullable: String
+}

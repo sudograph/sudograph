@@ -96,7 +96,8 @@ use settings::generate_settings::{
     generate_export_generated_query_function_attribute,
     generate_export_generated_mutation_function_attribute,
     generate_export_generated_init_function_attribute,
-    generate_export_generated_post_upgrade_function_attribute
+    generate_export_generated_post_upgrade_function_attribute,
+    generate_clear_mutation
 };
 use custom_resolvers::{
     generate_custom_query_struct::{
@@ -142,6 +143,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
     let export_generated_mutation_function_attribute = generate_export_generated_mutation_function_attribute(sudograph_settings_option);
     let export_generated_init_function_attribute = generate_export_generated_init_function_attribute(sudograph_settings_option);
     let export_generated_post_upgrade_function_attribute = generate_export_generated_post_upgrade_function_attribute(sudograph_settings_option);
+
+    let clear_mutation = generate_clear_mutation(sudograph_settings_option);
 
     let query_object_option = all_object_types.iter().find(|object_type| {
         return object_type.name == "Query";
@@ -554,17 +557,18 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_delete_mutation_resolvers)*
             // #(#generated_upsert_mutation_resolvers)*
             #(#generated_init_mutation_resolvers)*
+            #clear_mutation
 
             // TODO obviously this is an extremely horrible and dangerous thing
             // TODO perhaps only enable it in testing, or at least
             // TODO create a Sudograph setting that you must explicitly enable to allow this
-            async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
-                let object_store = storage::get_mut::<ObjectTypeStore>();
+            // async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
+            //     let object_store = storage::get_mut::<ObjectTypeStore>();
 
-                sudograph::sudodb::clear(object_store);
+            //     sudograph::sudodb::clear(object_store);
 
-                return Ok(true);
-            }
+            //     return Ok(true);
+            // }
         }
 
         #generated_custom_mutation_struct
