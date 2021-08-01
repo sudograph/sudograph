@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "build": "snowpack build --polyfill-node"
+  },
+  "devDependencies": {
+    "snowpack": "3.4.0"
+  },
+  "dependencies": {
+    "sudograph": "0.3.0"
+  }
+}

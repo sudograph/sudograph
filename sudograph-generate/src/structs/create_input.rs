@@ -50,7 +50,7 @@ fn generate_create_input_rust_struct(
         object_type
     );
     let create_input_rust_struct = quote! {
-        #[derive(InputObject)]
+        #[derive(InputObject, Default, Debug)]
         struct #create_input_rust_struct_name {
             #(#create_input_rust_struct_fields),*
         }

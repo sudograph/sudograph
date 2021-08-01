@@ -398,12 +398,12 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
         // TODO each object type and each field will probably need their own relation inputs
         // TODO the relation inputs are going to have connect, disconnect, create, update, delete, etc
-        #[derive(InputObject)]
+        #[derive(InputObject, Default, Debug)]
         struct CreateRelationManyInput {
             connect: Vec<ID>
         }
 
-        #[derive(InputObject)]
+        #[derive(InputObject, Default, Debug)]
         struct CreateRelationOneInput {
             connect: ID
         }
@@ -554,6 +554,17 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             #(#generated_delete_mutation_resolvers)*
             // #(#generated_upsert_mutation_resolvers)*
             #(#generated_init_mutation_resolvers)*
+
+            // TODO obviously this is an extremely horrible and dangerous thing
+            // TODO perhaps only enable it in testing, or at least
+            // TODO create a Sudograph setting that you must explicitly enable to allow this
+            // async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
+            //     let object_store = storage::get_mut::<ObjectTypeStore>();
+
+            //     sudograph::sudodb::clear(object_store);
+
+            //     return Ok(true);
+            // }
         }
 
         #generated_custom_mutation_struct

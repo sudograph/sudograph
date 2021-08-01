@@ -6,7 +6,7 @@ use graphql_parser::schema::parse_schema;
 use std::fs;
 use sudograph_tests::{
     assert_correct_result,
-    arbitraries::sudograph::arb_mutation_create,
+    arbitraries::sudograph::SudographObjectTypeArbitrary,
     utilities::graphql::{
         graphql_mutation,
         get_object_types
@@ -16,8 +16,6 @@ use proptest::test_runner::{
     TestRunner,
     Config
 };
-
-// TODO make sure to test self-referencing relationships
 
 #[test]
 fn test_create() {    
@@ -35,32 +33,32 @@ fn test_create() {
             .. Config::default()
         });
 
-        let arb_mutation_create = arb_mutation_create(
+        let mutation_create_arbitrary = object_type.arb_mutation_create(
             graphql_ast,
             object_types,
             object_type,
             false
         );
 
-        runner.run(&arb_mutation_create, |mutation_create_result| {
+        runner.run(&mutation_create_arbitrary, |mutation_create| {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
-                println!("query: {}", mutation_create_result.query);
-                println!("variables: {}", mutation_create_result.variables);
+                println!("query: {}", mutation_create.query);
+                println!("variables: {}", mutation_create.variables);
 
                 // TODO this is here for testing shrinking
                 // panic!();
 
                 let result_json = graphql_mutation(
-                    &mutation_create_result.query,
-                    &mutation_create_result.variables
+                    &mutation_create.query,
+                    &mutation_create.variables
                 ).await;
 
                 assert_eq!(
                     true,
                     assert_correct_result(
                         &result_json,
-                        &mutation_create_result.selection_name,
-                        &mutation_create_result.input_values
+                        &mutation_create.selection_name,
+                        &mutation_create.input_values
                     )
                 );
             });

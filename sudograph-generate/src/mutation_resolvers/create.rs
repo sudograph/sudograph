@@ -38,7 +38,8 @@ pub fn generate_create_mutation_resolvers(object_types: &Vec<ObjectType<String>>
                     MaybeUndefined::Value(value) => Some(value.to_string()),
                     _ => None
                 } } else { None };
-                let create_inputs = if let Some(create_input) = input { create_input.get_create_field_inputs() } else { vec![] };
+
+                let create_inputs = if let Some(create_input) = input { create_input.get_create_field_inputs() } else { #create_input_type::default().get_create_field_inputs() };
 
                 let create_result = create(
                     object_store,
