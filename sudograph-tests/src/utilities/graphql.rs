@@ -45,9 +45,9 @@ pub async fn graphql_query(
     let response = query_builder_with_args.call().await?;
     let response_string = Decode!(response.as_slice(), String)?;
 
-    println!("query {:#?}", query);
-    println!("variables {:#?}", variables);
-    println!("response_string: {}\n\n", response_string);
+    // println!("query {:#?}", query);
+    // println!("variables {:#?}", variables);
+    // println!("response_string: {}\n\n", response_string);
 
     let response_value: serde_json::Value = serde_json::from_str(&response_string)?;
 
@@ -89,9 +89,9 @@ pub async fn graphql_mutation(
     let response = update_builder_with_args.call_and_wait(waiter).await?;
     let response_string = Decode!(response.as_slice(), String)?;
 
-    println!("mutation {:#?}", mutation);
-    println!("variables {:#?}", variables);
-    println!("response_string: {}\n\n", response_string);
+    // println!("mutation {:#?}", mutation);
+    // println!("variables {:#?}", variables);
+    // println!("response_string: {}\n\n", response_string);
 
     let response_value: serde_json::Value = serde_json::from_str(&response_string)?;
 
