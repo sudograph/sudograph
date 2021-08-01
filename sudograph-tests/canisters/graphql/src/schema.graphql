@@ -1,3 +1,7 @@
+# TODO this was the original static schema I used when building the tests
+# TODO this file has been split up into the individual schemas that are currently used for tests
+# TODO we will probably want a combination of static and generated schemas to test against
+
 # TODO we might want to set up individual canisters with individual schemas to test per test
 
 # TODO this schema was designed for order

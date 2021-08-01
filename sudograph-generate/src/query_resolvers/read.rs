@@ -41,11 +41,6 @@ pub fn generate_read_query_resolvers(object_types: &Vec<ObjectType<String>>) -> 
                 let object_store = storage::get::<ObjectTypeStore>();
 
                 let read_inputs = if let Some(search_input) = search { search_input.get_read_inputs(String::from("")).0 } else { vec![] }; // TODO it is weird to pass in the empty string
-                
-                ic_cdk::println!("read_inputs\n");
-
-                ic_cdk::println!("{:#?}", read_inputs);
-
                 let order_inputs = if let Some(order_input) = order { order_input.get_order_inputs() } else { vec![] };
 
                 let read_result = read(

@@ -23,7 +23,7 @@ use sudograph_tests::{
 fn test_create() -> Result<(), Box<dyn std::error::Error>> {    
     // TODO I am leaking here because I am using BoxedStrategy, which has a 'static trait bound
     // TODO I am not sure I can get around leaking here, but it should be okay for tests
-    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql")?.into_boxed_str());
+    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_create_schema.graphql")?.into_boxed_str());
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
@@ -89,6 +89,9 @@ fn test_create() -> Result<(), Box<dyn std::error::Error>> {
             //         )?
             //     );
             // });
+
+            println!("Test complete");
+            println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
             return Ok(());
         })?;

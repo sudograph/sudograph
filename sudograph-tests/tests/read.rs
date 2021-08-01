@@ -37,7 +37,7 @@ use sudograph_tests::{
 fn test_read() -> Result<(), Box<dyn std::error::Error>> {
     // TODO I am leaking here because I am using BoxedStrategy, which has a 'static trait bound
     // TODO I am not sure I can get around leaking here, but it should be okay for tests
-    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql")?.into_boxed_str());
+    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_read_schema.graphql")?.into_boxed_str());
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
@@ -64,7 +64,7 @@ fn test_read() -> Result<(), Box<dyn std::error::Error>> {
         runner.run(&mutation_create_arbitrary, |mutation_create_arbitrary_result| {
             // TODO this is silly of course, but create_and_retrieve_object was angry at graphql_ast not being borrowed for static
             // TODO and I was having a hard time getting it to jump into the closure mainting its static borrow
-            let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql")?.into_boxed_str());
+            let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_read_schema.graphql")?.into_boxed_str());
             let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
 
             let object = create_and_retrieve_object(
@@ -77,7 +77,7 @@ fn test_read() -> Result<(), Box<dyn std::error::Error>> {
             tokio::runtime::Runtime::new()?.block_on(async {
                 // TODO this is silly of course, but create_and_retrieve_object was angry at graphql_ast not being borrowed for static
                 // TODO and I was having a hard time getting it to jump into the closure mainting its static borrow
-                let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql").unwrap().into_boxed_str());
+                let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_read_schema.graphql").unwrap().into_boxed_str());
                 let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents).unwrap()));
 
                 let input_info_map = get_input_info_map(

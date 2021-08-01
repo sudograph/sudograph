@@ -20,7 +20,7 @@ use sudograph_tests::{
 
 #[test]
 fn test_order() -> Result<(), Box<dyn std::error::Error>> {
-    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/schema.graphql")?.into_boxed_str());
+    let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_order_schema.graphql")?.into_boxed_str());
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
@@ -36,6 +36,10 @@ fn test_order() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     for object_type in object_types.iter() {
+        if object_type.name == "SudographSettings" {
+            continue;
+        }
+
         let mut runner = TestRunner::new(Config {
             cases: 10,
             max_shrink_iters: 100,

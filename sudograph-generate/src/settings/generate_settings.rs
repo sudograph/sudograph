@@ -79,6 +79,36 @@ pub fn generate_export_generated_post_upgrade_function_attribute(
     };
 }
 
+pub fn generate_clear_mutation(
+    sudograph_settings_option: Option<&ObjectType<String>>
+) -> TokenStream {
+    let clear_mutation_setting = get_setting_boolean(
+        sudograph_settings_option,
+        "clearMutation",
+        false
+    );
+
+    match clear_mutation_setting {
+        true => {
+            return quote! {
+                // TODO obviously this is an extremely horrible and dangerous thing
+                // TODO perhaps only enable it in testing, or at least
+                // TODO the user has to explicitly opt into this, but that still feels too dangerous
+                async fn clear(&self) -> std::result::Result<bool, sudograph::async_graphql::Error> {
+                    let object_store = storage::get_mut::<ObjectTypeStore>();
+
+                    sudograph::sudodb::clear(object_store);
+
+                    return Ok(true);
+                }
+            };
+        },
+        false => {
+            return quote! {};
+        }
+    };
+}
+
 fn get_setting_boolean(
     sudograph_settings_option: Option<&ObjectType<String>>,
     setting_name: &str,
