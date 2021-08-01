@@ -119,7 +119,7 @@ fn get_read_input_rust_struct_field_rust_type(
                 named_type
             );
 
-            return quote! { Option<#rust_type_for_named_type> };
+            return quote! { MaybeUndefined<#rust_type_for_named_type> };
         },
         Type::NonNullType(non_null_type) => {
             let rust_type = get_read_input_rust_struct_field_rust_type(
@@ -252,21 +252,61 @@ fn generate_read_field_input_pusher_for_relation(
     let relation_object_type_name = get_graphql_type_name(field_type);
 
     return quote! {
-        if let Some(field_value) = &self.#field_name {                    
-            let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
-            // TODO do this immutably if possible
-            // TODO we really need a much different type for relations versus scalars on read inputs
-            // TODO they do not seem to have much in common
-            read_inputs.push(ReadInput {
-                input_type: ReadInputType::Relation,
-                input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
-                field_name: String::from(#field_name_string),
-                field_value: FieldValue::Scalar(None),
-                relation_object_type_name: String::from(#relation_object_type_name),
-                relation_read_inputs: field_read_inputs,
-                and: vec![],
-                or: vec![]
-            });
+        match &self.#field_name {
+            MaybeUndefined::Value(field_value) => {
+                let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string)).0;
+            
+                if field_read_inputs.len() != 0 {
+                    read_inputs_or.push(vec![ReadInput {
+                        input_type: ReadInputType::Relation,
+                        input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None),
+                        relation_object_type_name: String::from(#relation_object_type_name),
+                        relation_read_inputs: field_read_inputs.clone(),
+                        and: vec![],
+                        or: vec![]
+                    }]);
+        
+                    // TODO do this immutably if possible
+                    // TODO we really need a much different type for relations versus scalars on read inputs
+                    // TODO they do not seem to have much in common
+                    read_inputs.push(ReadInput {
+                        input_type: ReadInputType::Relation,
+                        input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
+                        field_name: String::from(#field_name_string),
+                        field_value: FieldValue::Scalar(None),
+                        relation_object_type_name: String::from(#relation_object_type_name),
+                        relation_read_inputs: field_read_inputs,
+                        and: vec![],
+                        or: vec![]
+                    });
+                }
+            },
+            MaybeUndefined::Null => {
+                read_inputs_or.push(vec![ReadInput {
+                    input_type: ReadInputType::Relation,
+                    input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::RelationOne(None),
+                    relation_object_type_name: String::from(#relation_object_type_name),
+                    relation_read_inputs: vec![],
+                    and: vec![],
+                    or: vec![]
+                }]);
+
+                read_inputs.push(ReadInput {
+                    input_type: ReadInputType::Relation,
+                    input_operation: ReadInputOperation::Equals, // TODO figure out how to not do this if possible
+                    field_name: String::from(#field_name_string),
+                    field_value: FieldValue::RelationOne(None),
+                    relation_object_type_name: String::from(#relation_object_type_name),
+                    relation_read_inputs: vec![],
+                    and: vec![],
+                    or: vec![]
+                });
+            },
+            MaybeUndefined::Undefined => ()
         }
     };
 }
@@ -276,13 +316,18 @@ fn generate_read_field_input_pusher_for_scalar(
     field_name_string: &str
 ) -> TokenStream {
     return quote! {
-        if let Some(field_value) = &self.#field_name {                    
-            let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
+        match &self.#field_name {
+            MaybeUndefined::Value(field_value) => {
+                let field_read_inputs = field_value.get_read_inputs(String::from(#field_name_string));
 
-            // TODO do this immutably if possible
-            for field_read_input in field_read_inputs {
-                read_inputs.push(field_read_input);
-            }
+                read_inputs_or.push(field_read_inputs.clone());
+    
+                // TODO do this immutably if possible
+                for field_read_input in field_read_inputs {
+                    read_inputs.push(field_read_input);
+                }
+            },
+            _ => ()
         }
     };
 }
@@ -299,7 +344,7 @@ fn generate_read_field_input_pusher_for_and() -> TokenStream {
                 relation_object_type_name: String::from(""), // TODO this needs to be filled in
                 relation_read_inputs: vec![],
                 and: and.iter().flat_map(|read_entity_input| {
-                    return read_entity_input.get_read_inputs(String::from("and"));
+                    return read_entity_input.get_read_inputs(String::from("and")).0;
                 }).collect(),
                 or: vec![]
             });
@@ -320,7 +365,18 @@ fn generate_read_field_input_pusher_for_or() -> TokenStream {
                 relation_read_inputs: vec![],
                 and: vec![],
                 or: or.iter().flat_map(|read_entity_input| {
-                    return read_entity_input.get_read_inputs(String::from("or"));
+                    return read_entity_input.get_read_inputs(String::from("or")).1.into_iter().map(|read_inputs_or| {
+                        return ReadInput {
+                            input_type: ReadInputType::Scalar,
+                            input_operation: ReadInputOperation::Equals,
+                            field_name: String::from("and"),
+                            field_value: FieldValue::Scalar(None),
+                            relation_object_type_name: String::from(""),
+                            relation_read_inputs: vec![],
+                            and: read_inputs_or,
+                            or: vec![]
+                        };
+                    });
                 }).collect()
             });
         }
@@ -332,7 +388,7 @@ fn compose_read_input_rust_struct(
     read_input_rust_struct_fields: &Vec<TokenStream>,
     read_field_input_pushers: &Vec<TokenStream>
 ) -> TokenStream {
-return quote! {
+    return quote! {
         #[derive(InputObject)]
         struct #read_input_rust_struct_name {
             #(#read_input_rust_struct_fields),*,
@@ -344,12 +400,13 @@ return quote! {
             fn get_read_inputs(
                 &self,
                 field_name: String
-            ) -> Vec<ReadInput> {
+            ) -> (Vec<ReadInput>, Vec<Vec<ReadInput>>) {
                 let mut read_inputs = vec![];
+                let mut read_inputs_or = vec![];
 
                 #(#read_field_input_pushers)*
 
-                return read_inputs;
+                return (read_inputs, read_inputs_or);
             }
         }
     };

@@ -751,7 +751,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                     offset_option: get_offset_option_from_selection_field(selection_field),
                     order_inputs: get_order_inputs_from_selection_field(selection_field)
                 };
-            
+
                 hash_map.insert(String::from(selection_field.name()), child_selection_set_info);
             }
 
@@ -781,7 +781,10 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                 graphql_ast,
                                 &relation_object_type_name,
                                 &search_argument.1
-                            );
+                            )
+                            .into_iter()
+                            .flatten()
+                            .collect();
                         },
                         None => {
                             return vec![];
@@ -800,15 +803,14 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
             graphql_ast: &sudograph::graphql_parser::schema::Document<String>,
             object_type_name: &str,
             value: &sudograph::async_graphql::Value
-        ) -> Vec<ReadInput> {
+        ) -> Vec<Vec<ReadInput>> {
             match value {
                 sudograph::async_graphql::Value::Object(object) => {
-                    let search_inputs = object.keys().fold(vec![], |result, object_key| {
-
+                    let search_inputs = object.keys().fold(vec![], |mut result, object_key| {
                         let object_value = object.get(object_key).expect("get_search_inputs_from_value::object_value");
 
                         if object_key == "and" {
-                            return result.into_iter().chain(vec![ReadInput {
+                            result.push(vec![ReadInput {
                                 input_type: ReadInputType::Scalar,
                                 input_operation: ReadInputOperation::Equals,
                                 field_name: String::from("and"),
@@ -820,31 +822,105 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                         graphql_ast,
                                         object_type_name,
                                         value
-                                    ) }).collect(),
-                                    _ => panic!()
+                                    )
+                                    .into_iter()
+                                    .flatten()
+                                    .collect::<Vec<ReadInput>>() }).collect(),
+                                    sudograph::async_graphql::Value::Object(_) => {
+                                        get_search_inputs_from_value(
+                                            graphql_ast,
+                                            object_type_name,
+                                            object_value
+                                        )
+                                        .into_iter()
+                                        .flatten()
+                                        .collect()
+                                    },
+                                    _ => panic!("panic for and")
                                 },
                                 or: vec![]
-                            }]).collect();
+                            }]);
+
+                            return result;
                         }
 
                         if object_key == "or" {
-                            return result.into_iter().chain(vec![ReadInput {
-                                input_type: ReadInputType::Scalar,
-                                input_operation: ReadInputOperation::Equals,
-                                field_name: String::from("or"),
-                                field_value: FieldValue::Scalar(None),
-                                relation_object_type_name: String::from(""),
-                                relation_read_inputs: vec![],
-                                and: vec![],
-                                or: match object_value {
-                                    sudograph::async_graphql::Value::List(list) => list.iter().flat_map(|value| { get_search_inputs_from_value(
-                                        graphql_ast,
-                                        object_type_name,
-                                        value
-                                    ) }).collect(),
-                                    _ => panic!()
-                                }
-                            }]).collect();
+                            match object_value {
+                                sudograph::async_graphql::Value::List(list) => {
+                                    for value in list {
+                                        result.push(
+                                            vec![
+                                                ReadInput {
+                                                    input_type: ReadInputType::Scalar,
+                                                    input_operation: ReadInputOperation::Equals,
+                                                    field_name: String::from("or"),
+                                                    field_value: FieldValue::Scalar(None),
+                                                    relation_object_type_name: String::from(""),
+                                                    relation_read_inputs: vec![],
+                                                    and: vec![],
+                                                    or: get_search_inputs_from_value(
+                                                            graphql_ast,
+                                                            object_type_name,
+                                                            value
+                                                        )
+                                                        .into_iter()
+                                                        .map(|read_inputs| {
+                                                            return ReadInput {
+                                                                input_type: ReadInputType::Scalar,
+                                                                input_operation: ReadInputOperation::Equals,
+                                                                field_name: String::from("and"),
+                                                                field_value: FieldValue::Scalar(None),
+                                                                relation_object_type_name: String::from(""),
+                                                                relation_read_inputs: vec![],
+                                                                and: read_inputs,
+                                                                or: vec![]
+                                                            };
+                                                        })
+                                                        .collect()
+                                                }
+                                            ]
+                                        );
+                                    }
+                                },
+                                sudograph::async_graphql::Value::Object(_) => {
+                                    result.push(
+                                        vec![
+                                            ReadInput {
+                                                input_type: ReadInputType::Scalar,
+                                                input_operation: ReadInputOperation::Equals,
+                                                field_name: String::from("or"),
+                                                field_value: FieldValue::Scalar(None),
+                                                relation_object_type_name: String::from(""),
+                                                relation_read_inputs: vec![],
+                                                and: vec![],
+                                                or: get_search_inputs_from_value(
+                                                        graphql_ast,
+                                                        object_type_name,
+                                                        object_value
+                                                    )
+                                                    .into_iter()
+                                                    .map(|read_inputs| {
+                                                        return ReadInput {
+                                                            input_type: ReadInputType::Scalar,
+                                                            input_operation: ReadInputOperation::Equals,
+                                                            field_name: String::from("and"),
+                                                            field_value: FieldValue::Scalar(None),
+                                                            relation_object_type_name: String::from(""),
+                                                            relation_read_inputs: vec![],
+                                                            and: read_inputs,
+                                                            or: vec![]
+                                                        };
+                                                    })
+                                                    .collect()
+                                            }
+                                        ]
+                                    );
+                                },
+                                _ => panic!()
+                            };
+
+
+                            return result;
                         }
 
                         let field = get_field_for_object_type_name_and_field_name(
@@ -865,7 +941,7 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                         {
                             let relation_object_type_name = get_field_type_name(&field);
 
-                            return result.into_iter().chain(vec![ReadInput {
+                            result.push(vec![ReadInput {
                                 input_type: ReadInputType::Relation,
                                 input_operation: ReadInputOperation::Equals,
                                 field_name: object_key.to_string(),
@@ -875,10 +951,15 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                     graphql_ast,
                                     &relation_object_type_name,
                                     object_value
-                                ),
+                                )
+                                .into_iter()
+                                .flatten()
+                                .collect(),
                                 and: vec![],
                                 or: vec![]
-                            }]).collect();
+                            }]);
+
+                            return result;
                         }
                         else {
                             match object_value {
@@ -893,6 +974,8 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                             "lt" => ReadInputOperation::LessThan,
                                             "lte" => ReadInputOperation::LessThanOrEqualTo,
                                             "contains" => ReadInputOperation::Contains,
+                                            "startsWith" => ReadInputOperation::StartsWith,
+                                            "endsWith" => ReadInputOperation::EndsWith,
                                             _ => panic!()
                                         };
 
@@ -900,9 +983,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
 
                                         // TODO this will get more difficult once we introduce custom scalars
                                         let field_value = match graphql_type_name.as_str() {
-                                            "Blob" => FieldValue::Scalar(Some(FieldValueScalar::Blob(match scalar_object_value {
-                                                sudograph::async_graphql::Value::String(value_string) => value_string.clone().into_bytes(),
-                                                sudograph::async_graphql::Value::List(value_list) => value_list.iter().map(|item| {
+                                            "Blob" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(value_string) => FieldValue::Scalar(Some(FieldValueScalar::Blob(value_string.clone().into_bytes()))),
+                                                sudograph::async_graphql::Value::List(value_list) => FieldValue::Scalar(Some(FieldValueScalar::Blob(value_list.iter().map(|item| {
                                                     match item {
                                                         // sudograph::async_graphql::Value::String(item_string) => {
                                                             // TODO should we implement this too?
@@ -912,34 +995,45 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                                         },
                                                         _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
                                                     };
-                                                }).collect(),
-                                                _ => panic!("incorrect value") // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
-                                            }))),
-                                            "Boolean" => FieldValue::Scalar(Some(FieldValueScalar::Boolean(match scalar_object_value {
-                                                sudograph::async_graphql::Value::Boolean(boolean) => boolean.clone(),
+                                                }).collect()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
+                                                _ => panic!() // TODO return an error explaining that a utf-8 encoded string is the only acceptable input
+                                            },
+                                            "Boolean" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::Boolean(boolean) => FieldValue::Scalar(Some(FieldValueScalar::Boolean(boolean.clone()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
-                                            "Date" => FieldValue::Scalar(Some(FieldValueScalar::Date(match scalar_object_value {
-                                                sudograph::async_graphql::Value::String(date_string) => date_string.to_string(),
+                                            },
+                                            "Date" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(date_string) => FieldValue::Scalar(Some(FieldValueScalar::Date(date_string.to_string()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
-                                            "Float" => FieldValue::Scalar(Some(FieldValueScalar::Float(match scalar_object_value {
-                                                sudograph::async_graphql::Value::Number(number) => number.as_f64().unwrap() as f32,
+                                            },
+                                            "Float" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::Number(number) => FieldValue::Scalar(Some(FieldValueScalar::Float(number.as_f64().unwrap() as f32))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
-                                            "ID" => FieldValue::Scalar(Some(FieldValueScalar::String(match scalar_object_value {
-                                                sudograph::async_graphql::Value::String(id_string) => id_string.to_string(),
+                                            },
+                                            "ID" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(id_string) => FieldValue::Scalar(Some(FieldValueScalar::String(id_string.to_string()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
-                                            "Int" => FieldValue::Scalar(Some(FieldValueScalar::Int(match scalar_object_value {
-                                                sudograph::async_graphql::Value::Number(number) => number.as_i64().unwrap() as i32,
+                                            },
+                                            "Int" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::Number(number) => FieldValue::Scalar(Some(FieldValueScalar::Int(number.as_i64().unwrap() as i32))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
-                                            "JSON" => FieldValue::Scalar(Some(FieldValueScalar::JSON(scalar_object_value.to_string()))),
-                                            "String" => FieldValue::Scalar(Some(FieldValueScalar::String(match scalar_object_value {
-                                                sudograph::async_graphql::Value::String(string) => string.to_string(),
+                                            },
+                                            "JSON" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(string) => FieldValue::Scalar(Some(FieldValueScalar::JSON(string.to_string()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
                                                 _ => panic!()
-                                            }))),
+                                            },
+                                            "String" => match scalar_object_value {
+                                                sudograph::async_graphql::Value::String(string) => FieldValue::Scalar(Some(FieldValueScalar::String(string.to_string()))),
+                                                sudograph::async_graphql::Value::Null => FieldValue::Scalar(None),
+                                                _ => panic!()
+                                            },
                                             _ => panic!("this scalar is not defined")
                                         };
 
@@ -955,7 +1049,9 @@ pub fn graphql_database(schema_file_path_token_stream: TokenStream) -> TokenStre
                                         };
                                     }).collect();
 
-                                    return result.into_iter().chain(scalar_search_inputs).collect();
+                                    result.push(scalar_search_inputs);
+
+                                    return result;
                                 },
                                 _ => {
                                     panic!();

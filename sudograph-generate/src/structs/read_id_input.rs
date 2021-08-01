@@ -10,7 +10,9 @@ pub fn get_read_id_input_rust_struct() -> TokenStream {
             gte: MaybeUndefined<ID>,
             lt: MaybeUndefined<ID>,
             lte: MaybeUndefined<ID>,
-            contains: MaybeUndefined<ID>
+            contains: MaybeUndefined<ID>,
+            startsWith: MaybeUndefined<ID>,
+            endsWith: MaybeUndefined<ID>
         }
 
         impl ReadIDInput {
@@ -42,6 +44,14 @@ pub fn get_read_id_input_rust_struct() -> TokenStream {
                     (
                         &self.contains,
                         ReadInputOperation::Contains
+                    ),
+                    (
+                        &self.startsWith,
+                        ReadInputOperation::StartsWith
+                    ),
+                    (
+                        &self.endsWith,
+                        ReadInputOperation::EndsWith
                     )
                 ];
 
