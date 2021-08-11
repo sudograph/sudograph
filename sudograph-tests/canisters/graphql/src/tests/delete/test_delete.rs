@@ -4,6 +4,9 @@ use crate::{
         ArbitraryQueryInfo,
         QueriesArbitrary
     },
+    assert_equal_disconnect,
+    convert_arbitrary_mutation_info_into_mutation,
+    convert_arbitrary_query_info_into_query,
     get_object_types,
     graphql_mutation,
     graphql_query,
@@ -116,68 +119,4 @@ fn test_delete(
     }
 
     return true;
-}
-
-// TODO this is now copied in delete and update tests
-fn convert_arbitrary_mutation_info_into_mutation(arbitrary_mutation_info: &ArbitraryMutationInfo) -> (String, String) {
-    let mutation = format!(
-        "mutation ($input: {input_variable_type}) {{
-            {mutation_name}(input: $input){selection}
-        }}",
-        input_variable_type = arbitrary_mutation_info.input_variable_type,
-        mutation_name = arbitrary_mutation_info.mutation_name,
-        selection = arbitrary_mutation_info.selection
-    );
-    
-    let variables = serde_json::json!({
-        "input": arbitrary_mutation_info.input_value
-    }).to_string();
-
-    return (mutation, variables);
-}
-
-// TODO this is now copied in delete and update tests
-fn convert_arbitrary_query_info_into_query(arbitrary_query_info: &ArbitraryQueryInfo) -> (String, String) {
-    let mutation = format!(
-        "query ($search: {search_variable_type}) {{
-            {query_name}(search: $search){selection}
-        }}",
-        search_variable_type = arbitrary_query_info.search_variable_type,
-        query_name = arbitrary_query_info.query_name,
-        selection = arbitrary_query_info.selection
-    );
-    
-    let variables = serde_json::json!({
-        "search": arbitrary_query_info.search_value
-    }).to_string();
-
-    return (mutation, variables);
-}
-
-// TODO this is now copied in delete and update tests
-// TODO maybe we should check if errors.is_some instead of checking if data is null
-fn assert_equal_disconnect(
-    result: &serde_json::value::Value,
-    expected: &serde_json::value::Value,
-    logging: bool
-) -> bool {
-    if result.get("data").is_some() && result.get("data").unwrap().is_null() {
-        let result_errors: Vec<String> = result.get("errors").unwrap().as_array().unwrap().iter().map(|error| {
-            return error.get("message").unwrap().to_string();
-        }).collect();
-
-        let expected_errors: Vec<String> = expected.get("errors").unwrap().as_array().unwrap().iter().map(|error| {
-            return error.get("message").unwrap().to_string();
-        }).collect();
-
-        if logging == true {
-            ic_cdk::println!("result_errors {:#?}", result_errors);
-            ic_cdk::println!("expected_errors {:#?}", expected_errors);
-        }
-
-        return result_errors == expected_errors;
-    }
-    else {
-        return result == expected;
-    }
 }

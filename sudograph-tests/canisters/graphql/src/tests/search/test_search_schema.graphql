@@ -1,3 +1,7 @@
+type SudographSettings {
+    clearMutation: true
+}
+
 type User {
     id: ID!
     blob: Blob!

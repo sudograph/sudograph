@@ -7,6 +7,7 @@ use sudograph_tests::{
 // TODO the emulator seems to be broken, it barely progresses on the tests
 #[test]
 fn test_canister() {
+    let cases = 100;
     let logging = true; // TODO set this with an environment variable
     // TODO perhaps have different levels of logging, for example you might want to see the proptest iteration counter
     // TODO but not the actual queries
@@ -14,13 +15,56 @@ fn test_canister() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         // update_test(
         //     "test_create",
-        //     100,
+        //     cases,
         //     logging
         // ).await.unwrap();
 
+        // update_test(
+        //     "test_update",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_update_disconnect",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_delete",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_read",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_search",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_limit",
+        //     1, // TODO this test slows down very quickly for some reason
+        //     logging
+        // ).await.unwrap();
+
+        // update_test(
+        //     "test_offset",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
+
+        // TODO order is slowing down extremely quickly as well for some reason
         update_test(
-            "test_delete",
-            100,
+            "test_order",
+            cases,
             logging
         ).await.unwrap();
     });
