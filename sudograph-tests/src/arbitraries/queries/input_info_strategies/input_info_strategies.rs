@@ -214,14 +214,21 @@ pub fn create_and_retrieve_object(
     mutation_create: ArbitraryResult,
     level: u32
 ) -> Result<serde_json::value::Map<String, serde_json::Value>, Box<dyn std::error::Error>> {
-    let future = async {
+    // let future = async {
+    //     return graphql_mutation(
+    //         &mutation_create.query,
+    //         &mutation_create.variables
+    //     ).await;
+    // };
+
+    // let result_json = tokio::runtime::Runtime::new()?.block_on(future)?;
+
+    let result_json = wasm_rs_async_executor::single_threaded::block_on(async {
         return graphql_mutation(
             &mutation_create.query,
             &mutation_create.variables
-        ).await;
-    };
-
-    let result_json = tokio::runtime::Runtime::new()?.block_on(future)?;
+        ).await.unwrap();
+    });
 
     let object = result_json
         .as_object()

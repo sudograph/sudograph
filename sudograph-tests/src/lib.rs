@@ -51,6 +51,7 @@ pub mod arbitraries {
     }
 }
 pub mod utilities {
+    pub mod agent;
     pub mod assert;
     pub mod graphql;
 }

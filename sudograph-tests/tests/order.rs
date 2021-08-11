@@ -24,7 +24,18 @@ fn test_order() -> Result<(), Box<dyn std::error::Error>> {
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
-    tokio::runtime::Runtime::new()?.block_on(async {
+    // tokio::runtime::Runtime::new()?.block_on(async {
+    //     graphql_mutation(
+    //         "
+    //             mutation {
+    //                 clear
+    //             }
+    //         ",
+    //         "{}"
+    //     ).await.unwrap();
+    // });
+
+    wasm_rs_async_executor::single_threaded::block_on(async {
         graphql_mutation(
             "
                 mutation {
@@ -75,7 +86,19 @@ fn test_order() -> Result<(), Box<dyn std::error::Error>> {
                 println!("order_read_concrete.selection\n");
                 println!("{:#?}", order_read_concrete.selection);
 
-                let result_json = tokio::runtime::Runtime::new()?.block_on(async {
+                // let result_json = tokio::runtime::Runtime::new()?.block_on(async {
+                //     return graphql_query(
+                //         &format!(
+                //             "query {{
+                //                 {selection}
+                //             }}",
+                //             selection = order_read_concrete.selection
+                //         ),
+                //         "{}"
+                //     ).await;
+                // }).unwrap();
+
+                let result_json = wasm_rs_async_executor::single_threaded::block_on(async {
                     return graphql_query(
                         &format!(
                             "query {{
@@ -84,8 +107,8 @@ fn test_order() -> Result<(), Box<dyn std::error::Error>> {
                             selection = order_read_concrete.selection
                         ),
                         "{}"
-                    ).await;
-                }).unwrap();
+                    ).await.unwrap();
+                });
 
                 let query_name = format!(
                     "read{object_type_name}",
@@ -112,7 +135,18 @@ fn test_order() -> Result<(), Box<dyn std::error::Error>> {
                 return Ok(());
             }).unwrap();
 
-            tokio::runtime::Runtime::new()?.block_on(async {
+            // tokio::runtime::Runtime::new()?.block_on(async {
+            //     graphql_mutation(
+            //         "
+            //             mutation {
+            //                 clear
+            //             }
+            //         ",
+            //         "{}"
+            //     ).await.unwrap();
+            // });
+
+            wasm_rs_async_executor::single_threaded::block_on(async {
                 graphql_mutation(
                     "
                         mutation {

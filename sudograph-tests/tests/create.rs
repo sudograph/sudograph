@@ -66,7 +66,7 @@ fn test_create() -> Result<(), Box<dyn std::error::Error>> {
                 );
             };
 
-            tokio::runtime::Runtime::new()?.block_on(future);
+            wasm_rs_async_executor::single_threaded::block_on(future);
 
             // tokio::runtime::Runtime::new()?.block_on(async {
             //     println!("query: {}", mutation_create.query);

@@ -74,7 +74,7 @@ fn test_read() -> Result<(), Box<dyn std::error::Error>> {
             ).unwrap();
             let object_id = object.get("id").unwrap();
 
-            tokio::runtime::Runtime::new()?.block_on(async {
+            wasm_rs_async_executor::single_threaded::block_on(async {
                 // TODO this is silly of course, but create_and_retrieve_object was angry at graphql_ast not being borrowed for static
                 // TODO and I was having a hard time getting it to jump into the closure mainting its static borrow
                 let schema_file_contents: &'static str = Box::leak(fs::read_to_string("canisters/graphql/src/test_read_schema.graphql").unwrap().into_boxed_str());

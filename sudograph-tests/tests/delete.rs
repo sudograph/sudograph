@@ -41,7 +41,7 @@ fn test_delete() -> Result<(), Box<dyn std::error::Error>> {
         );
 
         runner.run(&mutation_delete_arbitrary, |arbitrary_result_tuple| {
-            tokio::runtime::Runtime::new()?.block_on(async {
+            wasm_rs_async_executor::single_threaded::block_on(async {
                 let arbitrary_mutation_info = arbitrary_result_tuple.0;
 
                 let (

@@ -207,7 +207,21 @@ fn get_objects(
     mutation_option: Option<String>,
     query: &str
 ) -> Vec<serde_json::value::Value> {
-    let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    // let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    //     if let Some(mutation) = mutation_option {
+    //         graphql_mutation(
+    //             &mutation,
+    //             "{}"
+    //         ).await.unwrap();
+    //     }
+
+    //     return graphql_query(
+    //         query,
+    //         "{}"
+    //     ).await.unwrap();
+    // });
+
+    let result_json = wasm_rs_async_executor::single_threaded::block_on(async {
         if let Some(mutation) = mutation_option {
             graphql_mutation(
                 &mutation,

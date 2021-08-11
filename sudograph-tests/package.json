@@ -1,5 +1,8 @@
 {
     "scripts": {
-        "build": "cd canisters/playground && npm install && npm run build"
+        "build": "cd canisters/playground && npm install && npm run build",
+        "dfx-deploy-graphql": "npm run dfx-build-graphql && npm run dfx-optimize-graphql && dfx deploy graphql",
+        "dfx-build-graphql": "cargo build --target wasm32-unknown-unknown --package graphql --release",
+        "dfx-optimize-graphql": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/graphql.wasm -o ./target/wasm32-unknown-unknown/release/graphql-optimized.wasm"
     }
 }

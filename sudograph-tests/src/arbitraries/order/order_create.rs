@@ -321,7 +321,25 @@ fn get_objects(
     mutation_option: Option<(String, String)>,
     query: &str
 ) -> Vec<serde_json::value::Value> {
-    let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    // let result_json = tokio::runtime::Runtime::new().unwrap().block_on(async {
+    //     if let Some(mutation) = mutation_option {
+    //         // TODO we should panic if this returns an error, otherwise the test could go on
+    //         // TODO and seem to succeed with empty arrays
+    //         // TODO we should probably do this everywhere..in fact, in the graphql_query or graphql_mutation
+    //         // TODO functions perhaps we should panic there for now
+    //         let result_json = graphql_mutation(
+    //             &mutation.0,
+    //             &mutation.1
+    //         ).await.unwrap();
+    //     }
+
+    //     return graphql_query(
+    //         query,
+    //         "{}"
+    //     ).await.unwrap();
+    // });
+
+    let result_json = wasm_rs_async_executor::single_threaded::block_on(async {
         if let Some(mutation) = mutation_option {
             // TODO we should panic if this returns an error, otherwise the test could go on
             // TODO and seem to succeed with empty arrays

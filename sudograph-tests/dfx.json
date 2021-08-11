@@ -8,7 +8,7 @@
             "type": "custom",
             "build": "cargo build --target wasm32-unknown-unknown --package graphql --release",
             "candid": "canisters/graphql/src/lib.did",
-            "wasm": "target/wasm32-unknown-unknown/release/graphql.wasm"
+            "wasm": "target/wasm32-unknown-unknown/release/graphql-optimized.wasm"
         }
     }
 }

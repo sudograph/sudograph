@@ -47,7 +47,7 @@ fn test_update() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
         runner.run(&mutation_update_arbitrary, |mutation_update_result| {
-            tokio::runtime::Runtime::new()?.block_on(async { 
+            wasm_rs_async_executor::single_threaded::block_on(async { 
                 let mutation_update = mutation_update_result.unwrap();
                 let mutation = mutation_update.0;
                 
@@ -118,7 +118,7 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
     let graphql_ast = Box::leak(Box::new(parse_schema::<String>(&schema_file_contents)?));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
-    tokio::runtime::Runtime::new()?.block_on(async {
+    wasm_rs_async_executor::single_threaded::block_on(async {
         graphql_mutation(
             "
                 mutation {
@@ -146,7 +146,7 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
         );
 
         runner.run(&mutation_update_disconnect_arbitrary, |arbitrary_result_tuples| {
-            tokio::runtime::Runtime::new()?.block_on(async {
+            wasm_rs_async_executor::single_threaded::block_on(async {
                 for arbitrary_result_tuple in arbitrary_result_tuples {
                     let connect_arbitrary_mutation_info = arbitrary_result_tuple.0;
                     let disconnect_arbitrary_mutation_info = arbitrary_result_tuple.1;
@@ -222,7 +222,7 @@ fn test_update_disconnect() -> Result<(), Box<dyn std::error::Error>> {
                 println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
             });
 
-            tokio::runtime::Runtime::new()?.block_on(async {
+            wasm_rs_async_executor::single_threaded::block_on(async {
                 graphql_mutation(
                     "
                         mutation {
