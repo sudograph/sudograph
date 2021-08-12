@@ -3,7 +3,10 @@ use crate::{
         mutation_update_disconnect::mutation_update_disconnect::MutationUpdateDisconnectRelationType,
         queries::ArbitraryMutationInfo
     },
-    utilities::graphql::is_graphql_type_a_relation_one
+    utilities::graphql::{
+        is_graphql_type_a_relation_one,
+        is_graphql_type_nullable
+    }
 };
 use graphql_parser::schema::{
     Document,
@@ -48,6 +51,7 @@ pub fn get_connect_arbitrary_mutation_info(
 
     let expected_value = get_expected_value(
         graphql_ast,
+        object,
         &object_id,
         &relation_object_id,
         field,
@@ -127,6 +131,7 @@ fn get_selection(
 
 fn get_expected_value(
     graphql_ast: &'static Document<String>,
+    object: &serde_json::value::Map<String, serde_json::Value>,
     object_id: &serde_json::value::Value,
     relation_object_id: &serde_json::value::Value,
     field: &'static Field<String>,
@@ -140,30 +145,49 @@ fn get_expected_value(
         Some(opposing_field) => {
             let opposing_field_name = &opposing_field.name;
             
-            if is_graphql_type_a_relation_one(
-                graphql_ast,
-                &opposing_field.field_type
-            ) == true {
-                // TODO I think here I need to check if an error should be returned for trying to disconnect a non-nullable relation one
-                return get_expected_value_opposing_relation_one(
-                    object_id,
-                    relation_object_id,
-                    field_name,
-                    opposing_field_name,
-                    mutation_name,
-                    mutation_update_disconnect_relation_type
-                );
+            if
+                is_graphql_type_a_relation_one(
+                    graphql_ast,
+                    &opposing_field.field_type
+                ) == true &&
+                is_graphql_type_nullable(&opposing_field.field_type) == false &&
+                object.get(field_name).is_some() &&
+                object.get(field_name).unwrap().is_null() == false
+            {
+                return serde_json::json!({
+                    "data": null,
+                    "errors": [
+                        {
+                            "message": "Cannot set a non-nullable relation one to null"
+                        }
+                    ]
+                });
             }
             else {
-                return get_expected_value_opposing_relation_many(
-                    object_id,
-                    relation_object_id,
-                    field_name,
-                    opposing_field_name,
-                    mutation_name,
-                    mutation_update_disconnect_relation_type
-                );
-            }        
+                if is_graphql_type_a_relation_one(
+                    graphql_ast,
+                    &opposing_field.field_type
+                ) == true {
+                    return get_expected_value_opposing_relation_one(
+                        object_id,
+                        relation_object_id,
+                        field_name,
+                        opposing_field_name,
+                        mutation_name,
+                        mutation_update_disconnect_relation_type
+                    );
+                }
+                else {
+                    return get_expected_value_opposing_relation_many(
+                        object_id,
+                        relation_object_id,
+                        field_name,
+                        opposing_field_name,
+                        mutation_name,
+                        mutation_update_disconnect_relation_type
+                    );
+                }
+            }
         },
         None => {
             return get_expected_value_opposing_relation_none(

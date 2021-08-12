@@ -25,11 +25,11 @@ fn test_canister() {
         //     logging
         // ).await.unwrap();
 
-        // update_test(
-        //     "test_update_disconnect",
-        //     cases,
-        //     logging
-        // ).await.unwrap();
+        update_test(
+            "test_update_disconnect",
+            cases,
+            logging
+        ).await.unwrap();
 
         // update_test(
         //     "test_delete",
@@ -61,10 +61,10 @@ fn test_canister() {
         //     logging
         // ).await.unwrap();
 
-        update_test(
-            "test_order",
-            cases,
-            logging
-        ).await.unwrap();
+        // update_test(
+        //     "test_order",
+        //     cases,
+        //     logging
+        // ).await.unwrap();
     });
 }

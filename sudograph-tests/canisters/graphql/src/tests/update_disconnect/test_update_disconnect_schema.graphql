@@ -1,5 +1,3 @@
-# TODO there is something still not right with checking on the non-nullable error returning when it should
-
 type SudographSettings {
     clearMutation: true
 }
@@ -13,12 +11,11 @@ type User {
     plant_3: Plant @relation(name: "User:plant_3::Plant::user_3")
     plant_4: Plant @relation(name: "User:plant_4::Plant::user_4")
 
-    # TODO these are commented out because they seem to take far too much time to run and are relatively similar to the Plant tests
-    # flowers_0: [Flower!]!
-    # flowers_1: [Flower!]! @relation(name: "User:flowers_1::Flower:user_1")
-    # flowers_2: [Flower!]! @relation(name: "User:flowers_2::Flower:user_2")
-    # flowers_3: [Flower!]! @relation(name: "User:flowers_3::Flower:user_3")
-    # flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
+    flowers_0: [Flower!]!
+    flowers_1: [Flower!]! @relation(name: "User:flowers_1::Flower:user_1")
+    flowers_2: [Flower!]! @relation(name: "User:flowers_2::Flower:user_2")
+    flowers_3: [Flower!]! @relation(name: "User:flowers_3::Flower:user_3")
+    flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
 }
 
 type Plant {
@@ -29,11 +26,10 @@ type Plant {
     user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
 }
 
-# TODO these are commented out because they seem to take far too much time to run and are relatively similar to the Plant tests
-# type Flower {
-#     id: ID!
-#     user_1: User! @relation(name: "User:flowers_1::Flower:user_1")
-#     user_2: User @relation(name: "User:flowers_2::Flower:user_2")
-#     user_3: [User!]! @relation(name: "User:flowers_3::Flower:user_3")
-#     user_4: [User!] @relation(name: "User:flowers_4::Flower:user_4")
-# }
+type Flower {
+    id: ID!
+    user_1: User! @relation(name: "User:flowers_1::Flower:user_1")
+    user_2: User @relation(name: "User:flowers_2::Flower:user_2")
+    user_3: [User!]! @relation(name: "User:flowers_3::Flower:user_3")
+    user_4: [User!] @relation(name: "User:flowers_4::Flower:user_4")
+}

@@ -152,15 +152,29 @@ fn get_disconnect_arbitrary_mutation_info_expected_value(
             }
         },
         None => {
-            // TODO this might be wrong, not accounting for a relation many without an opposing field
-            return serde_json::json!({
-                "data": {
-                    mutation_name: [{
-                        "id": object_id,
-                        field_name: null
-                    }]
-                }
-            });          
+            if is_graphql_type_a_relation_many(
+                graphql_ast,
+                &field.field_type
+            ) == true {
+                return serde_json::json!({
+                    "data": {
+                        mutation_name: [{
+                            "id": object_id,
+                            field_name: []
+                        }]
+                    }
+                });
+            }
+            else {
+                return serde_json::json!({
+                    "data": {
+                        mutation_name: [{
+                            "id": object_id,
+                            field_name: null
+                        }]
+                    }
+                });
+            }       
         }
     };
 }

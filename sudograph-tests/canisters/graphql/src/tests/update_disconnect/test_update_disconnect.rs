@@ -154,11 +154,6 @@ fn test_update_disconnect(
                 }
             }
 
-                if logging == true {
-                    ic_cdk::println!("Test complete");
-                    ic_cdk::println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-                }
-
             futures::executor::block_on(async {
                 graphql_mutation(
                     "
@@ -169,6 +164,11 @@ fn test_update_disconnect(
                     "{}".to_string()
                 ).await;
             });
+
+            if logging == true {
+                ic_cdk::println!("Test complete");
+                ic_cdk::println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            }
 
             return Ok(());
         }).unwrap();
