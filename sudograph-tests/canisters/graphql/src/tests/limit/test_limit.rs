@@ -1,6 +1,3 @@
-// TODO this test seems to slow down on each iteration, as if there is some kind of memory leak
-// TODO test_offset does not seem to have the same problem, nor does test_search
-
 use crate::{
     arbitraries::{
         queries::{
@@ -85,7 +82,7 @@ fn test_limit(
             );
 
             let mut runner = TestRunner::new(Config {
-                cases: 10, // TODO figure out the optimal number here
+                cases: 10,
                 max_shrink_iters: 0,
                 .. Config::default()
             });

@@ -35,7 +35,22 @@ fn test_read(
     let graphql_ast = Box::leak(Box::new(graphql_parser::schema::parse_schema::<String>(static_schema).unwrap()));
     let object_types = Box::leak(Box::new(get_object_types(graphql_ast)));
 
+    futures::executor::block_on(async {
+        graphql_mutation(
+            "
+                mutation {
+                    clear
+                }
+            ".to_string(),
+            "{}".to_string()
+        ).await;
+    });
+
     for object_type in object_types.iter() {
+        if object_type.name == "SudographSettings" {
+            continue;
+        }
+
         let mut runner = TestRunner::new(Config {
             cases,
             max_shrink_iters: 0,
@@ -132,6 +147,17 @@ fn test_read(
             assert!(
                 result_json == expected_value
             );
+
+            futures::executor::block_on(async {
+                graphql_mutation(
+                    "
+                        mutation {
+                            clear
+                        }
+                    ".to_string(),
+                    "{}".to_string()
+                ).await;
+            });
 
             if logging == true {
                 ic_cdk::println!("Test complete");

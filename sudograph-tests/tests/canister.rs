@@ -51,7 +51,7 @@ fn test_canister() {
 
         // update_test(
         //     "test_limit",
-        //     1, // TODO this test slows down very quickly for some reason
+        //     cases,
         //     logging
         // ).await.unwrap();
 
@@ -64,7 +64,7 @@ fn test_canister() {
         // TODO order is slowing down extremely quickly as well for some reason
         update_test(
             "test_order",
-            cases,
+            10,
             logging
         ).await.unwrap();
     });

@@ -53,6 +53,10 @@ fn test_search(
     });
 
     for object_type in object_types.iter() {
+        if object_type.name == "SudographSettings" {
+            continue;
+        }
+
         let mut runner = TestRunner::new(Config {
             cases,
             max_shrink_iters: 0,
@@ -79,7 +83,7 @@ fn test_search(
             );
 
             let mut runner = TestRunner::new(Config {
-                cases,
+                cases: 10,
                 max_shrink_iters: 0,
                 .. Config::default()
             });

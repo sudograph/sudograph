@@ -104,7 +104,7 @@ register_custom_getrandom!(custom_getrandom);
 // graphql_database!("canisters/graphql/src/tests/update_disconnect/test_update_disconnect_schema.graphql"); // TODO currently broken
 // graphql_database!("canisters/graphql/src/tests/delete/test_delete_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/read/test_read_schema.graphql");
-// graphql_database!("canisters/graphql/src/tests/search/test_search_schema.graphql"); // TODO currently broken
+// graphql_database!("canisters/graphql/src/tests/search/test_search_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/limit/test_limit_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/offset/test_offset_schema.graphql");
 graphql_database!("canisters/graphql/src/tests/order/test_order_schema.graphql"); // TODO currently broken

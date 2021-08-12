@@ -1,3 +1,7 @@
+type SudographSettings {
+    clearMutation: true
+}
+
 # TODO there are a few more many-to-many combinations to try, non-nullable to nullable and nullable to non-nullable
 type User {
     id: ID!
