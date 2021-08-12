@@ -77,3 +77,20 @@ pub async fn update_test(
 
     return Ok(response_value);
 }
+
+pub fn copy_schema(schema_file_name: &str) {
+    std::fs::write(
+        "canisters/graphql/src/schema.graphql",
+        std::fs::read(schema_file_name).unwrap()
+    );
+}
+
+pub fn deploy_canister() {
+    let mut output = std::process::Command::new("npm")
+        .arg("run")
+        .arg("dfx-deploy-graphql")
+        .spawn()
+        .unwrap();
+    
+    output.wait();
+}

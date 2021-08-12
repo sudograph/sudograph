@@ -4,62 +4,32 @@ type SudographSettings {
 
 type User {
     id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
+    
+    plant_0: Plant
+    plant_1: Plant @relation(name: "User:plant_1::Plant::user_1")
+    plant_2: Plant @relation(name: "User:plant_2::Plant::user_2")
+    plant_3: Plant @relation(name: "User:plant_3::Plant::user_3")
+    plant_4: Plant @relation(name: "User:plant_4::Plant::user_4")
 
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
-
-    hobbies: [Hobby!]!
+    flowers_0: [Flower!]!
+    flowers_1: [Flower!]! @relation(name: "User:flowers_1::Flower:user_1")
+    flowers_2: [Flower!]! @relation(name: "User:flowers_2::Flower:user_2")
+    flowers_3: [Flower!]! @relation(name: "User:flowers_3::Flower:user_3")
+    flowers_4: [Flower!]! @relation(name: "User:flowers_4::Flower:user_4")
 }
 
-type Hobby {
+type Plant {
     id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
-
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
-
-    users: [User!]!
-    lobbies: [Lobby!]!
+    user_1: User! @relation(name: "User:plant_1::Plant::user_1")
+    user_2: User @relation(name: "User:plant_2::Plant::user_2")
+    user_3: [User!]! @relation(name: "User:plant_3::Plant::user_3")
+    user_4: [User!] @relation(name: "User:plant_4::Plant::user_4")
 }
 
-type Lobby {
+type Flower {
     id: ID!
-    blob: Blob!
-    bool: Boolean!
-    date: Date!
-    float: Float!
-    int: Int!
-    json: JSON!
-    string: String!
-
-    blob_nullable: Blob
-    bool_nullable: Boolean
-    date_nullable: Date
-    float_nullable: Float
-    int_nullable: Int
-    json_nullable: JSON
-    string_nullable: String
+    user_1: User! @relation(name: "User:flowers_1::Flower:user_1")
+    user_2: User @relation(name: "User:flowers_2::Flower:user_2")
+    user_3: [User!]! @relation(name: "User:flowers_3::Flower:user_3")
+    user_4: [User!] @relation(name: "User:flowers_4::Flower:user_4")
 }

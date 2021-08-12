@@ -16,13 +16,7 @@ opt-level = 'z'
 [dependencies]
 ic-cdk = "0.3.0"
 ic-agent = "0.5.2"
-proptest = "1.0.0" # TODO needs to be commented out when deploying, but uncommented when executing tests
-graphql-parser = "0.3.0"
 garcon = "0.2.3"
 serde_json = { version = "1.0.64", features = ["float_roundtrip"] }
-chrono = "0.4.19"
 serde = "1.0.126"
-# futures = { version = "0.3.16", features = ["executor"] }
-# spin_on = "0.1.1"
-wasm-rs-async-executor = "0.9.0"
-tokio = "1.9.0" # I think I need this for the agent
+tokio = "1.9.0"

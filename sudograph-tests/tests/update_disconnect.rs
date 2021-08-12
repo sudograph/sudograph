@@ -9,12 +9,12 @@ use sudograph_tests::{
 };
 
 #[test]
-fn test_offset() {
+fn test_update_disconnect() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        copy_schema("canisters/graphql/src/tests/offset/test_offset_schema.graphql");
+        copy_schema("canisters/graphql/src/tests/update_disconnect/test_update_disconnect_schema.graphql");
         deploy_canister();
         update_test(
-            "test_offset",
+            "test_update_disconnect",
             CASES,
             LOGGING
         ).await.unwrap();
