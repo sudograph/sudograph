@@ -99,9 +99,11 @@ fn custom_getrandom(buf: &mut [u8]) -> Result<(), getrandom::Error> {
 
 register_custom_getrandom!(custom_getrandom);
 
+graphql_database!("canisters/graphql/src/schema.graphql");
+
 // graphql_database!("canisters/graphql/src/tests/create/test_create_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/update/test_update_schema.graphql");
-graphql_database!("canisters/graphql/src/tests/update_disconnect/test_update_disconnect_schema.graphql");
+// graphql_database!("canisters/graphql/src/tests/update_disconnect/test_update_disconnect_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/delete/test_delete_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/read/test_read_schema.graphql");
 // graphql_database!("canisters/graphql/src/tests/search/test_search_schema.graphql");
