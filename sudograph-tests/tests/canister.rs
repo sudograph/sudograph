@@ -61,10 +61,9 @@ fn test_canister() {
         //     logging
         // ).await.unwrap();
 
-        // TODO order is slowing down extremely quickly as well for some reason
         update_test(
             "test_order",
-            10,
+            cases,
             logging
         ).await.unwrap();
     });

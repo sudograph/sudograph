@@ -188,18 +188,20 @@ fn order_objects(
         let object_a = a.as_object().unwrap();
         let object_b = b.as_object().unwrap();
 
-        println!("object_a\n");
-        println!("{:#?}", object_a);
+        // TODO these may help fix adding the possibility of 0 objects
+        // ic_cdk::println!("object_a\n");
+        // ic_cdk::println!("{:#?}", object_a);
 
-        println!("object_b\n");
-        println!("{:#?}", object_b);
+        // ic_cdk::println!("object_b\n");
+        // ic_cdk::println!("{:#?}", object_b);
 
         let order_field_name = order_input_concrete.field_name.clone();
         let order_direction = order_input_concrete.order_direction.clone();
         let order_field_type = order_input_concrete.field_type.clone();
 
-        println!("order_field_name\n");
-        println!("{}", order_field_name);
+        // TODO these may help fix adding the possibility of 0 objects
+        // ic_cdk::println!("order_field_name\n");
+        // ic_cdk::println!("{}", order_field_name);
 
         if
             object_a.get(&order_field_name).unwrap().is_null() == true &&

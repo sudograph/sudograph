@@ -56,7 +56,10 @@ pub fn get_order_create_arbitrary(
         None
     ).unwrap();
     
-    return (0..10).prop_flat_map(move |num_objects| {
+    // TODO if we want to test 0, we will have to refactor and possibly not use input_infos to get the object selections
+    // TODO think about what to do when there are 0 objects to create
+    // TODO the answer is probably to prop_flat_map input_info_arbitraries once...or at least once
+    return (1..10).prop_flat_map(move |num_objects| {
         let relation_field_name_option = relation_field_name_option.clone();
 
         return vec![0; num_objects as usize]
@@ -86,7 +89,7 @@ pub fn get_order_create_arbitrary(
                     object_types,
                     object_type,
                     level
-                ) };
+                )};
         
                 let relation_field_name_option = relation_field_name_option.clone();
         
@@ -103,6 +106,10 @@ pub fn get_order_create_arbitrary(
                         object_type_name = object_type_name
                     );
         
+                    // TODO these may help fix adding the possibility of 0 objects
+                    // ic_cdk::println!("input_infoses\n");
+                    // ic_cdk::println!("{:#?}", input_infoses);
+
                     let (
                         selection,
                         query
@@ -112,13 +119,16 @@ pub fn get_order_create_arbitrary(
                         &relation_many_order_create_concretes,
                         &input_infoses
                     );
-        
+
+                    // TODO these may help fix adding the possibility of 0 objects
+                    // ic_cdk::println!("selection: {}", selection);
+                    // ic_cdk::println!("query: {}", query);
+
                     let objects = get_objects(
                         &query_name,
                         mutation_option,
                         &query
                     );
-
         
                     let mut order_info_map = std::collections::BTreeMap::new();
         
