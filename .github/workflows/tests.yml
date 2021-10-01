@@ -1,17 +1,23 @@
+# TODO I might be able to have one job per test...then I could do more iterations and run them all in parallel
 name: GitHub Actions Demo
 on: [push]
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v2
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+      - run: rustup target add wasm32-unknown-unknown
+      - run: DFX_VERSION=0.7.2 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+      - run: cargo
+      - run: dfx
+      # - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      # - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      # - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      # - name: Check out repository code
+      #   uses: actions/checkout@v2
+      # - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      # - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      # - name: List files in the repository
+      #   run: |
+      #     ls ${{ github.workspace }}
+      # - run: echo "🍏 This job's status is ${{ job.status }}."
