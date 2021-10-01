@@ -1,0 +1,21 @@
+[package]
+name = "search"
+version = "0.0.0"
+authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sudograph = { version = "0.4.0", path = "../../../" }
+ic-cdk = { version = "0.3.0" }
+ic-cdk-macros = { version = "0.3.0" }
+proptest = { version = "1.0.0", path = "../../../../proptest/proptest", default-features = false, features = ["std"] }
+getrandom = { version = "0.2.2", features = ["custom"] }
+graphql-parser = "0.3.0"
+serde_json = { version = "1.0.64", features = ["float_roundtrip"] }
+chrono = "0.4.19"
+serde = "1.0.126"
+futures = "0.3.16"
+test_utilities = { path = "../test_utilities" }

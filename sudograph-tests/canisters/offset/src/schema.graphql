@@ -1,0 +1,18 @@
+type SudographSettings {
+    clearMutation: true
+}
+
+type User {
+    id: ID!
+    ducks: [Duck!]!
+}
+
+type Duck {
+    id: ID!
+    hunters: [User!]!
+    ponds: [Pond!]!
+}
+
+type Pond {
+    id: ID!
+}

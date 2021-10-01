@@ -4,10 +4,18 @@ version = "0.3.0"
 authors = ["Jordan Last <jordan.michael.last@gmail.com>"]
 edition = "2018"
 
-# [workspace]
-# members = [
-#     "canisters/graphql"
-# ]
+[workspace]
+members = [
+    "canisters/create",
+    "canisters/delete",
+    "canisters/limit",
+    "canisters/offset",
+    "canisters/order",
+    "canisters/read",
+    "canisters/search",
+    "canisters/update",
+    "canisters/update_disconnect"
+]
 
 [profile.release]
 lto = true
@@ -16,10 +24,8 @@ opt-level = 'z'
 [dependencies]
 ic-cdk = "0.3.0"
 ic-agent = "0.5.2"
-proptest = "1.0.0"
-graphql-parser = "0.3.0"
-tokio = { version = "1.8.1", features = ["macros"] }
 garcon = "0.2.3"
 serde_json = { version = "1.0.64", features = ["float_roundtrip"] }
-chrono = "0.4.19"
 serde = "1.0.126"
+tokio = "1.9.0"
+lazy_static = "1.4.0"

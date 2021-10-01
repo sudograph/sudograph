@@ -10,6 +10,7 @@ description = "GraphQL database for the Internet Computer"
 [workspace]
 members = [
     "sudograph-tests",
+    "sudograph-tests/canisters/graphql"
 ]
 
 [dependencies]
