@@ -13,6 +13,7 @@ jobs:
         working-directory: sudograph-tests
       - run: sleep 30
       - run: cargo test test_create -- --nocapture --exact --test-threads 1
+        working-directory: sudograph-tests
       # - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       # - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       # - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
