@@ -11,7 +11,9 @@ crate-type = ["cdylib"]
 sudograph = { version = "0.4.0", path = "../../../" }
 ic-cdk = { version = "0.3.0" }
 ic-cdk-macros = { version = "0.3.0" }
-proptest = { version = "1.0.0", path = "../../../../proptest/proptest", default-features = false, features = ["std"] }
+# TODO it would be ideal to get the small changes required for proptest upstreamed into the true proptest repo
+proptest = { git = "https://github.com/sudograph/proptest.git", default-features = false, features = ["std"] }
+# proptest = { path = "../../../../proptest/proptest", default-features = false, features = ["std"] }
 getrandom = { version = "0.2.2", features = ["custom"] }
 graphql-parser = "0.3.0"
 serde_json = { version = "1.0.64", features = ["float_roundtrip"] }

@@ -1540,10 +1540,10 @@ dependencies = [
 [[package]]
 name = "proptest"
 version = "1.0.0"
+source = "git+https://github.com/sudograph/proptest.git#2828a9a5232ebeaea58ca8d3ee9710cc9663fbc4"
 dependencies = [
  "bitflags",
  "byteorder",
- "ic-cdk 0.3.0",
  "lazy_static",
  "num-traits",
  "quick-error",

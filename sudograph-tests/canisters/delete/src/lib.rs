@@ -75,7 +75,7 @@ fn test_delete(
             assert!(assert_equal_disconnect(
                 &result_json,
                 &arbitrary_mutation_info.expected_value,
-                logging
+                logging == "verbose"
             ));
 
             let arbitrary_query_infos = arbitrary_result_tuple.1;
