@@ -2,7 +2,6 @@ use sudograph_tests::{
     CASES,
     LOGGING,
     utilities::agent::{
-        copy_schema,
         deploy_canister,
         update_test
     }
@@ -11,12 +10,12 @@ use sudograph_tests::{
 #[test]
 fn test_limit() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        copy_schema("canisters/graphql/src/tests/limit/test_limit_schema.graphql");
-        deploy_canister();
+        deploy_canister("dfx-deploy-limit");
         update_test(
+            "rkp4c-7iaaa-aaaaa-aaaca-cai",
             "test_limit",
-            CASES,
-            LOGGING
+            *CASES,
+            &*LOGGING
         ).await.unwrap();
     });
 }

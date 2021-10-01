@@ -2,7 +2,6 @@ use sudograph_tests::{
     CASES,
     LOGGING,
     utilities::agent::{
-        copy_schema,
         deploy_canister,
         update_test
     }
@@ -11,12 +10,12 @@ use sudograph_tests::{
 #[test]
 fn test_update_disconnect() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        copy_schema("canisters/graphql/src/tests/update_disconnect/test_update_disconnect_schema.graphql");
-        deploy_canister();
+        deploy_canister("dfx-deploy-update-disconnect");
         update_test(
+            "qjdve-lqaaa-aaaaa-aaaeq-cai",
             "test_update_disconnect",
-            CASES,
-            LOGGING
+            *CASES,
+            &*LOGGING
         ).await.unwrap();
     });
 }

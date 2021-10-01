@@ -2,7 +2,6 @@ use sudograph_tests::{
     CASES,
     LOGGING,
     utilities::agent::{
-        copy_schema,
         deploy_canister,
         update_test
     }
@@ -11,12 +10,12 @@ use sudograph_tests::{
 #[test]
 fn test_read() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        copy_schema("canisters/graphql/src/tests/read/test_read_schema.graphql");
-        deploy_canister();
+        deploy_canister("dfx-deploy-read");
         update_test(
+            "rdmx6-jaaaa-aaaaa-aaadq-cai",
             "test_read",
-            CASES,
-            LOGGING
+            *CASES,
+            &*LOGGING
         ).await.unwrap();
     });
 }

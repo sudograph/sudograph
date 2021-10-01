@@ -6,7 +6,15 @@ edition = "2018"
 
 [workspace]
 members = [
-    "canisters/graphql"
+    "canisters/create",
+    "canisters/delete",
+    "canisters/limit",
+    "canisters/offset",
+    "canisters/order",
+    "canisters/read",
+    "canisters/search",
+    "canisters/update",
+    "canisters/update_disconnect"
 ]
 
 [profile.release]
@@ -20,3 +28,4 @@ garcon = "0.2.3"
 serde_json = { version = "1.0.64", features = ["float_roundtrip"] }
 serde = "1.0.126"
 tokio = "1.9.0"
+lazy_static = "1.4.0"

@@ -1,8 +1,33 @@
 {
     "scripts": {
         "build": "cd canisters/playground && npm install && npm run build",
-        "dfx-deploy-graphql": "npm run dfx-build-graphql && npm run dfx-optimize-graphql && dfx deploy graphql",
-        "dfx-build-graphql": "cargo build --target wasm32-unknown-unknown --package graphql --release",
-        "dfx-optimize-graphql": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/graphql.wasm -o ./target/wasm32-unknown-unknown/release/graphql-optimized.wasm"
+        "dfx-deploy": "npm run dfx-deploy-create && npm run dfx-deploy-delete && npm run dfx-deploy-limit && npm run dfx-deploy-offset && npm run dfx-deploy-order && npm run dfx-deploy-read && npm run dfx-deploy-search && npm run dfx-deploy-update-disconnect && npm run dfx-deploy-update",
+        "dfx-deploy-create": "npm run dfx-build-create && npm run dfx-optimize-create && dfx deploy create",
+        "dfx-deploy-delete": "npm run dfx-build-delete && npm run dfx-optimize-delete && dfx deploy delete",
+        "dfx-deploy-limit": "npm run dfx-build-limit && npm run dfx-optimize-limit && dfx deploy limit",
+        "dfx-deploy-offset": "npm run dfx-build-offset && npm run dfx-optimize-offset && dfx deploy offset",
+        "dfx-deploy-order": "npm run dfx-build-order && npm run dfx-optimize-order && dfx deploy order",
+        "dfx-deploy-read": "npm run dfx-build-read && npm run dfx-optimize-read && dfx deploy read",
+        "dfx-deploy-search": "npm run dfx-build-search && npm run dfx-optimize-search && dfx deploy search",
+        "dfx-deploy-update-disconnect": "npm run dfx-build-update-disconnect && npm run dfx-optimize-update-disconnect && dfx deploy update-disconnect",
+        "dfx-deploy-update": "npm run dfx-build-update && npm run dfx-optimize-update && dfx deploy update",
+        "dfx-build-create": "cargo build --target wasm32-unknown-unknown --package create --release",
+        "dfx-build-delete": "cargo build --target wasm32-unknown-unknown --package delete --release",
+        "dfx-build-limit": "cargo build --target wasm32-unknown-unknown --package limit --release",
+        "dfx-build-offset": "cargo build --target wasm32-unknown-unknown --package offset --release",
+        "dfx-build-order": "cargo build --target wasm32-unknown-unknown --package order --release",
+        "dfx-build-read": "cargo build --target wasm32-unknown-unknown --package read --release",
+        "dfx-build-search": "cargo build --target wasm32-unknown-unknown --package search --release",
+        "dfx-build-update-disconnect": "cargo build --target wasm32-unknown-unknown --package update_disconnect --release",
+        "dfx-build-update": "cargo build --target wasm32-unknown-unknown --package update --release",
+        "dfx-optimize-create": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/create.wasm -o ./target/wasm32-unknown-unknown/release/create-optimized.wasm",
+        "dfx-optimize-delete": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/delete.wasm -o ./target/wasm32-unknown-unknown/release/delete-optimized.wasm",
+        "dfx-optimize-limit": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/limit.wasm -o ./target/wasm32-unknown-unknown/release/limit-optimized.wasm",
+        "dfx-optimize-offset": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/offset.wasm -o ./target/wasm32-unknown-unknown/release/offset-optimized.wasm",
+        "dfx-optimize-order": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/order.wasm -o ./target/wasm32-unknown-unknown/release/order-optimized.wasm",
+        "dfx-optimize-read": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/read.wasm -o ./target/wasm32-unknown-unknown/release/read-optimized.wasm",
+        "dfx-optimize-search": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/search.wasm -o ./target/wasm32-unknown-unknown/release/search-optimized.wasm",
+        "dfx-optimize-update-disconnect": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/update_disconnect.wasm -o ./target/wasm32-unknown-unknown/release/update_disconnect-optimized.wasm",
+        "dfx-optimize-update": "./target/bin/ic-cdk-optimizer ./target/wasm32-unknown-unknown/release/update.wasm -o ./target/wasm32-unknown-unknown/release/update-optimized.wasm"
     }
 }

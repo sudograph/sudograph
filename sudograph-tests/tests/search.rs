@@ -2,7 +2,6 @@ use sudograph_tests::{
     CASES,
     LOGGING,
     utilities::agent::{
-        copy_schema,
         deploy_canister,
         update_test
     }
@@ -11,12 +10,12 @@ use sudograph_tests::{
 #[test]
 fn test_search() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
-        copy_schema("canisters/graphql/src/tests/search/test_search_schema.graphql");
-        deploy_canister();
+        deploy_canister("dfx-deploy-search");
         update_test(
+            "qoctq-giaaa-aaaaa-aaaea-cai",
             "test_search",
-            CASES,
-            LOGGING
+            *CASES,
+            &*LOGGING
         ).await.unwrap();
     });
 }

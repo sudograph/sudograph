@@ -4,9 +4,10 @@ use ic_cdk::export::candid::{
 };
 
 pub async fn query_test(
+    canister_id: &str,
     method_name: &str,
     cases: u32,
-    logging: bool
+    logging: &str
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let agent = ic_agent::Agent::builder()
         .with_url("http://localhost:8000")
@@ -15,8 +16,7 @@ pub async fn query_test(
 
     agent.fetch_root_key().await?;
 
-    // let canister_id = ic_cdk::export::Principal::from_text("ai7t5-aibaq-aaaaa-aaaaa-c")?;
-    let canister_id = ic_cdk::export::Principal::from_text("rrkah-fqaaa-aaaaa-aaaaq-cai")?;
+    let canister_id = ic_cdk::export::Principal::from_text(canister_id)?;
 
     let mut query_builder = ic_agent::agent::QueryBuilder::new(
         &agent,
@@ -39,9 +39,10 @@ pub async fn query_test(
 }
 
 pub async fn update_test(
+    canister_id: &str,
     method_name: &str,
     cases: u32,
-    logging: bool
+    logging: &str
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let agent = ic_agent::Agent::builder()
         .with_url("http://localhost:8000")
@@ -50,8 +51,7 @@ pub async fn update_test(
     
     agent.fetch_root_key().await?;
 
-    // let canister_id = ic_cdk::export::Principal::from_text("ai7t5-aibaq-aaaaa-aaaaa-c")?;
-    let canister_id = ic_cdk::export::Principal::from_text("rrkah-fqaaa-aaaaa-aaaaq-cai")?;
+    let canister_id = ic_cdk::export::Principal::from_text(canister_id)?;
 
     let mut update_builder = ic_agent::agent::UpdateBuilder::new(
         &agent,
@@ -85,10 +85,10 @@ pub fn copy_schema(schema_file_name: &str) {
     );
 }
 
-pub fn deploy_canister() {
+pub fn deploy_canister(npm_command: &str) {
     let mut output = std::process::Command::new("npm")
         .arg("run")
-        .arg("dfx-deploy-graphql")
+        .arg(npm_command)
         .spawn()
         .unwrap();
     
