@@ -5,7 +5,7 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
-      - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+      - run: curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
       - run: rustup target add wasm32-unknown-unknown
       - run: DFX_VERSION=0.7.2 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
       - run: cargo
