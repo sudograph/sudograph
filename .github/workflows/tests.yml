@@ -9,8 +9,10 @@ jobs:
       - run: curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
       - run: rustup target add wasm32-unknown-unknown
       - run: DFX_VERSION=0.7.2 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
-      - run: dfx start --no-artificial-delay
+      - run: dfx start --background --no-artificial-delay
         working-directory: sudograph-tests
+      - run: sleep 30
+      - run: cargo test test_create -- --nocapture --exact --test-threads 1
       # - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       # - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       # - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
