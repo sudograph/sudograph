@@ -11,16 +11,16 @@ jobs:
       - run: DFX_VERSION=0.7.2 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
       - run: cargo install ic-cdk-optimizer --root target
         working-directory: sudograph-tests
-      - run: dfx start --background --no-artificial-delay
-        working-directory: sudograph-tests
-      - run: sleep 30
-      - run: cargo test test_create -- --nocapture --exact --test-threads 1
-        working-directory: sudograph-tests
       # TODO testing out the cache
       - uses: actions/cache@v2
         with:
           key: sudograph-tests-target
           path: sudograph-tests/target
+      - run: dfx start --background --no-artificial-delay
+        working-directory: sudograph-tests
+      - run: sleep 30
+      - run: cargo test test_create -- --nocapture --exact --test-threads 1
+        working-directory: sudograph-tests
       # - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       # - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       # - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
