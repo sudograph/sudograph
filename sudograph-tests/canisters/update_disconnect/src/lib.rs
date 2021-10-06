@@ -93,7 +93,7 @@ fn test_update_disconnect(
                 assert!(assert_equal_disconnect(
                     &result_json,
                     &connect_arbitrary_mutation_info.expected_value,
-                    logging
+                    logging == "verbose"
                 ));
 
                 let (
@@ -123,7 +123,7 @@ fn test_update_disconnect(
                 assert!(assert_equal_disconnect(
                     &result_json,
                     &disconnect_arbitrary_mutation_info.expected_value,
-                    logging
+                    logging == "verbose"
                 ));
 
                 if let Some(check_disconnected_relation_arbitrary_query_info) = check_disconnected_relation_arbitrary_query_info_option {
