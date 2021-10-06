@@ -9,13 +9,13 @@ jobs:
       - run: curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
       - run: rustup target add wasm32-unknown-unknown
       - run: DFX_VERSION=0.7.2 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
-      - run: cargo install ic-cdk-optimizer --root target
+      - run: CARGO_TARGET_DIR=temp-cargo-install cargo install ic-cdk-optimizer --root target
         working-directory: sudograph-tests
       # TODO testing out the cache
       - uses: actions/cache@v2
         with:
-          key: sudograph-tests-target
-          path: sudograph-tests/target
+          key: temp-cargo-install
+          path: temp-cargo-install
       - run: dfx start --background --no-artificial-delay
         working-directory: sudograph-tests
       - run: sleep 30
